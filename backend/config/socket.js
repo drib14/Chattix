@@ -43,6 +43,36 @@ export const initSocket = (server) => {
       });
     });
 
+    socket.on('call-user', (data) => {
+      // data: { conversationId, participants, callType, caller }
+      if (!data.participants) return;
+      data.participants.forEach((pId) => {
+        const participantId = typeof pId === 'object' ? pId._id : pId;
+        if (participantId === data.caller._id) return;
+        socket.in(participantId).emit('incoming-call', data);
+      });
+    });
+
+    socket.on('answer-call', (data) => {
+      // data: { conversationId, participants, answerer }
+      if (!data.participants) return;
+      data.participants.forEach((pId) => {
+        const participantId = typeof pId === 'object' ? pId._id : pId;
+        if (participantId === data.answerer._id) return;
+        socket.in(participantId).emit('call-answered', data);
+      });
+    });
+
+    socket.on('end-call', (data) => {
+      // data: { conversationId, participants, sender }
+      if (!data.participants) return;
+      data.participants.forEach((pId) => {
+        const participantId = typeof pId === 'object' ? pId._id : pId;
+        if (participantId === data.sender._id) return;
+        socket.in(participantId).emit('call-ended', data);
+      });
+    });
+
     socket.on('disconnect', async () => {
       console.log('USER DISCONNECTED', socket.id);
       const userId = userSocketMap.get(socket.id);

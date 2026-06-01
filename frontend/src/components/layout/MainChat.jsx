@@ -230,6 +230,35 @@ const MainChat = () => {
             }
         });
 
+        socket.on('incoming-call', (data) => {
+            setCallType(data.callType);
+            setCallStatus('incoming');
+            setCallActive(true);
+            setCallTimer(0);
+            startRingingSynth();
+        });
+
+        socket.on('call-answered', () => {
+            stopRingingSynth();
+            setCallStatus('connected');
+            if (timerRef.current) clearInterval(timerRef.current);
+            timerRef.current = setInterval(() => {
+                setCallTimer((prev) => prev + 1);
+            }, 1000);
+        });
+
+        socket.on('call-ended', () => {
+            stopRingingSynth();
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+            setCallActive(false);
+            setCallStatus('dialing');
+            setCallTimer(0);
+            toast.error('Call ended');
+        });
+
         return () => {
             socket.disconnect();
             stopRingingSynth();
@@ -375,25 +404,85 @@ const MainChat = () => {
         setCallActive(true);
         setCallTimer(0);
         startRingingSynth();
+
+        if (socket && selectedChat) {
+            socket.emit('call-user', {
+                conversationId: selectedChat._id,
+                participants: selectedChat.participants.map((p) => p._id),
+                callType: type,
+                caller: { _id: user._id, username: user.username, profilePic: user.profilePic }
+            });
+        }
     };
 
     const answerCall = () => {
         stopRingingSynth();
         setCallStatus('connected');
+        if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = setInterval(() => {
             setCallTimer((prev) => prev + 1);
         }, 1000);
+
+        if (socket && selectedChat) {
+            socket.emit('answer-call', {
+                conversationId: selectedChat._id,
+                participants: selectedChat.participants.map((p) => p._id),
+                answerer: { _id: user._id, username: user.username }
+            });
+        }
+    };
+
+    const saveCallLog = async (status, duration) => {
+        try {
+            const logText = status === 'ended'
+                ? `${callType === 'video' ? '📹 Video Call' : '📞 Voice Call'} Ended`
+                : status === 'declined'
+                    ? '📞 Call Declined'
+                    : '📹 Missed Call';
+
+            await sendDataMessage({
+                content: logText,
+                callLog: {
+                    callType: callType,
+                    status: status, // 'ended' | 'missed' | 'declined'
+                    duration: duration
+                }
+            });
+        } catch (error) {
+            console.error('Call log error:', error);
+        }
     };
 
     const terminateCall = () => {
         stopRingingSynth();
+        const duration = callTimer;
+        
         if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
         }
+
+        // Save call log entries before clearing state
+        if (callStatus === 'connected') {
+            saveCallLog('ended', duration);
+        } else if (callStatus === 'dialing') {
+            saveCallLog('missed', 0);
+        } else if (callStatus === 'incoming') {
+            saveCallLog('declined', 0);
+        }
+
         setCallActive(false);
-        setCallStatus('dialing');
         setCallTimer(0);
+        setCallStatus('dialing');
+
+        if (socket && selectedChat) {
+            socket.emit('end-call', {
+                conversationId: selectedChat._id,
+                participants: selectedChat.participants.map((p) => p._id),
+                sender: { _id: user._id }
+            });
+        }
+        
         toast.error('Call ended');
     };
 
@@ -494,6 +583,46 @@ const MainChat = () => {
                         <MessageSkeleton isOwn />
                     </div>
                 ) : messages.map((m) => {
+                    if (m.callLog) {
+                        const callIcon = m.callLog.callType === 'video' ? <Video size={16} /> : <Phone size={16} />;
+                        
+                        return (
+                            <div key={m._id} className="w-full flex justify-center my-2 select-none">
+                                <div className="bg-neutral-800/60 border border-white/5 backdrop-blur-md px-4 py-3 rounded-2xl max-w-sm flex items-center space-x-3.5 shadow-sm text-xs font-semibold text-neutral-300">
+                                    <div className={`p-2.5 rounded-xl ${
+                                        m.callLog.status === 'missed' 
+                                            ? 'bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse'
+                                            : 'bg-green-500/10 text-green-400 border border-green-500/25'
+                                    }`}>
+                                        {callIcon}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-white font-bold leading-tight">
+                                            {m.callLog.status === 'ended' 
+                                                ? `${m.callLog.callType === 'video' ? 'Video Call' : 'Voice Call'} Ended`
+                                                : m.callLog.status === 'declined'
+                                                    ? 'Call Declined'
+                                                    : 'Missed Call'}
+                                        </div>
+                                        <div className="text-[10px] text-neutral-500 mt-0.5 leading-relaxed font-sans font-medium">
+                                            {m.callLog.status === 'ended' 
+                                                ? `Duration: ${formatCallTime(m.callLog.duration)}`
+                                                : m.callLog.status === 'declined'
+                                                    ? 'The recipient declined the call.'
+                                                    : 'No answer.'}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => initiateCall(m.callLog.callType)}
+                                        className="px-3 py-1.5 rounded-lg bg-[#0099ff]/10 text-[#0099ff] border border-[#0099ff]/20 hover:bg-[#0099ff]/25 active:scale-95 transition cursor-pointer text-[10px] font-black uppercase tracking-wider"
+                                    >
+                                        Call Back
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    }
+
                     const isMyMessage = m.sender._id === user._id;
                     const senderPic = m.sender.profilePic;
                     const senderInitial = m.sender.username[0]?.toUpperCase() || '?';
@@ -643,9 +772,13 @@ const MainChat = () => {
                         </div>
                         <h2 className="text-2xl font-black">{chatName}</h2>
                         
-                        {callStatus === 'dialing' ? (
+                        {callStatus === 'dialing' && (
                             <p className="text-neutral-500 text-sm animate-pulse mt-1.5 font-medium">Contacting...</p>
-                        ) : (
+                        )}
+                        {callStatus === 'incoming' && (
+                            <p className="text-[#0099ff] text-sm animate-pulse mt-1.5 font-bold tracking-wide">Incoming Call...</p>
+                        )}
+                        {callStatus === 'connected' && (
                             <p className="text-green-500 text-sm font-semibold mt-1.5 tracking-wider font-mono">
                                 CONNECTED — {formatCallTime(callTimer)}
                             </p>
@@ -654,7 +787,7 @@ const MainChat = () => {
 
                     {/* Ringing Visual animation circle */}
                     <div className="relative flex items-center justify-center">
-                        <div className={`absolute w-44 h-44 rounded-full bg-[#0099ff]/5 border border-[#0099ff]/10 ${callStatus === 'dialing' ? 'animate-ping' : ''}`}></div>
+                        <div className={`absolute w-44 h-44 rounded-full bg-[#0099ff]/5 border border-[#0099ff]/10 ${(callStatus === 'dialing' || callStatus === 'incoming') ? 'animate-ping' : ''}`}></div>
                         <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-white/10 z-10 shadow-2xl bg-neutral-800 flex items-center justify-center font-bold text-3xl">
                             {chatPic ? <img src={chatPic} alt="" className="w-full h-full object-cover" /> : chatName?.[0]?.toUpperCase()}
                         </div>
@@ -673,19 +806,28 @@ const MainChat = () => {
 
                     {/* Calling Options controls toolbar */}
                     <div className="flex items-center space-x-6 mb-6">
-                        {callStatus === 'dialing' ? (
+                        {callStatus === 'dialing' && (
+                            /* Caller Dialing View - Cancel only */
+                            <button onClick={terminateCall} className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 flex items-center justify-center shadow-lg transition cursor-pointer" title="Cancel Call">
+                                <X size={26} className="stroke-[2.5]" />
+                            </button>
+                        )}
+                        {callStatus === 'incoming' && (
+                            /* Receiver View - Answer or Decline */
                             <>
-                                {/* Mock decline */}
-                                <button onClick={terminateCall} className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 flex items-center justify-center shadow-lg transition cursor-pointer">
+                                {/* Decline Button */}
+                                <button onClick={terminateCall} className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 flex items-center justify-center shadow-lg transition cursor-pointer" title="Decline Call">
                                     <X size={26} className="stroke-[2.5]" />
                                 </button>
                                 
-                                {/* Mock answer trigger */}
-                                <button onClick={answerCall} className="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 active:scale-95 flex items-center justify-center shadow-lg transition animate-bounce cursor-pointer">
+                                {/* Answer Button */}
+                                <button onClick={answerCall} className="w-16 h-16 rounded-full bg-green-600 hover:bg-green-500 active:scale-95 flex items-center justify-center shadow-lg transition animate-bounce cursor-pointer" title="Answer Call">
                                     <Phone size={26} className="stroke-[2.5]" />
                                 </button>
                             </>
-                        ) : (
+                        )}
+                        {callStatus === 'connected' && (
+                            /* Active Connected View - Mic, Hangup, Speaker */
                             <>
                                 {/* Mic toggle */}
                                 <button 
@@ -701,7 +843,7 @@ const MainChat = () => {
                                 </button>
 
                                 {/* Red hang up trigger */}
-                                <button onClick={terminateCall} className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 flex items-center justify-center shadow-lg transition cursor-pointer">
+                                <button onClick={terminateCall} className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 flex items-center justify-center shadow-lg transition cursor-pointer" title="Hang Up">
                                     <X size={26} className="stroke-[2.5]" />
                                 </button>
 

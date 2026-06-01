@@ -15,6 +15,11 @@ const messageSchema = new Schema(
     paymentIntentId: { type: String },
     isAiGenerated: { type: Boolean, default: false },
     readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    callLog: {
+      callType: { type: String }, // 'voice' | 'video'
+      status: { type: String }, // 'missed' | 'declined' | 'ended'
+      duration: { type: Number }, // in seconds
+    },
   },
   { timestamps: true }
 );

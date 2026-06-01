@@ -14,7 +14,7 @@ export const allMessages = async (req, res) => {
 };
 
 export const sendMessage = async (req, res) => {
-  const { content, conversationId, image, gifUrl, location, paymentIntentId, isAiGenerated } = req.body;
+  const { content, conversationId, image, gifUrl, location, paymentIntentId, isAiGenerated, callLog } = req.body;
 
   if (!conversationId) {
     console.log('Invalid data passed into request');
@@ -31,6 +31,7 @@ export const sendMessage = async (req, res) => {
     location,
     paymentIntentId,
     isAiGenerated,
+    callLog,
   };
 
   try {
