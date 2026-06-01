@@ -25,6 +25,7 @@ export default function ChatList({ className = '' }) {
     toggleFavorite,
     updateProfile,
     createChat,
+    switchSavedAccount,
     loading
   } = useApp();
 
@@ -48,6 +49,7 @@ export default function ChatList({ className = '' }) {
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [showAddContactModal, setShowAddContactModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   
   // Profile editing
   const [statusText, setStatusText] = useState(user?.statusText || '');
@@ -254,7 +256,7 @@ export default function ChatList({ className = '' }) {
   return (
     <div className={`sidebar glass-panel ${className}`}>
       {/* Header Profile Widget */}
-      <div className="sidebar-header">
+      <div className="sidebar-header" style={{ position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Logo size={32} />
           <div className="user-profile-widget" onClick={() => setShowAccountDropdown(!showAccountDropdown)}>
@@ -283,6 +285,123 @@ export default function ChatList({ className = '' }) {
             <LogOut size={16} />
           </button>
         </div>
+
+        {/* Floating Switch Accounts Dropdown Drawer */}
+        {showAccountDropdown && (
+          <div className="account-swapper-dropdown glass-panel" style={{
+            position: 'absolute',
+            top: '60px',
+            left: '16px',
+            right: '16px',
+            zIndex: 100,
+            padding: '12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            border: '1px solid var(--glass-border-glow)',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--accent-purple)', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              Switch Account
+            </div>
+            
+            {/* Active current user */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', background: 'rgba(168,85,247,0.1)', borderRadius: '8px', border: '1px solid rgba(168,85,247,0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="avatar-wrapper" style={{ width: '28px', height: '28px' }}>
+                  {user.profilePhoto ? (
+                    <img className="avatar" src={user.profilePhoto} alt={user.username} />
+                  ) : (
+                    <div className="avatar-placeholder" style={{ fontSize: '10px' }}>{user.username.substring(0, 2)}</div>
+                  )}
+                  <div className="status-indicator online" style={{ bottom: 0, right: 0 }}></div>
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{user.username} (You)</span>
+              </div>
+              <Check size={14} style={{ color: 'var(--status-online)' }} />
+            </div>
+
+            {/* Other saved accounts */}
+            {(() => {
+              try {
+                const saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+                const otherAccounts = saved.filter(acc => acc.id !== user.id);
+                if (otherAccounts.length === 0) return null;
+                return otherAccounts.map(acc => (
+                  <div
+                    key={acc.id}
+                    onClick={() => {
+                      switchSavedAccount(acc.id);
+                      setShowAccountDropdown(false);
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="avatar-wrapper" style={{ width: '28px', height: '28px' }}>
+                        {acc.profilePhoto ? (
+                          <img className="avatar" src={acc.profilePhoto} alt={acc.username} />
+                        ) : (
+                          <div className="avatar-placeholder" style={{ fontSize: '10px' }}>{acc.username.substring(0, 2)}</div>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '12px', color: 'var(--text-primary)' }}>{acc.username}</span>
+                    </div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Saved</span>
+                  </div>
+                ));
+              } catch(e) {
+                return null;
+              }
+            })()}
+
+            {/* Add Account Option */}
+            <div
+              onClick={() => {
+                logoutUser();
+                setShowAccountDropdown(false);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', borderRadius: '8px', cursor: 'pointer', border: '1px dashed var(--glass-border)', color: 'var(--accent-cyan)', justifyContent: 'center' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(6, 182, 212, 0.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+              <Plus size={14} />
+              <span style={{ fontSize: '12px' }}>Add Account</span>
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {/* Preferences Option */}
+              <div
+                onClick={() => {
+                  setShowControlCenter(true);
+                  setShowAccountDropdown(false);
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <Sparkles size={13} style={{ color: 'var(--accent-purple)' }} />
+                <span style={{ fontSize: '12px' }}>Control Center</span>
+              </div>
+
+              {/* Logout Option */}
+              <div
+                onClick={() => {
+                  logoutUser();
+                  setShowAccountDropdown(false);
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', color: '#ef4444' }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <LogOut size={13} />
+                <span style={{ fontSize: '12px' }}>Log Out</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Local search bar */}

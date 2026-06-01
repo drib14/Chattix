@@ -215,7 +215,7 @@ export const sendMessage = async (req, res) => {
       if (containsToxic) {
         const matched = toxicKeywords.find(keyword => lowercaseContent.includes(keyword));
         const reason = ['spam', 'scam', 'hack'].includes(matched) ? 'Phishing & Spam' : 'Harassment & Toxicity';
-        
+
         // Dynamic import to avoid circular dependencies
         import('./userController.js').then(({ addToxicityLog }) => {
           addToxicityLog({

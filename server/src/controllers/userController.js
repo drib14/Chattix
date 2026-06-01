@@ -8,7 +8,7 @@ export const searchUsers = async (req, res) => {
 
   try {
     let searchCriteria = {};
-    
+
     if (query && query.trim() !== '') {
       searchCriteria = {
         _id: { $ne: req.user._id },
@@ -607,7 +607,7 @@ export const uploadCustomSticker = async (req, res) => {
 
     const { uploadToCloudinary } = await import('../config/cloudinary.js');
     const uploadResult = await uploadToCloudinary(req.file.buffer, 'image');
-    
+
     const user = await User.findById(req.user._id);
     user.stickers.push(uploadResult.secure_url);
     await user.save();
@@ -662,10 +662,10 @@ export const createStory = async (req, res) => {
 export const getStories = async (req, res) => {
   try {
     const currentUser = await User.findById(req.user._id).populate('contacts', 'username profilePhoto stories');
-    
+
     // Aggregate stories across all contacts and self
     const allStories = [];
-    
+
     // Add self stories
     if (currentUser.stories && currentUser.stories.length > 0) {
       allStories.push({
