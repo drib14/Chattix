@@ -36,6 +36,45 @@ const SettingsDrawer = () => {
   const [username, setUsername] = useState(user?.username || '');
   const [profilePic, setProfilePic] = useState(user?.profilePic || '');
   const [updating, setUpdating] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('profilePic', file);
+
+    setUploadingPic(true);
+    try {
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${user.token}`,
+        },
+        withCredentials: true,
+      };
+
+      const { data } = await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/users/upload`,
+        formData,
+        config
+      );
+
+      setProfilePic(data.profilePic);
+      login(data);
+      toast.success('Profile picture uploaded successfully!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Upload failed');
+    } finally {
+      setUploadingPic(false);
+    }
+  };
 
   // Accounts state
   const [savedAccounts, setSavedAccounts] = useState([]);
@@ -111,12 +150,32 @@ const SettingsDrawer = () => {
     }
   };
 
-  const changeThemePalette = (t) => {
-    document.documentElement.style.setProperty('--color-primary', t.primary);
-    document.documentElement.style.setProperty('--color-primary-hover', `${t.primary}ee`);
-    document.documentElement.style.setProperty('--color-secondary', t.secondary);
-    document.documentElement.style.setProperty('--color-bg-dark', t.bg);
-    toast.success(`Theme set to ${t.name}`);
+  const changeThemePalette = async (t) => {
+    try {
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        withCredentials: true,
+      };
+
+      const { data } = await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/users/profile`,
+        { theme: t.name },
+        config
+      );
+
+      login(data);
+
+      document.documentElement.style.setProperty('--color-primary', t.primary);
+      document.documentElement.style.setProperty('--color-primary-hover', `${t.primary}ee`);
+      document.documentElement.style.setProperty('--color-secondary', t.secondary);
+      document.documentElement.style.setProperty('--color-bg-dark', t.bg);
+      toast.success(`Theme set to ${t.name} and saved to profile!`);
+    } catch (error) {
+      toast.error('Failed to save theme to database');
+    }
   };
 
   const changeChatBackground = (bg) => {
@@ -312,16 +371,35 @@ const SettingsDrawer = () => {
                     />
                   </div>
 
-                  {/* Profile Picture field */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-neutral-300">Profile Picture URL</label>
-                    <input
-                      type="text"
-                      placeholder="Paste picture URL..."
-                      value={profilePic}
-                      onChange={(e) => setProfilePic(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 placeholder-neutral-600 transition-all text-sm"
-                    />
+                  {/* Profile Picture Upload field */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-neutral-300 font-sans">Profile Picture</label>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 rounded-full overflow-hidden border border-white/5 bg-neutral-900 flex items-center justify-center font-bold text-xl text-neutral-400">
+                        {profilePic ? (
+                          <img src={profilePic} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          user?.username?.[0]?.toUpperCase()
+                        )}
+                      </div>
+                      <label className="flex-1 flex flex-col items-center justify-center px-4 py-4 bg-neutral-900 hover:bg-neutral-800/80 border border-white/5 hover:border-neutral-700 text-neutral-400 hover:text-white rounded-2xl cursor-pointer transition text-xs font-semibold text-center relative border-dashed select-none">
+                        {uploadingPic ? (
+                          <span className="flex items-center space-x-2">
+                            <span className="w-4.5 h-4.5 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin"></span>
+                            <span>Uploading image...</span>
+                          </span>
+                        ) : (
+                          <span>Choose image file</span>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          disabled={uploadingPic}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   {/* Submit Button */}
@@ -497,7 +575,7 @@ const SettingsDrawer = () => {
                               {acc.profilePic ? (
                                 <img src={acc.profilePic} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                acc.username[0]
+                                acc.username ? acc.username[0] : '?'
                               )}
                             </div>
                             <div>

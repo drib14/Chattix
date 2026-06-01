@@ -6,26 +6,34 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { User, Mail, KeyRound } from 'lucide-react';
 
-const MessengerLogo = () => (
+const ChattixLogo = () => (
     <div className="flex flex-col items-center justify-center select-none">
         <div className="relative group cursor-pointer">
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#0099FF] via-[#A033FF] to-[#FF7061] rounded-full blur-xl opacity-30 group-hover:opacity-55 transition duration-500 scale-110"></div>
-            <svg viewBox="0 0 28 28" className="w-20 h-20 filter drop-shadow-[0_4px_12px_rgba(0,198,255,0.3)] transition-transform duration-300 group-hover:scale-105 relative z-10">
+            <div className="absolute inset-0 bg-gradient-to-tr from-[#aa3bff] to-[#06b6d4] rounded-3xl blur-xl opacity-30 group-hover:opacity-55 transition duration-500 scale-110"></div>
+            
+            <svg viewBox="0 0 100 100" className="w-20 h-20 transition-transform duration-300 group-hover:scale-105 relative z-10">
                 <defs>
-                    <linearGradient id="messengerGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#0099FF" />
-                        <stop offset="30%" stopColor="#A033FF" />
-                        <stop offset="60%" stopColor="#FF5280" />
-                        <stop offset="90%" stopColor="#FF7061" />
+                    <linearGradient id="purpleCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#aa3bff" />
+                        <stop offset="100%" stopColor="#06b6d4" />
                     </linearGradient>
+                    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
                 </defs>
-                <path
-                    fill="url(#messengerGrad)"
-                    d="M14 2C7.373 2 2 6.942 2 13.031c0 3.486 1.745 6.586 4.477 8.571a.82.82 0 0 1 .284.648l-.008 1.956c-.004.88.948 1.458 1.714.996l2.257-1.358a.936.936 0 0 1 .593-.146c.866.12 1.76.184 2.683.184 6.627 0 12-4.942 12-11.031C26 6.942 20.627 2 14 2zm5.792 9.53-2.993 4.747a1.218 1.218 0 0 1-1.696.408l-2.482-1.654a.488.488 0 0 0-.542.007l-3.325 2.502c-.595.448-1.378-.26-.98-.893l2.993-4.748a1.218 1.218 0 0 1 1.696-.407l2.482 1.653c.17.114.394.112.562-.006l3.305-2.5c.594-.45 1.378.258.98.892z"
-                />
+                <rect x="5" y="5" width="90" height="90" rx="24" fill="#0d0e12" stroke="url(#purpleCyanGrad)" strokeWidth="1.5" />
+                <path d="M 50 15 C 27 15 15 27 15 48 C 15 62 21 72 32 78 L 28 88 L 40 84 C 43 85 47 85 50 85 C 73 85 85 73 85 48 C 85 27 73 15 50 15 Z" 
+                      fill="none" stroke="url(#purpleCyanGrad)" strokeWidth="4.5" filter="url(#neonGlow)" />
+                <path d="M 62 38 C 58 34 53 32 46 32 C 34 32 28 41 28 50 C 28 59 34 68 46 68 C 53 68 58 66 62 62" 
+                      fill="none" stroke="#ffffff" strokeWidth="6.5" strokeLinecap="round" filter="url(#neonGlow)" />
+                <circle cx="58" cy="50" r="5" fill="#06b6d4" filter="url(#neonGlow)" />
             </svg>
         </div>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-neutral-100 to-neutral-300 bg-clip-text text-transparent">
+        <h1 className="mt-4 text-3xl font-black tracking-tight bg-gradient-to-r from-white via-neutral-100 to-neutral-300 bg-clip-text text-transparent animate-pulse">
             Chattix
         </h1>
         <p className="mt-1 text-sm text-neutral-400 font-medium">Create a new Chattix account</p>
@@ -72,7 +80,7 @@ const RegisterPage = () => {
             <div className="w-full max-w-md p-8 z-10 bg-neutral-900/60 backdrop-blur-xl rounded-3xl border border-white/5 shadow-2xl relative">
                 {/* Header logo area */}
                 <div className="mb-8">
-                    <MessengerLogo />
+                    <ChattixLogo />
                 </div>
 
                 <motion.div

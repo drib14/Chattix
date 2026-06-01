@@ -101,6 +101,7 @@ export const registerUser = async (req, res) => {
         email: user.email,
         profilePic: user.profilePic,
         theme: user.theme,
+        token: accessToken,
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -129,6 +130,7 @@ export const loginUser = async (req, res) => {
         email: user.email,
         profilePic: user.profilePic,
         theme: user.theme,
+        token: accessToken,
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
