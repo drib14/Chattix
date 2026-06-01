@@ -115,6 +115,17 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    stickers: {
+      type: [String],
+      default: [],
+    },
+    stories: [
+      {
+        imageUrl: { type: String, required: true },
+        text: { type: String, default: '' },
+        createdAt: { type: Date, default: Date.now },
+      }
+    ],
   },
   { timestamps: true }
 );

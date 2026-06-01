@@ -28,6 +28,19 @@ export default function ChatList({ className = '' }) {
     loading
   } = useApp();
 
+  // Saved accounts swapper
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const { switchSavedAccount, getStories, createStory } = useApp();
+
+  // Stories deck states
+  const [storiesList, setStoriesList] = useState([]);
+  const [showCreateStoryModal, setShowCreateStoryModal] = useState(false);
+  const [newStoryUrl, setNewStoryUrl] = useState('');
+  const [newStoryText, setNewStoryText] = useState('');
+  const [activeUserIndex, setActiveUserIndex] = useState(null);
+  const [activeStoryIndex, setActiveStoryIndex] = useState(0);
+  const [storyTimer, setStoryTimer] = useState(0);
+
   const [activeTab, setActiveTab] = useState('chats'); // chats, contacts
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -60,6 +73,106 @@ export default function ChatList({ className = '' }) {
       fetchAllUsers();
     }
   }, [showAddContactModal]);
+
+  const loadStories = async () => {
+    try {
+      const dbStories = await getStories();
+      const mockStories = [
+        {
+          _id: 'mock_1',
+          username: 'alice_adventurer',
+          profilePhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
+          stories: [
+            {
+              imageUrl: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&auto=format&fit=crop&q=80',
+              text: 'Road trip across Utah! 🏔️✨',
+              createdAt: new Date(Date.now() - 3600000 * 2)
+            },
+            {
+              imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&auto=format&fit=crop&q=80',
+              text: 'Sandy beaches and crystal blue waves 🌊🌴',
+              createdAt: new Date(Date.now() - 3600000 * 1)
+            }
+          ]
+        },
+        {
+          _id: 'mock_2',
+          username: 'designer_bob',
+          profilePhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
+          stories: [
+            {
+              imageUrl: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=500&auto=format&fit=crop&q=80',
+              text: 'Scaffolding visual wireframes in Figma 💻📐',
+              createdAt: new Date(Date.now() - 3600000 * 4)
+            }
+          ]
+        },
+        {
+          _id: 'mock_3',
+          username: 'chef_clara',
+          profilePhoto: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80',
+          stories: [
+            {
+              imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&auto=format&fit=crop&q=80',
+              text: 'Fresh handmade gourmet pizza! 🍕🔥',
+              createdAt: new Date(Date.now() - 3600000 * 3)
+            }
+          ]
+        }
+      ];
+
+      const combined = [...dbStories];
+      mockStories.forEach(mock => {
+        if (!combined.some(item => item.username === mock.username)) {
+          combined.push(mock);
+        }
+      });
+      setStoriesList(combined);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    loadStories();
+  }, []);
+
+  useEffect(() => {
+    let interval;
+    if (activeUserIndex !== null) {
+      setStoryTimer(0);
+      interval = setInterval(() => {
+        setStoryTimer((prev) => {
+          if (prev >= 100) {
+            const userStories = storiesList[activeUserIndex]?.stories;
+            if (userStories && activeStoryIndex < userStories.length - 1) {
+              setActiveStoryIndex(prevIdx => prevIdx + 1);
+            } else if (activeUserIndex < storiesList.length - 1) {
+              setActiveUserIndex(prevIdx => prevIdx + 1);
+              setActiveStoryIndex(0);
+            } else {
+              setActiveUserIndex(null);
+            }
+            return 0;
+          }
+          return prev + 2;
+        });
+      }, 100);
+    }
+    return () => clearInterval(interval);
+  }, [activeUserIndex, activeStoryIndex, storiesList]);
+
+  const handleCreateStorySubmit = async (e) => {
+    e.preventDefault();
+    if (!newStoryUrl) return;
+    const res = await createStory(newStoryUrl, newStoryText);
+    if (res) {
+      setNewStoryUrl('');
+      setNewStoryText('');
+      setShowCreateStoryModal(false);
+      loadStories();
+    }
+  };
 
   // Search local chats
   const filteredConversations = conversations.filter((c) => {
@@ -144,7 +257,7 @@ export default function ChatList({ className = '' }) {
       <div className="sidebar-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Logo size={32} />
-          <div className="user-profile-widget" onClick={() => setShowControlCenter(true)}>
+          <div className="user-profile-widget" onClick={() => setShowAccountDropdown(!showAccountDropdown)}>
             <div className="avatar-wrapper" style={{ width: '36px', height: '36px' }}>
               {user.profilePhoto ? (
                 <img className="avatar" src={user.profilePhoto} alt={user.username} />
@@ -246,54 +359,144 @@ export default function ChatList({ className = '' }) {
       <div className="sidebar-list">
         {/* CHATS TAB LIST */}
         {activeTab === 'chats' && (
-          filteredConversations.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px', fontSize: '13px' }}>
-              No conversations yet.<br />Add a contact to start chatting!
-            </div>
-          ) : (
-            filteredConversations.map((chat) => {
-              const details = getChatDetails(chat);
-              const isActive = currentChat && currentChat._id === chat._id;
-              const isTyping = typingUsers[chat._id] && typingUsers[chat._id].length > 0;
-
-              return (
-                <div
-                  key={chat._id}
-                  className={`list-item ${isActive ? 'active' : ''}`}
-                  onClick={() => setCurrentChat(chat)}
-                >
-                  <div className="avatar-wrapper" style={{ width: '38px', height: '38px' }}>
-                    {details.photo ? (
-                      <img className="avatar" src={details.photo} alt={details.name} />
-                    ) : (
-                      <div className="avatar-placeholder" style={{ fontSize: '13px' }}>{details.fallback}</div>
-                    )}
-                    <div className={`status-indicator ${details.isOnline ? 'online' : ''}`}></div>
-                  </div>
-                  <div className="list-item-content">
-                    <div className="list-item-header">
-                      <div className="list-item-name">{details.name}</div>
-                      {chat.lastMessage && (
-                        <div className="list-item-time">{formatTime(chat.lastMessage.createdAt)}</div>
-                      )}
-                    </div>
-                    <div className="list-item-footer">
-                      {isTyping ? (
-                        <span className="typing-text">typing...</span>
-                      ) : chat.lastMessage ? (
-                        <span className="list-item-preview">
-                          {chat.lastMessage.sender.username === user.username ? 'You: ' : ''}
-                          {chat.lastMessage.isDeleted ? 'This message was deleted.' : chat.lastMessage.content || 'Sent an attachment'}
-                        </span>
-                      ) : (
-                        <span className="list-item-preview" style={{ fontStyle: 'italic' }}>No messages yet</span>
-                      )}
-                    </div>
-                  </div>
+          <>
+            {/* STORIES HORIZONTAL SLIDER */}
+            <div className="stories-horizontal-slider" style={{
+              display: 'flex',
+              gap: '12px',
+              padding: '12px 16px',
+              overflowX: 'auto',
+              borderBottom: '1px solid var(--glass-border)',
+              scrollbarWidth: 'none',
+              whiteSpace: 'nowrap'
+            }}>
+              {/* Create story thumbnail */}
+              <div
+                onClick={() => setShowCreateStoryModal(true)}
+                style={{
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  minWidth: '55px'
+                }}
+              >
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '50%',
+                  border: '1.5px dashed var(--accent-purple)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(168,85,247,0.05)',
+                  position: 'relative'
+                }}>
+                  <Plus size={18} style={{ color: 'var(--accent-purple)' }} />
                 </div>
-              );
-            })
-          )
+                <span style={{ fontSize: '10.5px', marginTop: '6px', color: 'var(--text-secondary)' }}>Add Story</span>
+              </div>
+
+              {/* Feed stories */}
+              {storiesList.map((feedItem, uIdx) => (
+                <div
+                  key={feedItem._id || uIdx}
+                  onClick={() => {
+                    setActiveUserIndex(uIdx);
+                    setActiveStoryIndex(0);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    minWidth: '55px'
+                  }}
+                >
+                  <div style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    padding: '2.5px',
+                    background: 'linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-cyan) 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 0 8px rgba(168,85,247,0.3)'
+                  }}>
+                    {feedItem.profilePhoto ? (
+                      <img src={feedItem.profilePhoto} alt={feedItem.username} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', background: '#000' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#3b0764', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>
+                        {feedItem.username.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: '10.5px',
+                    marginTop: '6px',
+                    color: 'var(--text-secondary)',
+                    maxWidth: '55px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    textAlign: 'center'
+                  }}>
+                    {feedItem.username === user.username ? 'My Story' : feedItem.username}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {filteredConversations.length === 0 ? (
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px', fontSize: '13px' }}>
+                No conversations yet.<br />Add a contact to start chatting!
+              </div>
+            ) : (
+              filteredConversations.map((chat) => {
+                const details = getChatDetails(chat);
+                const isActive = currentChat && currentChat._id === chat._id;
+                const isTyping = typingUsers[chat._id] && typingUsers[chat._id].length > 0;
+
+                return (
+                  <div
+                    key={chat._id}
+                    className={`list-item ${isActive ? 'active' : ''}`}
+                    onClick={() => setCurrentChat(chat)}
+                  >
+                    <div className="avatar-wrapper" style={{ width: '38px', height: '38px' }}>
+                      {details.photo ? (
+                        <img className="avatar" src={details.photo} alt={details.name} />
+                      ) : (
+                        <div className="avatar-placeholder" style={{ fontSize: '13px' }}>{details.fallback}</div>
+                      )}
+                      <div className={`status-indicator ${details.isOnline ? 'online' : ''}`}></div>
+                    </div>
+                    <div className="list-item-content">
+                      <div className="list-item-header">
+                        <div className="list-item-name">{details.name}</div>
+                        {chat.lastMessage && (
+                          <div className="list-item-time">{formatTime(chat.lastMessage.createdAt)}</div>
+                        )}
+                      </div>
+                      <div className="list-item-footer">
+                        {isTyping ? (
+                          <span className="typing-text">typing...</span>
+                        ) : chat.lastMessage ? (
+                          <span className="list-item-preview">
+                            {chat.lastMessage.sender.username === user.username ? 'You: ' : ''}
+                            {chat.lastMessage.isDeleted ? 'This message was deleted.' : chat.lastMessage.content || 'Sent an attachment'}
+                          </span>
+                        ) : (
+                          <span className="list-item-preview" style={{ fontStyle: 'italic' }}>No messages yet</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
         )}
 
         {/* CONTACTS TAB LIST */}
@@ -411,6 +614,317 @@ export default function ChatList({ className = '' }) {
           )
         )}
       </div>
+
+      {/* PROFILE CONFIG MODAL */}
+      {showControlCenter && (
+        <ControlCenter onClose={() => setShowControlCenter(false)} />
+      )}
+
+      {/* MULTIPLE ACCOUNT SWITCHER DROPDOWN */}
+      {showAccountDropdown && (
+        <div className="glass-panel" style={{
+          position: 'absolute',
+          top: '60px',
+          left: '16px',
+          zIndex: 250,
+          width: '260px',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--glass-border)',
+          borderRadius: '12px',
+          padding: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          animation: 'fadeIn 0.15s ease-out'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '8px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Switch Accounts</span>
+            <button className="icon-btn" onClick={() => setShowAccountDropdown(false)} style={{ padding: '2px' }}><X size={14} /></button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {(() => {
+              const savedAccs = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+              const currentExists = savedAccs.some(acc => acc.id === user.id);
+              const list = [...savedAccs];
+              if (!currentExists && user) {
+                list.push({
+                  id: user.id,
+                  username: user.username,
+                  profilePhoto: user.profilePhoto || '',
+                  token: localStorage.getItem('token') || ''
+                });
+              }
+
+              return list.map(acc => {
+                const isActive = acc.id === user.id;
+                return (
+                  <div
+                    key={acc.id}
+                    onClick={() => {
+                      if (isActive) return;
+                      switchSavedAccount(acc.id);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      cursor: isActive ? 'default' : 'pointer',
+                      background: isActive ? 'rgba(168, 85, 247, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                      border: isActive ? '1px solid rgba(168, 85, 247, 0.2)' : '1px solid transparent',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
+                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)'; }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="avatar-wrapper" style={{ width: '28px', height: '28px' }}>
+                        {acc.profilePhoto ? (
+                          <img className="avatar" src={acc.profilePhoto} alt={acc.username} />
+                        ) : (
+                          <div className="avatar-placeholder" style={{ fontSize: '10px' }}>{acc.username.substring(0, 2)}</div>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '12.5px', fontWeight: isActive ? '600' : 'normal' }}>{acc.username}</span>
+                    </div>
+                    {isActive ? (
+                      <span style={{ color: 'var(--accent-purple)', display: 'flex', alignItems: 'center' }}><Check size={14} /></span>
+                    ) : (
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Swap</span>
+                    )}
+                  </div>
+                );
+              });
+            })()}
+
+            <button
+              onClick={() => {
+                logoutUser();
+                setShowAccountDropdown(false);
+              }}
+              style={{
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px dashed var(--glass-border)',
+                borderRadius: '8px',
+                padding: '8px',
+                fontSize: '11px',
+                color: 'var(--accent-purple)',
+                fontWeight: '600',
+                cursor: 'pointer',
+                textAlign: 'center',
+                marginTop: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px'
+              }}
+            >
+              <Plus size={12} /> Add Another Account
+            </button>
+
+            <button
+              onClick={() => {
+                setShowControlCenter(true);
+                setShowAccountDropdown(false);
+              }}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px',
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                textAlign: 'center',
+                textDecoration: 'underline'
+              }}
+            >
+              Settings & Security
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE STORY CARD MODAL */}
+      {showCreateStoryModal && (
+        <div className="modal-overlay" style={{ zIndex: 300 }}>
+          <div className="modal-content glass-panel" style={{ width: '100%', maxWidth: '440px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">Publish Story</h2>
+              <button className="icon-btn" onClick={() => setShowCreateStoryModal(false)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleCreateStorySubmit}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className="form-group">
+                  <label>Story Image URL</label>
+                  <input
+                    className="glass-input"
+                    type="url"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={newStoryUrl}
+                    onChange={(e) => setNewStoryUrl(e.target.value)}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Story Caption Text</label>
+                  <input
+                    className="glass-input"
+                    type="text"
+                    placeholder="Describe your moment... ✨✍️"
+                    value={newStoryText}
+                    onChange={(e) => setNewStoryText(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn-secondary" type="button" onClick={() => setShowCreateStoryModal(false)}>Cancel</button>
+                <button className="btn-primary" type="submit" disabled={!newStoryUrl}>Publish Story</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* FULLSCREEN STORY DECK VIEW SPECTATOR OVERLAY */}
+      {storiesList[activeUserIndex] && storiesList[activeUserIndex].stories[activeStoryIndex] && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(5, 5, 8, 0.98)',
+          backdropFilter: 'blur(35px)',
+          zIndex: 400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          {/* Main Viewer Card */}
+          <div style={{
+            width: '100%',
+            maxWidth: '380px',
+            height: '90vh',
+            maxHeight: '680px',
+            borderRadius: '24px',
+            border: '1px solid var(--glass-border)',
+            backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, rgba(0,0,0,0.9) 100%), url(${storiesList[activeUserIndex].stories[activeStoryIndex].imageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '20px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+          }}>
+            
+            {/* Top progress indicators block */}
+            <div style={{ position: 'absolute', top: '16px', left: '16px', right: '16px', display: 'flex', gap: '4px' }}>
+              {storiesList[activeUserIndex].stories.map((s, idx) => {
+                let fillVal = 0;
+                if (idx < activeStoryIndex) fillVal = 100;
+                if (idx === activeStoryIndex) fillVal = storyTimer;
+                return (
+                  <div key={idx} style={{ flex: 1, height: '3.5px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ width: `${fillVal}%`, height: '100%', background: 'white', transition: 'width 0.1s linear' }}></div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Viewer Header Metadata */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '2px solid white', overflow: 'hidden' }}>
+                  {storiesList[activeUserIndex].profilePhoto ? (
+                    <img src={storiesList[activeUserIndex].profilePhoto} alt={storiesList[activeUserIndex].username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold', background: '#3b0764' }}>
+                      {storiesList[activeUserIndex].username.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.6)', margin: 0 }}>
+                    {storiesList[activeUserIndex].username}
+                  </h3>
+                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', textShadow: '0 1px 2px rgba(0,0,0,0.6)' }}>
+                    {new Date(storiesList[activeUserIndex].stories[activeStoryIndex].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Close spectator screen */}
+              <button
+                onClick={() => setActiveUserIndex(null)}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.5)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Navigation click shields (Left and Right overlays) */}
+            <div style={{ position: 'absolute', top: '100px', bottom: '120px', left: 0, right: 0, display: 'flex' }}>
+              <div onClick={() => {
+                if (activeStoryIndex > 0) {
+                  setActiveStoryIndex(prev => prev - 1);
+                } else if (activeUserIndex > 0) {
+                  setActiveUserIndex(prev => prev - 1);
+                  setActiveStoryIndex(storiesList[activeUserIndex - 1].stories.length - 1);
+                }
+              }} style={{ flex: 1, cursor: 'w-resize' }}></div>
+              <div onClick={() => {
+                const userStories = storiesList[activeUserIndex].stories;
+                if (activeStoryIndex < userStories.length - 1) {
+                  setActiveStoryIndex(prev => prev + 1);
+                } else if (activeUserIndex < storiesList.length - 1) {
+                  setActiveUserIndex(prev => prev + 1);
+                  setActiveStoryIndex(0);
+                } else {
+                  setActiveUserIndex(null);
+                }
+              }} style={{ flex: 1, cursor: 'e-resize' }}></div>
+            </div>
+
+            {/* Bottom Caption slot */}
+            <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center', paddingBottom: '16px' }}>
+              <p style={{
+                fontSize: '14.5px',
+                fontWeight: '500',
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.9)',
+                lineHeight: '1.4',
+                padding: '10px 16px',
+                background: 'rgba(0,0,0,0.6)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.05)',
+                backdropFilter: 'blur(10px)',
+                maxWidth: '90%'
+              }}>
+                {storiesList[activeUserIndex].stories[activeStoryIndex].text || 'No caption 📸'}
+              </p>
+            </div>
+            
+          </div>
+        </div>
+      )}
 
       {/* PROFILE CONFIG MODAL */}
       {showControlCenter && (

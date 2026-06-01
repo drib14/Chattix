@@ -632,7 +632,7 @@ export const getGroupFiles = async (req, res) => {
 // @access  Private
 export const updateConversationCustomization = async (req, res) => {
   const { chatId } = req.params;
-  const { themeColor, themeEmoji } = req.body;
+  const { themeColor, themeEmoji, themeBackground, vanishMode } = req.body;
   const userId = req.user._id;
 
   try {
@@ -647,6 +647,8 @@ export const updateConversationCustomization = async (req, res) => {
 
     if (themeColor !== undefined) conversation.themeColor = themeColor;
     if (themeEmoji !== undefined) conversation.themeEmoji = themeEmoji;
+    if (themeBackground !== undefined) conversation.themeBackground = themeBackground;
+    if (vanishMode !== undefined) conversation.vanishMode = vanishMode;
 
     await conversation.save();
 

@@ -8,11 +8,13 @@ import Logo from './components/Logo';
 import ContactsPage from './pages/ContactsPage';
 import SecurityPage from './pages/SecurityPage';
 import AdminPage from './pages/AdminPage';
-import { MessageSquare, Users, Shield, LineChart, LogOut } from 'lucide-react';
+import StoriesPage from './pages/StoriesPage';
+import MarketplacePage from './pages/MarketplacePage';
+import { MessageSquare, Users, BookOpen, Store, Shield, LineChart, LogOut } from 'lucide-react';
 
 function AppContent() {
   const { user, token, toast, fetchConversations, fetchContacts, currentChat, logoutUser } = useApp();
-  const [activePage, setActivePage] = useState('chats'); // chats, contacts, security, admin
+  const [activePage, setActivePage] = useState('chats'); // chats, contacts, stories, marketplace, security, admin
   
   // Visual Polish Loaders
   const [splashLoading, setSplashLoading] = useState(true);
@@ -32,6 +34,15 @@ function AppContent() {
     }, 1800);
 
     return () => clearTimeout(splashTimer);
+  }, []);
+
+  // Marketplace purchase pivot event listener
+  useEffect(() => {
+    const handlePivotToChats = () => {
+      setActivePage('chats');
+    };
+    window.addEventListener('pivot_to_chats', handlePivotToChats);
+    return () => window.removeEventListener('pivot_to_chats', handlePivotToChats);
   }, []);
 
   // Sync initial fetching
@@ -86,9 +97,25 @@ function AppContent() {
           <button
             className={`nav-dock-item accent-cyan ${activePage === 'contacts' ? 'active' : ''}`}
             onClick={() => setActivePage('contacts')}
-            title="Contacts & Requests Directory"
+            title="People & Friends"
           >
             <Users size={18} />
+          </button>
+
+          <button
+            className={`nav-dock-item accent-purple ${activePage === 'stories' ? 'active' : ''}`}
+            onClick={() => setActivePage('stories')}
+            title="Stories Deck"
+          >
+            <BookOpen size={18} />
+          </button>
+
+          <button
+            className={`nav-dock-item accent-cyan ${activePage === 'marketplace' ? 'active' : ''}`}
+            onClick={() => setActivePage('marketplace')}
+            title="Marketplace replica"
+          >
+            <Store size={18} />
           </button>
           
           <button
@@ -140,6 +167,8 @@ function AppContent() {
         )}
 
         {activePage === 'contacts' && <ContactsPage />}
+        {activePage === 'stories' && <StoriesPage />}
+        {activePage === 'marketplace' && <MarketplacePage />}
         {activePage === 'security' && <SecurityPage />}
         {activePage === 'admin' && <AdminPage />}
       </div>

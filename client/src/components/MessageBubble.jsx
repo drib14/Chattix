@@ -92,7 +92,37 @@ export default function MessageBubble({ message, index, messages, onReply }) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const isSender = message.sender._id === user.id;
+  const isSender = message?.sender?._id === user?.id;
+
+  if (message.messageType === 'call') {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        margin: '12px 0',
+        width: '100%',
+        animation: 'fadeIn 0.2s ease-out'
+      }}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid var(--glass-border)',
+          borderRadius: '16px',
+          padding: '6px 16px',
+          fontSize: '11px',
+          color: 'var(--text-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          backdropFilter: 'blur(5px)'
+        }}>
+          <span>📞</span>
+          <span style={{ fontWeight: '500' }}>{message.content || 'Call finished'}</span>
+          <span style={{ opacity: 0.6 }}>•</span>
+          <span>{formatMessageTime(message.createdAt)}</span>
+        </div>
+      </div>
+    );
+  }
 
   // Context-aware cluster borders & spacing calculations (Facebook Messenger replication)
   const prevMsg = index > 0 ? messages[index - 1] : null;
@@ -138,7 +168,12 @@ export default function MessageBubble({ message, index, messages, onReply }) {
     borderRadius: getBubbleRadius()
   };
 
-  if (isSender && message.messageType !== 'poll' && !message.isDeleted) {
+  if (message.messageType === 'sticker') {
+    bubbleStyle.background = 'transparent';
+    bubbleStyle.border = 'none';
+    bubbleStyle.boxShadow = 'none';
+    bubbleStyle.padding = '0';
+  } else if (isSender && message.messageType !== 'poll' && !message.isDeleted) {
     bubbleStyle.background = getThemeGradient(currentChat?.themeColor);
   }
 
@@ -147,6 +182,31 @@ export default function MessageBubble({ message, index, messages, onReply }) {
     if (!message.fileUrl) return null;
 
     switch (message.messageType) {
+      case 'sticker':
+        return (
+          <div
+            className="sticker-bubble-container"
+            style={{
+              transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              cursor: 'pointer',
+              padding: '4px'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <img
+              src={message.fileUrl}
+              alt="sticker"
+              style={{
+                width: '120px',
+                height: '120px',
+                objectFit: 'contain',
+                display: 'block',
+                background: 'transparent'
+              }}
+            />
+          </div>
+        );
       case 'image':
         return (
           <div className="attachment-preview-container">

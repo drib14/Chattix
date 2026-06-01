@@ -595,3 +595,104 @@ export const getToxicityLogs = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch AI moderated logs.' });
   }
 };
+
+// @desc    Upload Custom Sticker to Cloudinary
+// @route   POST /api/users/stickers
+// @access  Private
+export const uploadCustomSticker = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Sticker file is required' });
+    }
+
+    const { uploadToCloudinary } = await import('../config/cloudinary.js');
+    const uploadResult = await uploadToCloudinary(req.file.buffer, 'image');
+    
+    const user = await User.findById(req.user._id);
+    user.stickers.push(uploadResult.secure_url);
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Sticker uploaded successfully!',
+      stickers: user.stickers
+    });
+  } catch (error) {
+    console.error('[Upload Sticker Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload custom sticker' });
+  }
+};
+
+// @desc    Get Custom Stickers list
+// @route   GET /api/users/stickers
+// @access  Private
+export const getCustomStickers = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('stickers');
+    res.status(200).json({ success: true, stickers: user.stickers || [] });
+  } catch (error) {
+    console.error('[Get Stickers Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve stickers' });
+  }
+};
+
+// @desc    Create visual User Story
+// @route   POST /api/users/stories
+// @access  Private
+export const createStory = async (req, res) => {
+  const { imageUrl, text } = req.body;
+  try {
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: 'imageUrl is required to create a story.' });
+    }
+    const user = await User.findById(req.user._id);
+    user.stories.push({ imageUrl, text: text || '', createdAt: new Date() });
+    await user.save();
+
+    res.status(201).json({ success: true, message: 'Story created successfully!', stories: user.stories });
+  } catch (error) {
+    console.error('[Create Story Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to publish story.' });
+  }
+};
+
+// @desc    Get Stories for Friends & Self
+// @route   GET /api/users/stories
+// @access  Private
+export const getStories = async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user._id).populate('contacts', 'username profilePhoto stories');
+    
+    // Aggregate stories across all contacts and self
+    const allStories = [];
+    
+    // Add self stories
+    if (currentUser.stories && currentUser.stories.length > 0) {
+      allStories.push({
+        _id: currentUser._id,
+        username: currentUser.username,
+        profilePhoto: currentUser.profilePhoto,
+        stories: currentUser.stories
+      });
+    }
+
+    // Add friends stories
+    if (currentUser.contacts) {
+      currentUser.contacts.forEach(friend => {
+        if (friend.stories && friend.stories.length > 0) {
+          allStories.push({
+            _id: friend._id,
+            username: friend.username,
+            profilePhoto: friend.profilePhoto,
+            stories: friend.stories
+          });
+        }
+      });
+    }
+
+    res.status(200).json({ success: true, stories: allStories });
+  } catch (error) {
+    console.error('[Get Stories Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve stories feed.' });
+  }
+};

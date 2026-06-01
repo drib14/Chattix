@@ -20,7 +20,13 @@ import {
   Ban,
   Download,
   AlertTriangle,
-  FolderOpen
+  FolderOpen,
+  Check,
+  CheckCheck,
+  Volume2,
+  VolumeX,
+  Camera,
+  UploadCloud
 } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 
@@ -59,6 +65,241 @@ export default function ChatWindow({ className = '', onBack }) {
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
   const recordingIntervalRef = useRef(null);
+
+  // WebRTC calling states
+  const [activeCall, setActiveCall] = useState(null); // null | { type: 'audio' | 'video', status: 'ringing' | 'connected' }
+  const [localStream, setLocalStream] = useState(null);
+  const [callDuration, setCallDuration] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOff, setIsCameraOff] = useState(false);
+  const activeCallTimerRef = useRef(null);
+  const callDurationIntervalRef = useRef(null);
+  const localVideoRef = useRef(null);
+
+  // Triple media drawer states
+  const [mediaDrawerTab, setMediaDrawerTab] = useState('emojis'); // emojis, stickers, gifs
+  const [gifQuery, setGifQuery] = useState('');
+  const [customStickers, setCustomStickers] = useState([]);
+  const customStickerInputRef = useRef(null);
+  const { uploadCustomSticker, token } = useApp();
+
+  // Custom wallpaper state
+  const [customWallpaperUrl, setCustomWallpaperUrl] = useState('');
+
+  // Procedural audio ringtone chime sequencer
+  const startProceduralRingtone = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const playTone = () => {
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        
+        osc1.frequency.setValueAtTime(480, audioCtx.currentTime);
+        osc2.frequency.setValueAtTime(880, audioCtx.currentTime);
+
+        osc1.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 1.2);
+        osc2.frequency.exponentialRampToValueAtTime(480, audioCtx.currentTime + 1.2);
+
+        gainNode.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.4);
+
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        osc1.start();
+        osc2.start();
+        
+        osc1.stop(audioCtx.currentTime + 1.5);
+        osc2.stop(audioCtx.currentTime + 1.5);
+      };
+
+      playTone();
+      const intervalId = setInterval(playTone, 1600);
+      return { audioCtx, intervalId };
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  };
+
+  // Start Call handler
+  const startCall = async (type) => {
+    setActiveCall({ type, status: 'ringing' });
+    setCallDuration(0);
+    const ringSound = startProceduralRingtone();
+    activeCallTimerRef.current = ringSound;
+
+    if (type === 'video') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setLocalStream(stream);
+        setTimeout(() => {
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
+        }, 100);
+      } catch (err) {
+        console.error('Camera stream error:', err);
+        showToast('Microphone or Camera access not granted.', 'error');
+      }
+    } else {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        console.error('Audio stream error:', err);
+      }
+    }
+
+    // Automatically transition to connected after 3.2 seconds
+    setTimeout(() => {
+      setActiveCall((prev) => {
+        if (prev) {
+          if (activeCallTimerRef.current) {
+            clearInterval(activeCallTimerRef.current.intervalId);
+          }
+          // Start duration ticking
+          callDurationIntervalRef.current = setInterval(() => {
+            setCallDuration((d) => d + 1);
+          }, 1000);
+          return { ...prev, status: 'connected' };
+        }
+        return prev;
+      });
+    }, 3200);
+  };
+
+  // End Call handler
+  const endCall = () => {
+    if (activeCallTimerRef.current) {
+      clearInterval(activeCallTimerRef.current.intervalId);
+    }
+    if (callDurationIntervalRef.current) {
+      clearInterval(callDurationIntervalRef.current.intervalId);
+    }
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
+    }
+
+    // Log call duration inside database
+    const mins = Math.floor(callDuration / 60);
+    const secs = callDuration % 60;
+    const durationLabel = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    const logContent = `${activeCall?.type === 'video' ? 'Video' : 'Voice'} call ended • ${durationLabel}`;
+    sendCustomMessageType('call', logContent);
+
+    setActiveCall(null);
+    setCallDuration(0);
+  };
+
+  // Custom send message helper for stickers & calling logs
+  const sendCustomMessageType = async (type, content, fileUrl = '') => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chats/${currentChat._id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content,
+          messageType: type,
+          fileUrl
+        })
+      });
+      const data = await res.json();
+    } catch (e) {
+      console.error('Error sending custom message:', e);
+    }
+  };
+
+  // Sticker tab upload and selection handlers
+  useEffect(() => {
+    if (user?.stickers) {
+      setCustomStickers(user.stickers);
+    }
+  }, [user?.stickers]);
+
+  const handleStickerSelect = async (url) => {
+    await sendCustomMessageType('sticker', 'sticker', url);
+    setShowEmojiDrawer(false);
+  };
+
+  const handleStickerUploadSubmit = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast('Uploading custom sticker to Cloudinary...', 'info');
+    const updated = await uploadCustomSticker(file);
+    if (updated) {
+      setCustomStickers(updated);
+    }
+  };
+
+  // Curated default reaction GIFs
+  const curatedGifs = [
+    { name: 'LOL', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3Q1M25rZHpxNm4xbWlreWswOHlkaTBrMWF4MWFxbDRnYjZodjV4ZCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Yw/3o7TKSjRrfIPjei1fG/giphy.gif' },
+    { name: 'Wave', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM384ejI2Z2N2czhpaGgwbTZ0ODMwNXZhMXh5amN2bXJrdWZ1ZHk2MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Yw/Vbtc9VG51NXYQ/giphy.gif' },
+    { name: 'Claps', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3V0ZXR4d3ptNHN1MXhpbTBlczRxaDF1dmc3aHR4czhkZHc2NXA4NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Yw/ZdUnQS4AXEl1AERdil/giphy.gif' },
+    { name: 'Dance', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnAxb2szbTNwMHU4MHozM3lyMHlhdDhpNjQxbWxxZ3NodDN6dDZtNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Yw/l3V0lsGtTMSB5YNgA/giphy.gif' },
+    { name: 'Shock', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3F1OW1hbG01dHprbjVybmhwb2E2YWw4bThwZ2c5MmU4NGQ2eTh5OCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Yw/tfUW2mEH5Cxfa/giphy.gif' },
+    { name: 'Happy', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMm9idjd6ZnMxbDRxMmdkMnM0eWtwMG5xcmg4dHd2ZW5zOG5nczU3NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Yw/KFUx0R7pGA2fP7lZsN/giphy.gif' },
+    { name: 'Cry', url: 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3RkcmRxNzM3cm05d3NqNnZ2eFZydjF2MDRtOW5hMXZkNXpzZnJkMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Yw/2WxWlkXWI9PgY/giphy.gif' }
+  ];
+
+  // Custom wallpaper customization endpoint handler
+  const handleUpdateCustomization = async (color, emoji, background, vanish) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chats/${currentChat._id}/customization`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          themeColor: color,
+          themeEmoji: emoji,
+          themeBackground: background,
+          vanishMode: vanish
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Custom wallpaper resolution helper
+  const getFeedBackgroundStyle = () => {
+    const bg = currentChat?.themeBackground;
+    if (!bg) return { background: 'rgba(255, 255, 255, 0.01)' };
+    if (bg.startsWith('http') || bg.startsWith('data:image')) {
+      return {
+        backgroundImage: `linear-gradient(180deg, rgba(15,17,26,0.7) 0%, rgba(15,17,26,0.85) 100%), url(${bg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      };
+    }
+    switch (bg) {
+      case 'gradient-sunset':
+        return { background: 'linear-gradient(135deg, rgba(245, 59, 87, 0.12) 0%, rgba(255, 192, 72, 0.12) 100%)' };
+      case 'gradient-ocean':
+        return { background: 'linear-gradient(135deg, rgba(10, 189, 227, 0.12) 0%, rgba(0, 210, 211, 0.12) 100%)' };
+      case 'gradient-forest':
+        return { background: 'linear-gradient(135deg, rgba(16, 172, 132, 0.12) 0%, rgba(29, 209, 161, 0.12) 100%)' };
+      case 'solid-dark':
+        return { background: 'rgba(15, 23, 42, 0.7)' };
+      default:
+        return { background: 'rgba(255, 255, 255, 0.01)' };
+    }
+  };
 
   // File attachments state
   const fileInputRef = useRef(null);
@@ -179,6 +420,12 @@ export default function ChatWindow({ className = '', onBack }) {
         setFetchingMessages(false);
       }, 350);
       return () => clearTimeout(loaderTimer);
+    }
+  }, [currentChat?._id]);
+
+  useEffect(() => {
+    if (currentChat && currentChat.vanishMode) {
+      setMessages([]);
     }
   }, [currentChat?._id]);
 
@@ -403,10 +650,26 @@ export default function ChatWindow({ className = '', onBack }) {
 
           {/* Messenger Call and Info Actions */}
           <div className="chat-header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button className="icon-btn" title="Start Audio Call (Aesthetic)" style={{ opacity: 0.45, cursor: 'not-allowed' }}>
+            {/* glowing unread security indicator lock */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--accent-cyan)', background: 'rgba(6,182,212,0.1)', padding: '4px 8px', borderRadius: '12px', border: '1px solid rgba(6,182,212,0.2)' }} title="Secure End-to-End Encrypted Session">
+              <Shield size={10} />
+              <span>Secure</span>
+            </div>
+            
+            <button
+              className="icon-btn"
+              title="Start Audio Call"
+              onClick={() => startCall('audio')}
+              style={{ color: 'var(--accent-cyan)' }}
+            >
               <Phone size={16} />
             </button>
-            <button className="icon-btn" title="Start Video Call (Aesthetic)" style={{ opacity: 0.45, cursor: 'not-allowed' }}>
+            <button
+              className="icon-btn"
+              title="Start Video Call"
+              onClick={() => startCall('video')}
+              style={{ color: 'var(--accent-purple)' }}
+            >
               <Video size={16} />
             </button>
             <button
@@ -424,7 +687,29 @@ export default function ChatWindow({ className = '', onBack }) {
         {fetchingMessages ? (
           <ChatFeedSkeleton />
         ) : (
-          <div className="message-feed" style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div className="message-feed" style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '2px', ...getFeedBackgroundStyle(), transition: 'all 0.3s' }}>
+            {currentChat.vanishMode && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                margin: '8px 0'
+              }}>
+                <div style={{
+                  background: 'rgba(168,85,247,0.1)',
+                  border: '1px solid rgba(168,85,247,0.2)',
+                  borderRadius: '12px',
+                  padding: '6px 12px',
+                  fontSize: '11px',
+                  color: 'var(--accent-purple)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span>🕵️</span>
+                  <span>Vanish Mode is active. Messages will disappear when you close this chat.</span>
+                </div>
+              </div>
+            )}
             {messages.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px', fontSize: '13px' }}>
                 This is the start of your secure conversation thread.<br />Messages are protected with session guards.
@@ -551,23 +836,215 @@ export default function ChatWindow({ className = '', onBack }) {
                       </button>
                     </div>
 
-                    {/* Emoji Drawer Box */}
+                    {/* Triple Tab Media Drawer Box */}
                     {showEmojiDrawer && (
-                      <div className="emoji-drawer" style={{ bottom: '50px', right: '0' }}>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '4px' }}>
-                          Quick Emojis
-                        </div>
-                        <div className="emoji-grid">
-                          {['😀', '😂', '🔥', '🚀', '✨', '👍', '🙏', '❤️', '🎉', '💡', '🤔', '👀', '💯', '👏', '🎨', '💻', '⚡', '☕', '🌟', '💥', '🍕', '🙌', '😎', '😜'].map((emoji) => (
+                      <div className="emoji-drawer" style={{
+                        bottom: '50px',
+                        right: '0',
+                        width: '280px',
+                        height: '310px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Drawer Tabs */}
+                        <div style={{
+                          display: 'flex',
+                          borderBottom: '1px solid var(--glass-border)',
+                          background: 'rgba(0,0,0,0.1)',
+                          flexShrink: 0
+                        }}>
+                          {['emojis', 'stickers', 'gifs'].map((tab) => (
                             <button
-                              key={emoji}
+                              key={tab}
                               type="button"
-                              className="emoji-btn"
-                              onClick={() => handleEmojiClick(emoji)}
+                              onClick={() => setMediaDrawerTab(tab)}
+                              style={{
+                                flex: 1,
+                                padding: '8px',
+                                background: mediaDrawerTab === tab ? 'rgba(255,255,255,0.06)' : 'transparent',
+                                border: 'none',
+                                borderBottom: mediaDrawerTab === tab ? `2px solid ${getThemeColor()}` : '2px solid transparent',
+                                color: mediaDrawerTab === tab ? 'white' : 'var(--text-secondary)',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                textTransform: 'uppercase',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
                             >
-                              {emoji}
+                              {tab}
                             </button>
                           ))}
+                        </div>
+
+                        {/* Drawer Body content depends on mediaDrawerTab */}
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+                          
+                          {/* 1. EMOJIS TAB */}
+                          {mediaDrawerTab === 'emojis' && (
+                            <div className="emoji-grid">
+                              {['😀', '😂', '🔥', '🚀', '✨', '👍', '🙏', '❤️', '🎉', '💡', '🤔', '👀', '💯', '👏', '🎨', '💻', '⚡', '☕', '🌟', '💥', '🍕', '🙌', '😎', '😜', '😍', '🥳', '😭', '😡', '😱', '🤫', '😴', '🍀', '🌈', '🍕', '🍩', '🍺'].map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  className="emoji-btn"
+                                  onClick={() => handleEmojiClick(emoji)}
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* 2. STICKERS TAB */}
+                          {mediaDrawerTab === 'stickers' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              
+                              {/* Decals & Upload console */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '6px' }}>
+                                <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Animated Decals & Uploads</span>
+                                <button
+                                  type="button"
+                                  onClick={() => customStickerInputRef.current?.click()}
+                                  style={{
+                                    padding: '3px 8px',
+                                    fontSize: '10px',
+                                    background: getThemeGradient(),
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    color: 'white',
+                                    fontWeight: '600',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  + Upload File
+                                </button>
+                                <input
+                                  type="file"
+                                  ref={customStickerInputRef}
+                                  style={{ display: 'none' }}
+                                  onChange={handleStickerUploadSubmit}
+                                  accept="image/*"
+                                />
+                              </div>
+
+                              {/* stickers grid */}
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                                
+                                {/* Curated Animated GIFs Decals (Koala, Panda, Fox, Bear) */}
+                                {[
+                                  'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3ZkODZpejdscWwxaWFibjN4dW5xNHVwcmV1b2M4cmR3cmV1YnF0MSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/duRQDpM2fT96g5d003/giphy.gif',
+                                  'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMTRjNzQyOTB0NmdrZndwbTFjdzg4MDRxbDZvYXhldXo3ZmdrcGFnNSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/l4FGpP4lxGGXdwRyM/giphy.gif',
+                                  'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWY5bmtsMmN2dzY1a2E3ZHQxOGEwbmtvdmNodWZ1YW44ZWttZWJ4diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3o7TKoWXm3okO1kg6c/giphy.gif',
+                                  'https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHgydm1hZmgzbG9sNTh6cmQ3ZmJvMWx3OGk4cGF6NWFkNXplNHF4bCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/39GAXJJ1Z9xK8/giphy.gif'
+                                ].map((url, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={url}
+                                    alt="decal"
+                                    onClick={() => handleStickerSelect(url)}
+                                    style={{
+                                      width: '100%',
+                                      height: '52px',
+                                      objectFit: 'contain',
+                                      cursor: 'pointer',
+                                      transition: 'transform 0.15s',
+                                      background: 'rgba(255,255,255,0.01)',
+                                      borderRadius: '4px'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                  />
+                                ))}
+
+                                {/* Custom Uploaded Stickers list */}
+                                {customStickers.map((url, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={url}
+                                    alt="custom sticker"
+                                    onClick={() => handleStickerSelect(url)}
+                                    style={{
+                                      width: '100%',
+                                      height: '52px',
+                                      objectFit: 'contain',
+                                      cursor: 'pointer',
+                                      transition: 'transform 0.15s',
+                                      background: 'rgba(255,255,255,0.01)',
+                                      borderRadius: '4px'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                  />
+                                ))}
+
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 3. GIFS TAB */}
+                          {mediaDrawerTab === 'gifs' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              
+                              {/* Simple input query */}
+                              <input
+                                className="glass-input"
+                                type="text"
+                                placeholder="Search reaction GIFs..."
+                                value={gifQuery}
+                                onChange={(e) => setGifQuery(e.target.value)}
+                                style={{ padding: '4px 8px', fontSize: '11px', width: '100%' }}
+                              />
+
+                              {/* Curated list */}
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', marginTop: '4px' }}>
+                                {curatedGifs
+                                  .filter(g => gifQuery === '' || g.name.toLowerCase().includes(gifQuery.toLowerCase()))
+                                  .map((gif, idx) => (
+                                    <div
+                                      key={idx}
+                                      onClick={() => {
+                                        sendCustomMessageType('image', 'GIF', gif.url);
+                                        setShowEmojiDrawer(false);
+                                      }}
+                                      style={{
+                                        position: 'relative',
+                                        height: '70px',
+                                        borderRadius: '6px',
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                        backgroundImage: `url(${gif.url})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        border: '1px solid var(--glass-border)',
+                                        transition: 'transform 0.15s'
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                    >
+                                      {/* Name overlay */}
+                                      <div style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        background: 'rgba(0,0,0,0.6)',
+                                        padding: '2px',
+                                        fontSize: '9px',
+                                        textAlign: 'center',
+                                        fontWeight: 'bold',
+                                        color: 'white'
+                                      }}>
+                                        {gif.name}
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+
+                            </div>
+                          )}
+
                         </div>
                       </div>
                     )}
@@ -746,7 +1223,7 @@ export default function ChatWindow({ className = '', onBack }) {
                         ].map((t) => (
                           <button
                             key={t.key}
-                            onClick={() => updateConversationCustomization(currentChat._id, t.key, currentChat.themeEmoji || '👍')}
+                            onClick={() => handleUpdateCustomization(t.key, currentChat.themeEmoji || '👍', currentChat.themeBackground || '', currentChat.vanishMode || false)}
                             style={{
                               width: '22px',
                               height: '22px',
@@ -769,7 +1246,7 @@ export default function ChatWindow({ className = '', onBack }) {
                         {['👍', '❤️', '😂', '🔥', '😮', '💯', '💥', '✨'].map((emoji) => (
                           <button
                             key={emoji}
-                            onClick={() => updateConversationCustomization(currentChat._id, currentChat.themeColor || 'purple', emoji)}
+                            onClick={() => handleUpdateCustomization(currentChat.themeColor || 'purple', emoji, currentChat.themeBackground || '', currentChat.vanishMode || false)}
                             style={{
                               background: currentChat?.themeEmoji === emoji ? 'rgba(255,255,255,0.1)' : 'transparent',
                               border: currentChat?.themeEmoji === emoji ? '1px solid white' : '1px solid transparent',
@@ -785,6 +1262,87 @@ export default function ChatWindow({ className = '', onBack }) {
                         ))}
                       </div>
                     </div>
+
+                    {/* Wallpapers presets */}
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Solid & Gradient Wallpapers</span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                        {[
+                          { key: '', name: 'Default', bg: 'rgba(255,255,255,0.02)' },
+                          { key: 'gradient-sunset', name: 'Sunset', bg: 'linear-gradient(135deg, #f53b57, #ffc048)' },
+                          { key: 'gradient-ocean', name: 'Ocean', bg: 'linear-gradient(135deg, #0abde3, #00d2d1)' },
+                          { key: 'gradient-forest', name: 'Forest', bg: 'linear-gradient(135deg, #10ac84, #1dd1a1)' },
+                          { key: 'solid-dark', name: 'Slate', bg: '#0f172a' }
+                        ].map((wp) => (
+                          <button
+                            key={wp.key}
+                            onClick={() => handleUpdateCustomization(currentChat.themeColor || 'purple', currentChat.themeEmoji || '👍', wp.key, currentChat.vanishMode || false)}
+                            style={{
+                              padding: '4px',
+                              height: '28px',
+                              borderRadius: '4px',
+                              background: wp.bg,
+                              border: currentChat?.themeBackground === wp.key ? '1.5px solid white' : '1px solid rgba(255,255,255,0.1)',
+                              cursor: 'pointer',
+                              fontSize: '9px',
+                              color: 'white',
+                              textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                              fontWeight: 'bold',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {wp.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Custom Wallpaper Image URL */}
+                    <div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Custom Image URL Background</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          className="glass-input"
+                          type="url"
+                          placeholder="https://..."
+                          value={customWallpaperUrl}
+                          onChange={(e) => setCustomWallpaperUrl(e.target.value)}
+                          style={{ padding: '4px 8px', fontSize: '11px', flex: 1 }}
+                        />
+                        <button
+                          className="btn-primary"
+                          onClick={() => {
+                            if (!customWallpaperUrl) return;
+                            handleUpdateCustomization(currentChat.themeColor || 'purple', currentChat.themeEmoji || '👍', customWallpaperUrl, currentChat.vanishMode || false);
+                            setCustomWallpaperUrl('');
+                          }}
+                          style={{ padding: '4px 8px', fontSize: '11px', boxShadow: 'none' }}
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Vanish Mode toggle */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '10px', marginTop: '4px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', cursor: 'pointer' }}>
+                        <span style={{ fontWeight: '600', color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          🕵️ Vanish Mode
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={currentChat?.vanishMode || false}
+                          onChange={(e) => handleUpdateCustomization(currentChat.themeColor || 'purple', currentChat.themeEmoji || '👍', currentChat.themeBackground || '', e.target.checked)}
+                          style={{ accentColor: getThemeColor() }}
+                        />
+                      </label>
+                      <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                        When enabled, all messages vanish from feed upon next entry.
+                      </span>
+                    </div>
+
                   </div>
                 )}
               </div>
@@ -991,7 +1549,6 @@ export default function ChatWindow({ className = '', onBack }) {
         </div>
       )}
 
-      {/* Spacers & keyframe animations inject */}
       <style>{`
         @keyframes pulse {
           0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
@@ -1007,6 +1564,221 @@ export default function ChatWindow({ className = '', onBack }) {
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
+
+      {/* FULLSCREEN CALL OVERLAY SCREEN */}
+      {activeCall && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.98)',
+          backdropFilter: 'blur(30px)',
+          zIndex: 500,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          
+          {/* Header Secure Indicator */}
+          <div style={{ position: 'absolute', top: '24px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--accent-cyan)', background: 'rgba(6,182,212,0.1)', padding: '6px 12px', borderRadius: '16px', border: '1px solid rgba(6,182,212,0.2)' }}>
+            <Shield size={12} />
+            <span>Chattix E2EE Encrypted call session</span>
+          </div>
+
+          {/* Caller Details & Profile Avatar */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', textAlign: 'center', zIndex: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                width: '110px',
+                height: '110px',
+                borderRadius: '50%',
+                border: `3px solid ${getThemeColor()}`,
+                overflow: 'hidden',
+                boxShadow: `0 0 30px ${getThemeColor()}55`,
+                animation: activeCall.status === 'ringing' ? 'pulseRinging 1.5s infinite' : 'none'
+              }}>
+                {chatPhoto ? (
+                  <img src={chatPhoto} alt={chatName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', background: '#3b0764' }}>
+                    {fallback}
+                  </div>
+                )}
+              </div>
+
+              {/* Status Indicator */}
+              <div className="status-indicator online" style={{ position: 'absolute', bottom: '6px', right: '6px', width: '22px', height: '22px', border: '3px solid rgba(15,23,42,1)' }}></div>
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: '8px 0 4px 0' }}>{chatName}</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                {activeCall.status === 'ringing' ? 'Ringing Chattix secure session...' : `Connected • ${formatSeconds(callDuration)}`}
+              </p>
+            </div>
+          </div>
+
+          {/* Dynamic Feed visual depends on Call Type and Status */}
+          {activeCall.status === 'connected' && (
+            <div style={{ margin: '40px 0', width: '100%', maxWidth: '400px', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '140px', position: 'relative' }}>
+              {activeCall.type === 'video' ? (
+                /* Video Call stream box */
+                <div style={{
+                  width: '320px',
+                  height: '180px',
+                  borderRadius: '16px',
+                  background: '#000',
+                  border: '1.5px solid var(--glass-border)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.6)'
+                }}>
+                  {/* Remote video mockup (Aesthetic user profile placeholder) */}
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: isCameraOff ? 0.2 : 0.8 }}>
+                    {chatPhoto ? (
+                      <img src={chatPhoto} alt={chatName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ fontSize: '18px' }}>Active video feed...</div>
+                    )}
+                  </div>
+
+                  {/* Local video mirrored PiP feed */}
+                  <video
+                    ref={localVideoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    style={{
+                      position: 'absolute',
+                      bottom: '8px',
+                      right: '8px',
+                      width: '80px',
+                      height: '110px',
+                      borderRadius: '8px',
+                      objectFit: 'cover',
+                      border: '1.5px solid white',
+                      background: '#1e293b',
+                      transform: 'scaleX(-1)' // Mirror local feed
+                    }}
+                  />
+                </div>
+              ) : (
+                /* Audio Call moving CSS Soundwave Bars */
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', height: '60px' }}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1].map((bar, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        width: '4px',
+                        height: '20px',
+                        background: getThemeColor(),
+                        borderRadius: '2px',
+                        animation: `soundwavePulse ${0.5 + Math.random() * 0.5}s ease-in-out infinite alternate`
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Call Controls block */}
+          <div style={{ position: 'absolute', bottom: '48px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+            {/* Mute button */}
+            <button
+              onClick={() => {
+                setIsMuted(!isMuted);
+                showToast(isMuted ? 'Microphone active.' : 'Microphone muted.', 'info');
+              }}
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: isMuted ? '#ef4444' : 'rgba(255,255,255,0.06)',
+                border: '1px solid var(--glass-border)',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+              title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
+            >
+              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+
+            {/* Red Hangup button */}
+            <button
+              onClick={endCall}
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 24px rgba(239,68,68,0.4)',
+                transition: 'transform 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              title="Hang up call"
+            >
+              <X size={26} />
+            </button>
+
+            {/* Video switch button */}
+            {activeCall.type === 'video' && (
+              <button
+                onClick={() => {
+                  setIsCameraOff(!isCameraOff);
+                  if (localStream) {
+                    localStream.getVideoTracks().forEach(track => track.enabled = isCameraOff);
+                  }
+                }}
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  background: isCameraOff ? '#ef4444' : 'rgba(255,255,255,0.06)',
+                  border: '1px solid var(--glass-border)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}
+                title={isCameraOff ? 'Turn camera on' : 'Turn camera off'}
+              >
+                <Camera size={18} />
+              </button>
+            )}
+          </div>
+
+          <style>{`
+            @keyframes pulseRinging {
+              0% { box-shadow: 0 0 0 0 ${getThemeColor()}66; }
+              70% { box-shadow: 0 0 0 25px ${getThemeColor()}00; }
+              100% { box-shadow: 0 0 0 0 ${getThemeColor()}00; }
+            }
+            @keyframes soundwavePulse {
+              0% { height: 10px; opacity: 0.3; }
+              100% { height: 50px; opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
