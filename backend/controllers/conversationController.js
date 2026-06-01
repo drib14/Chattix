@@ -99,3 +99,26 @@ export const createGroupConversation = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+export const updateConversationTheme = async (req, res) => {
+  const { conversationId, theme } = req.body;
+
+  if (!conversationId || !theme) {
+     res.status(400).json({ message: 'ConversationId and theme are required' });
+     return;
+  }
+
+  try {
+    const updatedConversation = await Conversation.findByIdAndUpdate(
+      conversationId,
+      { theme },
+      { new: true }
+    )
+      .populate('participants', '-password')
+      .populate('admin', '-password');
+
+    res.status(200).json(updatedConversation);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
