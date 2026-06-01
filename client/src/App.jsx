@@ -5,10 +5,17 @@ import ChatList from './components/ChatList';
 import ChatWindow from './components/ChatWindow';
 import AISidebar from './components/AISidebar';
 import SplashScreen from './components/SplashScreen';
+import Logo from './components/Logo';
+import ContactsPage from './pages/ContactsPage';
+import SecurityPage from './pages/SecurityPage';
+import AIPage from './pages/AIPage';
+import AdminPage from './pages/AdminPage';
+import { MessageSquare, Users, Shield, Sparkles, LineChart, LogOut } from 'lucide-react';
 
 function AppContent() {
-  const { user, token, toast, fetchConversations, fetchContacts, currentChat } = useApp();
+  const { user, token, toast, fetchConversations, fetchContacts, currentChat, logoutUser } = useApp();
   const [showAISidebar, setShowAISidebar] = useState(false);
+  const [activePage, setActivePage] = useState('chats'); // chats, contacts, security, ai, admin
   
   // Visual Polish Loaders
   const [splashLoading, setSplashLoading] = useState(true);
@@ -65,26 +72,94 @@ function AppContent() {
       )}
 
       <div className="chat-layout">
-        {/* Sidebar displaying conversations & contacts directory */}
-        <ChatList
-          className={mobilePanel === 'chat' ? 'mobile-hide' : ''}
-          showAISidebar={showAISidebar}
-          setShowAISidebar={setShowAISidebar}
-        />
+        {/* Navigation Sidebar Dock */}
+        <div className="nav-dock">
+          <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center' }}>
+            <Logo size={28} />
+          </div>
+          
+          <button
+            className={`nav-dock-item accent-purple ${activePage === 'chats' ? 'active' : ''}`}
+            onClick={() => setActivePage('chats')}
+            title="Chats & Conversations"
+          >
+            <MessageSquare size={18} />
+          </button>
+          
+          <button
+            className={`nav-dock-item accent-cyan ${activePage === 'contacts' ? 'active' : ''}`}
+            onClick={() => setActivePage('contacts')}
+            title="Contacts & Requests Directory"
+          >
+            <Users size={18} />
+          </button>
+          
+          <button
+            className={`nav-dock-item accent-cyan ${activePage === 'security' ? 'active' : ''}`}
+            onClick={() => setActivePage('security')}
+            title="Security & Authenticator Hub"
+          >
+            <Shield size={18} />
+          </button>
+          
+          <button
+            className={`nav-dock-item accent-purple ${activePage === 'ai' ? 'active' : ''}`}
+            onClick={() => setActivePage('ai')}
+            title="Chattix AI Workspace"
+          >
+            <Sparkles size={18} />
+          </button>
 
-        {/* Dynamic chat feed window */}
-        <ChatWindow
-          className={mobilePanel === 'chat' ? 'active' : ''}
-          onBack={() => setMobilePanel('sidebar')}
-          showAISidebar={showAISidebar}
-          setShowAISidebar={setShowAISidebar}
-        />
+          <button
+            className={`nav-dock-item accent-purple ${activePage === 'admin' ? 'active' : ''}`}
+            onClick={() => setActivePage('admin')}
+            title="Administration Analytics Console"
+          >
+            <LineChart size={18} />
+          </button>
+          
+          <div style={{ flex: 1 }}></div>
 
-        {/* Sliding Chattix AI Sidebar */}
-        <AISidebar
-          className={showAISidebar ? 'active' : ''}
-          onClose={() => setShowAISidebar(false)}
-        />
+          <button
+            className="nav-dock-item"
+            onClick={logoutUser}
+            title="Sign Out Session"
+            style={{ color: '#ef4444' }}
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+
+        {/* Dynamic workspace area depending on activePage state */}
+        {activePage === 'chats' && (
+          <>
+            {/* Sidebar displaying conversations & contacts directory */}
+            <ChatList
+              className={mobilePanel === 'chat' ? 'mobile-hide' : ''}
+              showAISidebar={showAISidebar}
+              setShowAISidebar={setShowAISidebar}
+            />
+
+            {/* Dynamic chat feed window */}
+            <ChatWindow
+              className={mobilePanel === 'chat' ? 'active' : ''}
+              onBack={() => setMobilePanel('sidebar')}
+              showAISidebar={showAISidebar}
+              setShowAISidebar={setShowAISidebar}
+            />
+
+            {/* Sliding Chattix AI Sidebar */}
+            <AISidebar
+              className={showAISidebar ? 'active' : ''}
+              onClose={() => setShowAISidebar(false)}
+            />
+          </>
+        )}
+
+        {activePage === 'contacts' && <ContactsPage />}
+        {activePage === 'security' && <SecurityPage />}
+        {activePage === 'ai' && <AIPage />}
+        {activePage === 'admin' && <AdminPage />}
       </div>
     </div>
   );

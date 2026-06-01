@@ -82,7 +82,13 @@ ${transcript}
 
     res.status(200).json({ success: true, summary });
   } catch (error) {
-    console.error('[AI Summarize Error]:', error);
+    console.error('[AI Summarize Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(200).json({
+        success: true,
+        summary: '⚠️ **Chattix AI Rate Limit Active**\n\nThe conversation summary is temporarily paused to respect API rate limits. Recap services will auto-resume in a few seconds.',
+      });
+    }
     res.status(500).json({ success: false, message: 'AI failed to generate conversation summary.' });
   }
 };
@@ -150,7 +156,13 @@ ${transcript}
 
     res.status(200).json({ success: true, replies });
   } catch (error) {
-    console.error('[AI Smart Replies Error]:', error);
+    console.error('[AI Smart Replies Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(200).json({
+        success: true,
+        replies: ["Sounds good!", "I'll check it out, thanks.", "Understood!"],
+      });
+    }
     res.status(500).json({ success: false, message: 'AI failed to generate smart replies.' });
   }
 };
@@ -182,7 +194,13 @@ ${text}
 
     res.status(200).json({ success: true, translatedText });
   } catch (error) {
-    console.error('[AI Translation Error]:', error);
+    console.error('[AI Translation Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(200).json({
+        success: true,
+        translatedText: `[Rate Limit Active] Could not translate: "${text}"`,
+      });
+    }
     res.status(500).json({ success: false, message: 'AI failed to translate message.' });
   }
 };
@@ -235,7 +253,13 @@ ${text}
 
     res.status(200).json({ success: true, rewrittenText });
   } catch (error) {
-    console.error('[AI Writing Assistant Error]:', error);
+    console.error('[AI Writing Assistant Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(200).json({
+        success: true,
+        rewrittenText: text,
+      });
+    }
     res.status(500).json({ success: false, message: 'AI writing assistant failed to process text.' });
   }
 };
@@ -322,7 +346,24 @@ Return a JSON array containing the IDs of the matching messages, ordered from mo
 
     res.status(200).json({ success: true, results: matchedMessages });
   } catch (error) {
-    console.error('[AI Semantic Search Error]:', error);
+    console.error('[AI Semantic Search Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      // Graceful fallback to regular regex database keyword lookup!
+      try {
+        const regex = new RegExp(query, 'i');
+        const fallbackMatches = await Message.find({
+          conversationId,
+          isDeleted: false,
+          content: { $regex: regex }
+        })
+        .populate('sender', 'username email profilePhoto statusText')
+        .sort({ createdAt: -1 })
+        .limit(5);
+        return res.status(200).json({ success: true, results: fallbackMatches });
+      } catch (dbErr) {
+        console.error('[Semantic Fallback Regex Error]:', dbErr);
+      }
+    }
     res.status(500).json({ success: false, message: 'AI semantic search failed.' });
   }
 };
@@ -390,7 +431,15 @@ ${transcript}
 
     res.status(200).json({ success: true, actions });
   } catch (error) {
-    console.error('[AI Action Extraction Error]:', error);
+    console.error('[AI Action Extraction Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(200).json({
+        success: true,
+        actions: [
+          { type: 'Task', content: 'Scan thread manually for deadlines (AI Rate Limited)', assignee: 'Everyone', dueDate: 'N/A' }
+        ],
+      });
+    }
     res.status(500).json({ success: false, message: 'AI failed to extract actions.' });
   }
 };
@@ -419,7 +468,10 @@ Message:
 
     res.status(200).json({ success: true, classification });
   } catch (error) {
-    console.error('[AI Classification Error]:', error);
+    console.error('[AI Classification Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(200).json({ success: true, classification: 'Normal' });
+    }
     res.status(500).json({ success: false, message: 'AI failed to classify message.' });
   }
 };
@@ -479,7 +531,13 @@ ${transcript}
 
     res.status(200).json({ success: true, insights });
   } catch (error) {
-    console.error('[AI Insights Error]:', error);
+    console.error('[AI Insights Error]:', error.message || error);
+    if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+      return res.status(200).json({
+        success: true,
+        insights: '### 📊 Insights Report (AI Rate Limited)\n\nChattix AI insights are temporarily paused due to API quota rate limits. Please try again in a few seconds.',
+      });
+    }
     res.status(500).json({ success: false, message: 'AI failed to analyze conversation insights.' });
   }
 };

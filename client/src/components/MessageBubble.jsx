@@ -205,28 +205,41 @@ export default function MessageBubble({ message, onReply }) {
   };
 
   return (
-    <div className={`message-wrapper ${isSender ? 'sender' : 'receiver'}`}>
-      <span className="message-sender-name">
+    <div className={`message-wrapper ${isSender ? 'sender' : 'receiver'}`} style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
+      <span className="message-sender-name" style={{ alignSelf: isSender ? 'flex-end' : 'flex-start', margin: isSender ? '0 36px 0 0' : '0 0 0 36px', fontSize: '11px', color: 'var(--text-muted)' }}>
         {isSender ? 'You' : message.sender.username}
       </span>
 
-      {/* RENDER INLINE REPLIES / QUOTED PREVIEWS */}
-      {message.parentMessage && (
-        <div
-          className="quoted-message-preview"
-          style={{ alignSelf: isSender ? 'flex-end' : 'flex-start' }}
-        >
-          <div className="quoted-message-sender">
-            @{message.parentMessage.sender?.username || 'user'}
-          </div>
-          <div style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
-            {message.parentMessage.isDeleted ? 'This message was deleted.' : message.parentMessage.content || 'Attached file'}
-          </div>
+      <div style={{ display: 'flex', flexDirection: isSender ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: '8px', width: '100%' }}>
+        {/* Render Profile Photo */}
+        <div className="avatar-wrapper" style={{ width: '28px', height: '28px', flexShrink: 0, marginBottom: '2px' }}>
+          {message.sender?.profilePhoto ? (
+            <img className="avatar" src={message.sender.profilePhoto} alt={message.sender.username} style={{ borderRadius: '50%' }} />
+          ) : (
+            <div className="avatar-placeholder" style={{ fontSize: '10px' }}>
+              {(message.sender?.username || 'CU').substring(0, 2).toUpperCase()}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* BUBBLE FEED CONTAINER */}
-      <div className={`message-bubble ${translating ? 'ai-highlight' : ''}`}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: isSender ? 'flex-end' : 'flex-start', maxWidth: '75%' }}>
+          {/* RENDER INLINE REPLIES / QUOTED PREVIEWS */}
+          {message.parentMessage && (
+            <div
+              className="quoted-message-preview"
+              style={{ alignSelf: isSender ? 'flex-end' : 'flex-start', marginBottom: '4px' }}
+            >
+              <div className="quoted-message-sender">
+                @{message.parentMessage.sender?.username || 'user'}
+              </div>
+              <div style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>
+                {message.parentMessage.isDeleted ? 'This message was deleted.' : message.parentMessage.content || 'Attached file'}
+              </div>
+            </div>
+          )}
+
+          {/* BUBBLE FEED CONTAINER */}
+          <div className={`message-bubble ${translating ? 'ai-highlight' : ''}`} style={{ margin: 0 }}>
         {/* Render media if any */}
         {renderAttachment()}
 
@@ -327,9 +340,11 @@ export default function MessageBubble({ message, onReply }) {
             </span>
           )}
         </div>
+      </div>
+    </div>
 
-        {/* Message Actions options on hover */}
-        {!message.isDeleted && (
+    {/* Message Actions options on hover */}
+    {!message.isDeleted && (
           <div className="message-bubble-options">
             <button className="bubble-option-btn" title="Reply Message" onClick={onReply}>
               <CornerUpLeft size={12} />

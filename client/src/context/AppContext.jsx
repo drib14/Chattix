@@ -6,7 +6,28 @@ const AppContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export const AppProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUserRaw] = useState(null);
+  const setUser = (val) => {
+    if (typeof val === 'function') {
+      setUserRaw((prev) => {
+        const res = val(prev);
+        if (res && typeof res === 'object') {
+          const id = res._id || res.id;
+          return { ...res, id, _id: id };
+        }
+        return res;
+      });
+    } else if (val && typeof val === 'object') {
+      const id = val._id || val.id;
+      setUserRaw({
+        ...val,
+        id,
+        _id: id,
+      });
+    } else {
+      setUserRaw(val);
+    }
+  };
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [conversations, setConversations] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);

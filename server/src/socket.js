@@ -17,9 +17,9 @@ export const initSocket = (server) => {
 
     // Register user session
     socket.on('setup', async (userData) => {
-      if (!userData || !userData.id) return;
+      if (!userData || (!userData.id && !userData._id)) return;
       
-      const userId = userData.id;
+      const userId = userData.id || userData._id;
       socket.join(userId);
       onlineUsers.set(userId, socket.id);
       
