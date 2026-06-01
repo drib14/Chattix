@@ -80,7 +80,7 @@ function AppContent() {
           setShowAISidebar={setShowAISidebar}
         />
 
-        {/* Sliding Gemini AI Sidebar */}
+        {/* Sliding Chattix AI Sidebar */}
         <AISidebar
           className={showAISidebar ? 'active' : ''}
           onClose={() => setShowAISidebar(false)}

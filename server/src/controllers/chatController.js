@@ -38,7 +38,11 @@ export const createConversation = async (req, res) => {
       return res.status(201).json({ success: true, conversation: populatedGroup });
     } else {
       // 1-to-1 Conversation
-      const { recipientId } = req.body;
+      let { recipientId, participants } = req.body;
+      if (!recipientId && participants && participants.length > 0) {
+        recipientId = participants[0];
+      }
+
       if (!recipientId) {
         return res.status(400).json({ success: false, message: 'Recipient ID is required for 1-to-1 chat' });
       }

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import Logo from './Logo';
 import { ContactListSkeleton } from './SkeletonLoader';
-import { MessageSquare, Users, UserPlus, LogOut, Search, Star, Check, X, Plus } from 'lucide-react';
+import { MessageSquare, Users, UserPlus, LogOut, Search, Star, Check, X, Plus, Sparkles } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function ChatList({ className = '', showAISidebar, setShowAISidebar }) {
   const {
@@ -45,6 +46,19 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
   // Group creation
   const [groupName, setGroupName] = useState('');
   const [selectedContacts, setSelectedContacts] = useState([]);
+
+  // Automatically fetch other registered users when opening modal
+  useEffect(() => {
+    if (showAddContactModal) {
+      const fetchAllUsers = async () => {
+        const res = await searchUsers('');
+        if (res.success) {
+          setFoundUsers(res.users);
+        }
+      };
+      fetchAllUsers();
+    }
+  }, [showAddContactModal]);
 
   // Search local chats
   const filteredConversations = conversations.filter((c) => {
@@ -145,6 +159,15 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
           </div>
         </div>
         <div className="sidebar-actions">
+          {/* Glowing Sparkles icon to instantly slide-in the AI Drawer even from sidebar list */}
+          <button
+            className="icon-btn"
+            style={{ color: 'var(--accent-cyan)', filter: 'drop-shadow(0 0 5px rgba(6, 182, 212, 0.45))' }}
+            title="Chattix AI Assistant"
+            onClick={() => setShowAISidebar(!showAISidebar)}
+          >
+            <Sparkles size={16} />
+          </button>
           <button className="icon-btn" title="Add Contact" onClick={() => setShowAddContactModal(true)}>
             <UserPlus size={16} />
           </button>
@@ -438,22 +461,37 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
                             <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.statusText}</div>
                           </div>
                         </div>
-                        {isFriend ? (
-                          <span style={{ fontSize: '11px', color: 'var(--status-online)', fontWeight: 'bold' }}>Contact</span>
-                        ) : (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {/* Direct Message button to instantly open a conversation */}
                           <button
                             className="btn-primary"
-                            style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px' }}
+                            style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px', background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', boxShadow: 'none' }}
                             onClick={() => {
-                              sendRequest(u._id);
+                              createChat(false, [u._id]);
                               setShowAddContactModal(false);
                               setFoundUsers([]);
                               setFriendSearchQuery('');
                             }}
                           >
-                            Add Friend
+                            Message
                           </button>
-                        )}
+                          {isFriend ? (
+                            <span style={{ fontSize: '11px', color: 'var(--status-online)', fontWeight: 'bold', display: 'flex', alignItems: 'center', padding: '0 4px' }}>Friend</span>
+                          ) : (
+                            <button
+                              className="btn-secondary"
+                              style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '4px' }}
+                              onClick={() => {
+                                sendRequest(u._id);
+                                setShowAddContactModal(false);
+                                setFoundUsers([]);
+                                setFriendSearchQuery('');
+                              }}
+                            >
+                              Add
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })

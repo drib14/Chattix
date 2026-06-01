@@ -138,7 +138,7 @@ export default function ChatWindow({ className = '', onBack, showAISidebar, setS
       return;
     }
     setShowToneDropdown(false);
-    showToast(`Gemini is rewriting your draft (${tone})...`, 'info');
+    showToast(`Chattix AI is rewriting your draft (${tone})...`, 'info');
     const res = await writeAssistAPI(input, tone);
     if (res.success) {
       setInput(res.rewrittenText);
@@ -471,7 +471,7 @@ export default function ChatWindow({ className = '', onBack, showAISidebar, setS
                   }}
                 >
                   <div style={{ fontSize: '10px', color: 'var(--accent-cyan)', fontWeight: 'bold', textTransform: 'uppercase', padding: '4px 8px' }}>
-                    Gemini Tone Rewrite
+                    Chattix AI Tone Rewrite
                   </div>
                   {['professional', 'casual', 'shorten', 'expand', 'grammar'].map((t) => (
                     <button

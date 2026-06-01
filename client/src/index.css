@@ -1375,7 +1375,7 @@ h1, h2, h3, h4, h5, h6 {
     right: 0;
     width: 100%;
     height: 100%;
-    z-index: 20;
+    z-index: 999; /* Higher layer index to sit on top of everything on small viewports */
     border-radius: 0;
     border: none;
     transform: translateX(100%);

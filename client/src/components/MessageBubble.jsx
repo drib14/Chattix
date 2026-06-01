@@ -240,7 +240,7 @@ export default function MessageBubble({ message, onReply }) {
           </p>
         )}
 
-        {/* Gemini AI Translation card label */}
+        {/* Chattix AI Translation card label */}
         {translationText && (
           <div
             style={{
@@ -255,7 +255,7 @@ export default function MessageBubble({ message, onReply }) {
             }}
           >
             <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '2px' }}>
-              🌐 Gemini Translated ({translationLang})
+              🌐 Chattix AI Translated ({translationLang})
             </div>
             <div>{translationText}</div>
           </div>

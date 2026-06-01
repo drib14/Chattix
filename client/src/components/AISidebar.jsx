@@ -23,7 +23,7 @@ export default function AISidebar({ className = '', onClose }) {
     }
   }, [currentChat]);
 
-  // Generate conversation summary via Gemini
+  // Generate conversation summary via Chattix AI
   const handleGenerateSummary = async () => {
     if (!currentChat) return;
     setLoadingSummary(true);
@@ -35,18 +35,18 @@ export default function AISidebar({ className = '', onClose }) {
     if (res.success) {
       setSummary(res.summary);
     } else {
-      setSummary('Failed to retrieve summary. Please verify Gemini API connectivity.');
+      setSummary('Failed to retrieve summary. Please verify Chattix AI API connectivity.');
     }
   };
 
-  // Perform semantic search via Gemini
+  // Perform semantic search via Chattix AI
   const handleSemanticSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim() || !currentChat) return;
 
     setSearching(true);
     setSearchResults([]);
-    showToast('Gemini is searching contextually...', 'info');
+    showToast('Chattix AI is searching contextually...', 'info');
 
     const res = await semanticSearchAPI(currentChat._id, searchQuery);
     setSearching(false);
@@ -114,7 +114,7 @@ export default function AISidebar({ className = '', onClose }) {
       {/* Header */}
       <div className="ai-sidebar-header">
         <Sparkles size={18} />
-        <h2 style={{ fontSize: '15px', fontWeight: '600', letterSpacing: '-0.2px', flex: 1 }}>Gemini AI Assistant</h2>
+        <h2 style={{ fontSize: '15px', fontWeight: '600', letterSpacing: '-0.2px', flex: 1 }}>Chattix AI Assistant</h2>
         <button className="icon-btn" onClick={onClose} title="Close Sidebar"><X size={18} /></button>
       </div>
 

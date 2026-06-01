@@ -7,18 +7,24 @@ export const searchUsers = async (req, res) => {
   const { query } = req.query;
 
   try {
-    if (!query) {
-      return res.status(400).json({ success: false, message: 'Search query is required' });
+    let searchCriteria = {};
+    
+    if (query && query.trim() !== '') {
+      searchCriteria = {
+        _id: { $ne: req.user._id },
+        $or: [
+          { username: { $regex: query, $options: 'i' } },
+          { email: { $regex: query, $options: 'i' } },
+        ],
+      };
+    } else {
+      // Empty query returns all other registered users (limit 20)
+      searchCriteria = { _id: { $ne: req.user._id } };
     }
 
-    // Find users matching query, excluding current user
-    const users = await User.find({
-      _id: { $ne: req.user._id },
-      $or: [
-        { username: { $regex: query, $options: 'i' } },
-        { email: { $regex: query, $options: 'i' } },
-      ],
-    }).select('username email profilePhoto statusText');
+    const users = await User.find(searchCriteria)
+      .select('username email profilePhoto statusText')
+      .limit(20);
 
     res.status(200).json({ success: true, users });
   } catch (error) {
