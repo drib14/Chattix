@@ -626,3 +626,51 @@ export const getGroupFiles = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to retrieve group files.' });
   }
 };
+
+// @desc    Update Conversation Customizations (Theme color, Theme Emoji)
+// @route   PUT /api/chats/:chatId/customization
+// @access  Private
+export const updateConversationCustomization = async (req, res) => {
+  const { chatId } = req.params;
+  const { themeColor, themeEmoji } = req.body;
+  const userId = req.user._id;
+
+  try {
+    const conversation = await Conversation.findOne({
+      _id: chatId,
+      participants: userId,
+    });
+
+    if (!conversation) {
+      return res.status(403).json({ success: false, message: 'Access denied or conversation not found' });
+    }
+
+    if (themeColor !== undefined) conversation.themeColor = themeColor;
+    if (themeEmoji !== undefined) conversation.themeEmoji = themeEmoji;
+
+    await conversation.save();
+
+    const populated = await Conversation.findById(conversation._id)
+      .populate('participants', 'username email profilePhoto statusText isOnline lastSeen')
+      .populate('admins', 'username email profilePhoto')
+      .populate({
+        path: 'lastMessage',
+        populate: { path: 'sender', select: 'username' },
+      });
+
+    // Broadcast customized updates in real-time to all participants
+    const io = req.app.get('socketio');
+    if (io) {
+      io.to(chatId).emit('conversation_customized', populated);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Chat customization updated successfully!',
+      conversation: populated,
+    });
+  } catch (error) {
+    console.error('[Update Chat Customization Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to update chat customization.' });
+  }
+};

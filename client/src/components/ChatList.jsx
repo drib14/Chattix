@@ -6,7 +6,7 @@ import { MessageSquare, Users, UserPlus, LogOut, Search, Star, Check, X, Plus, S
 import { useEffect } from 'react';
 import ControlCenter from './ControlCenter';
 
-export default function ChatList({ className = '', showAISidebar, setShowAISidebar }) {
+export default function ChatList({ className = '' }) {
   const {
     user,
     logoutUser,
@@ -160,15 +160,6 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
           </div>
         </div>
         <div className="sidebar-actions">
-          {/* Glowing Sparkles icon to instantly slide-in the AI Drawer even from sidebar list */}
-          <button
-            className="icon-btn"
-            style={{ color: 'var(--accent-cyan)', filter: 'drop-shadow(0 0 5px rgba(6, 182, 212, 0.45))' }}
-            title="Chattix AI Assistant"
-            onClick={() => setShowAISidebar(!showAISidebar)}
-          >
-            <Sparkles size={16} />
-          </button>
           <button className="icon-btn" title="Add Contact" onClick={() => setShowAddContactModal(true)}>
             <UserPlus size={16} />
           </button>
@@ -194,6 +185,44 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
           />
         </div>
       </div>
+
+      {/* Horizontal Active Now status row */}
+      {activeTab === 'chats' && contacts.filter((c) => onlineUsers.includes(c._id)).length > 0 && (
+        <div 
+          className="active-now-bar" 
+          style={{ 
+            padding: '12px 16px', 
+            borderBottom: '1px solid var(--glass-border)', 
+            display: 'flex', 
+            gap: '16px', 
+            overflowX: 'auto', 
+            whiteSpace: 'nowrap',
+            scrollbarWidth: 'none'
+          }}
+        >
+          {contacts.filter((c) => onlineUsers.includes(c._id)).map((contact) => (
+            <div
+              key={contact._id}
+              onClick={() => createChat(false, [contact._id])}
+              style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer', minWidth: '60px' }}
+            >
+              <div className="avatar-wrapper" style={{ width: '42px', height: '42px', position: 'relative' }}>
+                {contact.profilePhoto ? (
+                  <img className="avatar" src={contact.profilePhoto} alt={contact.username} style={{ borderRadius: '50%', border: '2px solid rgba(168,85,247,0.3)', width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div className="avatar-placeholder" style={{ fontSize: '13px', borderRadius: '50%', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {contact.username.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="status-indicator online" style={{ bottom: '0px', right: '0px', width: '12px', height: '12px', border: '2px solid var(--bg-primary)' }}></div>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60px', textAlign: 'center' }}>
+                {contact.username}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Tab Selectors */}
       <div className="sidebar-tabs">

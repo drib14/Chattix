@@ -46,6 +46,14 @@ const conversationSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    themeColor: {
+      type: String,
+      default: 'purple',
+    },
+    themeEmoji: {
+      type: String,
+      default: '👍',
+    },
   },
   { timestamps: true }
 );

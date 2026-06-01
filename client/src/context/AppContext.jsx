@@ -149,6 +149,15 @@ export const AppProvider = ({ children }) => {
         }
       });
 
+      socket.on('conversation_customized', (updatedConv) => {
+        setConversations((prev) =>
+          prev.map((c) => (c._id === updatedConv._id ? updatedConv : c))
+        );
+        if (currentChat && currentChat._id === updatedConv._id) {
+          setCurrentChat(updatedConv);
+        }
+      });
+
       socket.on('typing_received', (data) => {
         setTypingUsers((prev) => {
           const list = prev[data.conversationId] || [];
@@ -633,80 +642,31 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // ---------------- AI Endpoints ----------------
-
-  // AI Summary
-  const getAIConversationSummary = async (chatId) => {
+  // Update Chat customization (Theme & Emoji)
+  const updateConversationCustomization = async (chatId, themeColor, themeEmoji) => {
     try {
-      const res = await fetch(`${API_URL}/api/ai/summarize`, {
-        method: 'POST',
+      const res = await fetch(`${API_URL}/api/chats/${chatId}/customization`, {
+        method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({ conversationId: chatId }),
+        body: JSON.stringify({ themeColor, themeEmoji }),
       });
-      return await res.json();
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        // Refresh conversations & current chat locally
+        setConversations((prev) =>
+          prev.map((c) => (c._id === chatId ? data.conversation : c))
+        );
+        if (currentChat && currentChat._id === chatId) {
+          setCurrentChat(data.conversation);
+        }
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
     } catch (error) {
       console.error(error);
-      return { success: false, summary: 'AI summary request failed.' };
-    }
-  };
-
-  // AI Smart Replies
-  const getAISmartReplies = async (chatId) => {
-    try {
-      const res = await fetch(`${API_URL}/api/ai/smart-replies`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ conversationId: chatId }),
-      });
-      return await res.json();
-    } catch (error) {
-      console.error(error);
-      return { success: false, replies: [] };
-    }
-  };
-
-  // AI Translate
-  const translateMessageAPI = async (text, targetLanguage) => {
-    try {
-      const res = await fetch(`${API_URL}/api/ai/translate`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ text, targetLanguage }),
-      });
-      return await res.json();
-    } catch (error) {
-      console.error(error);
-      return { success: false, translatedText: 'Translation service failed.' };
-    }
-  };
-
-  // AI Writing Assistant
-  const writeAssistAPI = async (text, tone) => {
-    try {
-      const res = await fetch(`${API_URL}/api/ai/write-assist`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ text, tone }),
-      });
-      return await res.json();
-    } catch (error) {
-      console.error(error);
-      return { success: false, rewrittenText: 'Writing helper failed.' };
-    }
-  };
-
-  // AI Semantic Search
-  const semanticSearchAPI = async (chatId, query) => {
-    try {
-      const res = await fetch(`${API_URL}/api/ai/semantic-search`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ conversationId: chatId, query }),
-      });
-      return await res.json();
-    } catch (error) {
-      console.error(error);
-      return { success: false, results: [] };
+      showToast('Failed to update chat customization.', 'error');
     }
   };
 
@@ -1070,35 +1030,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Extract Action Items (Tasks/Deadlines/Reminders)
-  const extractAIActions = async (chatId) => {
-    try {
-      const res = await fetch(`${API_URL}/api/ai/action-extraction`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ conversationId: chatId }),
-      });
-      return await res.json();
-    } catch (error) {
-      console.error(error);
-      return { success: false, actions: [] };
-    }
-  };
-
-  // Fetch rich insights
-  const fetchAIInsights = async (chatId) => {
-    try {
-      const res = await fetch(`${API_URL}/api/ai/insights`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ conversationId: chatId }),
-      });
-      return await res.json();
-    } catch (error) {
-      console.error(error);
-      return { success: false, insights: 'Analysis service failed.' };
-    }
-  };
+  // AI extraction removed
 
   return (
     <AppContext.Provider
@@ -1145,11 +1077,6 @@ export const AppProvider = ({ children }) => {
         rejectRequest,
         toggleFavorite,
         removeContact,
-        getAIConversationSummary,
-        getAISmartReplies,
-        translateMessageAPI,
-        writeAssistAPI,
-        semanticSearchAPI,
         sendTypingStatus,
         sendReaction,
         changeUsername,
@@ -1170,8 +1097,7 @@ export const AppProvider = ({ children }) => {
         fetchAdminAnalytics,
         toggleSuspendUser,
         fetchToxicityLogs,
-        extractAIActions,
-        fetchAIInsights,
+        updateConversationCustomization,
       }}
     >
       {children}

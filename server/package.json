@@ -9,8 +9,6 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
-    "@google/genai": "*",
-    "@google/generative-ai": "*",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.2.0",
     "cors": "^2.8.5",

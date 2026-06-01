@@ -3,19 +3,16 @@ import { AppProvider, useApp } from './context/AppContext';
 import Auth from './components/Auth';
 import ChatList from './components/ChatList';
 import ChatWindow from './components/ChatWindow';
-import AISidebar from './components/AISidebar';
 import SplashScreen from './components/SplashScreen';
 import Logo from './components/Logo';
 import ContactsPage from './pages/ContactsPage';
 import SecurityPage from './pages/SecurityPage';
-import AIPage from './pages/AIPage';
 import AdminPage from './pages/AdminPage';
-import { MessageSquare, Users, Shield, Sparkles, LineChart, LogOut } from 'lucide-react';
+import { MessageSquare, Users, Shield, LineChart, LogOut } from 'lucide-react';
 
 function AppContent() {
   const { user, token, toast, fetchConversations, fetchContacts, currentChat, logoutUser } = useApp();
-  const [showAISidebar, setShowAISidebar] = useState(false);
-  const [activePage, setActivePage] = useState('chats'); // chats, contacts, security, ai, admin
+  const [activePage, setActivePage] = useState('chats'); // chats, contacts, security, admin
   
   // Visual Polish Loaders
   const [splashLoading, setSplashLoading] = useState(true);
@@ -102,13 +99,7 @@ function AppContent() {
             <Shield size={18} />
           </button>
           
-          <button
-            className={`nav-dock-item accent-purple ${activePage === 'ai' ? 'active' : ''}`}
-            onClick={() => setActivePage('ai')}
-            title="Chattix AI Workspace"
-          >
-            <Sparkles size={18} />
-          </button>
+          {/* AI Workspace tab removed */}
 
           {user?.isAdmin && (
             <button
@@ -138,29 +129,18 @@ function AppContent() {
             {/* Sidebar displaying conversations & contacts directory */}
             <ChatList
               className={mobilePanel === 'chat' ? 'mobile-hide' : ''}
-              showAISidebar={showAISidebar}
-              setShowAISidebar={setShowAISidebar}
             />
 
             {/* Dynamic chat feed window */}
             <ChatWindow
               className={mobilePanel === 'chat' ? 'active' : ''}
               onBack={() => setMobilePanel('sidebar')}
-              showAISidebar={showAISidebar}
-              setShowAISidebar={setShowAISidebar}
-            />
-
-            {/* Sliding Chattix AI Sidebar */}
-            <AISidebar
-              className={showAISidebar ? 'active' : ''}
-              onClose={() => setShowAISidebar(false)}
             />
           </>
         )}
 
         {activePage === 'contacts' && <ContactsPage />}
         {activePage === 'security' && <SecurityPage />}
-        {activePage === 'ai' && <AIPage />}
         {activePage === 'admin' && <AdminPage />}
       </div>
     </div>

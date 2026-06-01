@@ -13,6 +13,7 @@ import {
   createPollMessage,
   votePollOption,
   getGroupFiles,
+  updateConversationCustomization,
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { uploadMiddleware } from '../config/cloudinary.js';
@@ -34,5 +35,6 @@ router.get('/:chatId/invite', generateGroupInviteLink);
 router.post('/:chatId/poll', createPollMessage);
 router.post('/:chatId/poll/:messageId/vote', votePollOption);
 router.get('/:chatId/files', getGroupFiles);
+router.put('/:chatId/customization', updateConversationCustomization);
 
 export default router;

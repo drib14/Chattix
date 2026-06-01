@@ -4,28 +4,20 @@ import {
   CornerUpLeft,
   Pin,
   Trash,
-  Globe,
   FileText,
   Play,
   Pause,
   Download,
-  Check,
   CheckCheck,
   Smile
 } from 'lucide-react';
 
-export default function MessageBubble({ message, onReply }) {
-  const { user, deleteMessage, togglePin, translateMessageAPI, sendReaction, showToast, onlineUsers, votePoll, currentChat } = useApp();
+export default function MessageBubble({ message, index, messages, onReply }) {
+  const { user, deleteMessage, togglePin, sendReaction, showToast, votePoll, currentChat } = useApp();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   
-  // Translation states
-  const [showLangDropdown, setShowLangDropdown] = useState(false);
-  const [translationText, setTranslationText] = useState('');
-  const [translationLang, setTranslationLang] = useState('');
-  const [translating, setTranslating] = useState(false);
-
   // Reaction picker
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -88,25 +80,6 @@ export default function MessageBubble({ message, onReply }) {
     setCurrentTime(newTime);
   };
 
-  // Translate click
-  const handleTranslate = async (langName) => {
-    setShowLangDropdown(false);
-    if (!message.content) return;
-
-    setTranslating(true);
-    showToast(`AI is translating message to ${langName}...`, 'info');
-    const res = await translateMessageAPI(message.content, langName);
-    setTranslating(false);
-
-    if (res.success) {
-      setTranslationText(res.translatedText);
-      setTranslationLang(langName);
-      showToast('Translation completed!', 'success');
-    } else {
-      showToast(res.message, 'error');
-    }
-  };
-
   const formatSeconds = (sec) => {
     if (isNaN(sec)) return '0:00';
     const mins = Math.floor(sec / 60);
@@ -120,6 +93,54 @@ export default function MessageBubble({ message, onReply }) {
   };
 
   const isSender = message.sender._id === user.id;
+
+  // Context-aware cluster borders & spacing calculations (Facebook Messenger replication)
+  const prevMsg = index > 0 ? messages[index - 1] : null;
+  const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
+
+  const isPrevSameSender = prevMsg && prevMsg.sender._id === message.sender._id && prevMsg.messageType !== 'poll' && message.messageType !== 'poll' && !prevMsg.isDeleted;
+  const isNextSameSender = nextMsg && nextMsg.sender._id === message.sender._id && nextMsg.messageType !== 'poll' && message.messageType !== 'poll' && !nextMsg.isDeleted;
+
+  const getBubbleRadius = () => {
+    if (message.messageType === 'poll') return '12px'; // Polls are block layout
+
+    if (isSender) {
+      if (isPrevSameSender && isNextSameSender) return '18px 4px 4px 18px';
+      if (isPrevSameSender) return '18px 4px 18px 18px';
+      if (isNextSameSender) return '18px 18px 4px 18px';
+      return '18px 18px 18px 18px';
+    } else {
+      if (isPrevSameSender && isNextSameSender) return '4px 18px 18px 4px';
+      if (isPrevSameSender) return '4px 18px 18px 18px';
+      if (isNextSameSender) return '18px 18px 18px 4px';
+      return '18px 18px 18px 18px';
+    }
+  };
+
+  const getThemeGradient = (colorName) => {
+    switch (colorName) {
+      case 'blue':
+        return 'linear-gradient(135deg, #0084ff 0%, #00c6ff 100%)';
+      case 'pink':
+        return 'linear-gradient(135deg, #ff007f 0%, #ff80df 100%)';
+      case 'orange':
+        return 'linear-gradient(135deg, #ff5e36 0%, #ffaa00 100%)';
+      case 'green':
+        return 'linear-gradient(135deg, #00b060 0%, #00e0a0 100%)';
+      case 'purple':
+      default:
+        return 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)';
+    }
+  };
+
+  const bubbleStyle = {
+    margin: 0,
+    borderRadius: getBubbleRadius()
+  };
+
+  if (isSender && message.messageType !== 'poll' && !message.isDeleted) {
+    bubbleStyle.background = getThemeGradient(currentChat?.themeColor);
+  }
 
   // Render attachment helper
   const renderAttachment = () => {
@@ -136,7 +157,7 @@ export default function MessageBubble({ message, onReply }) {
         );
       case 'video':
         return (
-          <div className="attachment-preview-container" style={{ maxFormatWidth: '280px', maxHeight: 'none' }}>
+          <div className="attachment-preview-container" style={{ maxWidth: '280px', maxHeight: 'none' }}>
             <video
               src={message.fileUrl}
               controls
@@ -205,18 +226,22 @@ export default function MessageBubble({ message, onReply }) {
   };
 
   return (
-    <div className={`message-wrapper ${isSender ? 'sender' : 'receiver'}`} style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%' }}>
-      <span className="message-sender-name" style={{ alignSelf: isSender ? 'flex-end' : 'flex-start', margin: isSender ? '0 36px 0 0' : '0 0 0 36px', fontSize: '11px', color: 'var(--text-muted)' }}>
-        {isSender ? 'You' : message.sender.username}
-      </span>
+    <div className={`message-wrapper ${isSender ? 'sender' : 'receiver'}`} style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', marginTop: !isPrevSameSender ? '12px' : '2px' }}>
+      
+      {/* Show Sender Name only at the start of a clustered group of receiver messages */}
+      {!isSender && !isPrevSameSender && (
+        <span className="message-sender-name" style={{ alignSelf: 'flex-start', margin: '0 0 0 36px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>
+          {message.sender?.username || 'Chattix User'}
+        </span>
+      )}
 
       <div style={{ display: 'flex', flexDirection: isSender ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: '8px', width: '100%' }}>
-        {/* Render Profile Photo */}
-        <div className="avatar-wrapper" style={{ width: '28px', height: '28px', flexShrink: 0, marginBottom: '2px' }}>
+        {/* Render Profile Photo - Hidden if next message is from the same sender (Messenger clustered styling) */}
+        <div className="avatar-wrapper" style={{ width: '28px', height: '28px', flexShrink: 0, marginBottom: '2px', visibility: isNextSameSender ? 'hidden' : 'visible' }}>
           {message.sender?.profilePhoto ? (
-            <img className="avatar" src={message.sender.profilePhoto} alt={message.sender.username} style={{ borderRadius: '50%' }} />
+            <img className="avatar" src={message.sender.profilePhoto} alt={message.sender.username} style={{ borderRadius: '50%', width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div className="avatar-placeholder" style={{ fontSize: '10px' }}>
+            <div className="avatar-placeholder" style={{ fontSize: '10px', borderRadius: '50%', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {(message.sender?.username || 'CU').substring(0, 2).toUpperCase()}
             </div>
           )}
@@ -239,197 +264,141 @@ export default function MessageBubble({ message, onReply }) {
           )}
 
           {/* BUBBLE FEED CONTAINER */}
-          <div className={`message-bubble ${translating ? 'ai-highlight' : ''}`} style={{ margin: 0 }}>
-        {/* Render media if any */}
-        {renderAttachment()}
+          <div className="message-bubble" style={bubbleStyle}>
+            {/* Render media if any */}
+            {renderAttachment()}
 
-        {/* Render group poll if type is poll */}
-        {message.messageType === 'poll' && message.pollDetails && (
-          <div style={{ padding: '4px 2px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '220px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '10px', background: 'rgba(168,85,247,0.15)', color: 'var(--accent-purple)', fontWeight: 'bold', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '4px' }}>📊 Group Poll</span>
+            {/* Render group poll if type is poll */}
+            {message.messageType === 'poll' && message.pollDetails && (
+              <div style={{ padding: '4px 2px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '220px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', background: 'rgba(168,85,247,0.15)', color: 'var(--accent-purple)', fontWeight: 'bold', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '4px' }}>📊 Group Poll</span>
+                </div>
+                <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: 'white', margin: '2px 0 4px 0' }}>{message.pollDetails.question}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {message.pollDetails.options.map((opt, idx) => {
+                    const totalVotes = message.pollDetails.options.reduce((sum, o) => sum + (o.votes?.length || 0), 0);
+                    const hasVoted = opt.votes?.some(vId => vId.toString() === user.id);
+                    const votesCount = opt.votes?.length || 0;
+                    const percentage = totalVotes > 0 ? Math.round((votesCount / totalVotes) * 100) : 0;
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (message.isDeleted) return;
+                          votePoll(currentChat._id, message._id, idx);
+                        }}
+                        style={{
+                          position: 'relative',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          background: 'rgba(255,255,255,0.03)',
+                          border: hasVoted ? '1px solid rgba(168,85,247,0.4)' : '1px solid var(--glass-border)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          overflow: 'hidden',
+                          transition: 'all 0.15s ease-out',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            height: '100%',
+                            width: `${percentage}%`,
+                            background: hasVoted ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.03)',
+                            zIndex: 0,
+                            transition: 'width 0.3s ease-out'
+                          }}
+                        ></div>
+                        <span style={{ zIndex: 1, fontSize: '12px', fontWeight: hasVoted ? '600' : 'normal' }}>{opt.optionText}</span>
+                        <span style={{ zIndex: 1, fontSize: '10.5px', color: 'var(--text-muted)' }}>{votesCount} votes ({percentage}%)</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Text message */}
+            {message.content && !message.isDeleted && (
+              <p style={{ margin: 0, fontSize: '13.5px' }}>{message.content}</p>
+            )}
+            {message.isDeleted && (
+              <p style={{ margin: 0, fontSize: '13px', fontStyle: 'italic', opacity: 0.6 }}>
+                {message.content}
+              </p>
+            )}
+
+            <div className="message-bubble-meta">
+              <span>{formatMessageTime(message.createdAt)}</span>
+              {message.isEdited && !message.isDeleted && <span style={{ fontStyle: 'italic' }}>(edited)</span>}
+              {isSender && (
+                <span style={{ color: 'var(--accent-cyan)' }}>
+                  <CheckCheck size={11} />
+                </span>
+              )}
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: 'white', margin: '2px 0 4px 0' }}>{message.pollDetails.question}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {message.pollDetails.options.map((opt, idx) => {
-                const totalVotes = message.pollDetails.options.reduce((sum, o) => sum + (o.votes?.length || 0), 0);
-                const hasVoted = opt.votes?.some(vId => vId.toString() === user.id);
-                const votesCount = opt.votes?.length || 0;
-                const percentage = totalVotes > 0 ? Math.round((votesCount / totalVotes) * 100) : 0;
 
-                return (
+            {/* Message Actions options on hover */}
+            {!message.isDeleted && (
+              <div className="message-bubble-options">
+                <button className="bubble-option-btn" title="Reply Message" onClick={onReply}>
+                  <CornerUpLeft size={12} />
+                </button>
+                <button className="bubble-option-btn" title="Pin Message" onClick={() => togglePin(message._id)}>
+                  <Pin size={12} />
+                </button>
+                {isSender && (
+                  <button className="bubble-option-btn" title="Delete for Everyone" onClick={() => deleteMessage(message._id)}>
+                    <Trash size={12} />
+                  </button>
+                )}
+                <button className="bubble-option-btn" title="React Emoji" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                  <Smile size={12} />
+                </button>
+
+                {/* Quick reaction picker shelf */}
+                {showEmojiPicker && (
                   <div
-                    key={idx}
-                    onClick={() => {
-                      if (message.isDeleted) return;
-                      votePoll(currentChat._id, message._id, idx);
-                    }}
+                    className="glass-panel"
                     style={{
-                      position: 'relative',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      background: 'rgba(255,255,255,0.03)',
-                      border: hasVoted ? '1px solid rgba(168,85,247,0.4)' : '1px solid var(--glass-border)',
-                      cursor: 'pointer',
+                      position: 'absolute',
+                      top: '30px',
+                      left: isSender ? 'auto' : '30px',
+                      right: isSender ? '30px' : 'auto',
+                      padding: '4px',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      overflow: 'hidden',
-                      transition: 'all 0.15s ease-out',
-                      userSelect: 'none'
+                      gap: '4px',
+                      zIndex: 30,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
                     }}
                   >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        height: '100%',
-                        width: `${percentage}%`,
-                        background: hasVoted ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.03)',
-                        zIndex: 0,
-                        transition: 'width 0.3s ease-out'
-                      }}
-                    ></div>
-                    <span style={{ zIndex: 1, fontSize: '12px', fontWeight: hasVoted ? '600' : 'normal' }}>{opt.optionText}</span>
-                    <span style={{ zIndex: 1, fontSize: '10.5px', color: 'var(--text-muted)' }}>{votesCount} votes ({percentage}%)</span>
+                    {['👍', '❤️', '😂', '😮', '😢', '🔥'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        style={{ background: 'transparent', border: 'none', fontSize: '14px', cursor: 'pointer', padding: '2px' }}
+                        onClick={() => {
+                          sendReaction(message._id, emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Text message */}
-        {message.content && !message.isDeleted && (
-          <p style={{ margin: 0, fontSize: '13.5px' }}>{message.content}</p>
-        )}
-        {message.isDeleted && (
-          <p style={{ margin: 0, fontSize: '13px', fontStyle: 'italic', opacity: 0.6 }}>
-            {message.content}
-          </p>
-        )}
-
-        {/* Chattix AI Translation card label */}
-        {translationText && (
-          <div
-            style={{
-              marginTop: '8px',
-              padding: '6px 8px',
-              background: 'rgba(6, 182, 212, 0.08)',
-              borderTop: '1px solid rgba(6, 182, 212, 0.2)',
-              borderRadius: '4px',
-              fontSize: '12px',
-              color: '#06b6d4',
-              animation: 'slideDown 0.15s ease-out'
-            }}
-          >
-            <div style={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '2px' }}>
-              🌐 Chattix AI Translated ({translationLang})
-            </div>
-            <div>{translationText}</div>
-          </div>
-        )}
-
-        <div className="message-bubble-meta">
-          <span>{formatMessageTime(message.createdAt)}</span>
-          {message.isEdited && !message.isDeleted && <span style={{ fontStyle: 'italic' }}>(edited)</span>}
-          {isSender && (
-            <span style={{ color: 'var(--accent-cyan)' }}>
-              <CheckCheck size={11} />
-            </span>
-          )}
         </div>
-
-    {/* Message Actions options on hover */}
-    {!message.isDeleted && (
-          <div className="message-bubble-options">
-            <button className="bubble-option-btn" title="Reply Message" onClick={onReply}>
-              <CornerUpLeft size={12} />
-            </button>
-            <button className="bubble-option-btn" title="AI Translation" onClick={() => setShowLangDropdown(!showLangDropdown)}>
-              <Globe size={12} />
-            </button>
-            <button className="bubble-option-btn" title="Pin Message" onClick={() => togglePin(message._id)}>
-              <Pin size={12} />
-            </button>
-            {isSender && (
-              <button className="bubble-option-btn" title="Delete for Everyone" onClick={() => deleteMessage(message._id)}>
-                <Trash size={12} />
-              </button>
-            )}
-            <button className="bubble-option-btn" title="React Emoji" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
-              <Smile size={12} />
-            </button>
-
-            {/* Translation Languages Dropdown */}
-            {showLangDropdown && (
-              <div
-                className="glass-panel"
-                style={{
-                  position: 'absolute',
-                  top: '30px',
-                  left: isSender ? 'auto' : '0',
-                  right: isSender ? '0' : 'auto',
-                  padding: '6px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '3px',
-                  width: '110px',
-                  zIndex: 30,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-                }}
-              >
-                {['English', 'Spanish', 'French', 'Japanese', 'German'].map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    className="tab-btn"
-                    style={{ textAlign: 'left', fontSize: '11px', padding: '4px 6px' }}
-                    onClick={() => handleTranslate(lang)}
-                  >
-                    {lang}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Quick reaction picker shelf */}
-            {showEmojiPicker && (
-              <div
-                className="glass-panel"
-                style={{
-                  position: 'absolute',
-                  top: '30px',
-                  left: isSender ? 'auto' : '30px',
-                  right: isSender ? '30px' : 'auto',
-                  padding: '4px',
-                  display: 'flex',
-                  gap: '4px',
-                  zIndex: 30,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-                }}
-              >
-                {['👍', '❤️', '😂', '😮', '😢', '🔥'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    style={{ background: 'transparent', border: 'none', fontSize: '14px', cursor: 'pointer', padding: '2px' }}
-                    onClick={() => {
-                      sendReaction(message._id, emoji);
-                      setShowEmojiPicker(false);
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
-    </div>
-  </div>
 
       {/* Render emoji reactions list under bubble */}
       {message.reactions && message.reactions.length > 0 && (
@@ -439,8 +408,8 @@ export default function MessageBubble({ message, onReply }) {
             gap: '2px',
             marginTop: '2px',
             alignSelf: isSender ? 'flex-end' : 'flex-start',
-            marginRight: isSender ? '8px' : '0',
-            marginLeft: isSender ? '0' : '8px'
+            marginRight: isSender ? '36px' : '0',
+            marginLeft: isSender ? '0' : '36px'
           }}
         >
           {message.reactions.map((r, idx) => (
