@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const GRADIENTS = [
-    { name: 'blue', label: 'Classic Messenger', class: 'bg-[#0084FF]' },
+    { name: 'blue', label: 'Classic Chattix', class: 'bg-[#0084FF]' },
     { name: 'candy', label: 'Candy Crush', class: 'bg-gradient-to-r from-[#ec008c] to-[#fc6767]' },
     { name: 'lavender', label: 'Lavender Sunset', class: 'bg-gradient-to-r from-[#8a2387] via-[#e94057] to-[#f27121]' },
     { name: 'sea', label: 'Emerald Sea', class: 'bg-gradient-to-r from-[#11998e] to-[#38ef7d]' },
@@ -30,7 +30,7 @@ const RightSidebar = () => {
 
     const handleLogout = () => {
         showConfirm({
-            title: 'Log Out of Messenger',
+            title: 'Log Out of Chattix',
             message: 'Are you sure you want to sign out?',
             type: 'warning',
             confirmText: 'Log Out',

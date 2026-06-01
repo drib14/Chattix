@@ -545,7 +545,7 @@ const MainChat = () => {
                         <div className="flex items-center justify-center space-x-2 text-[#0099ff] mb-2">
                             {callType === 'video' ? <Video size={16} /> : <Phone size={16} />}
                             <span className="text-xs uppercase tracking-widest font-black">
-                                Messenger {callType} Call
+                                Chattix {callType} Call
                             </span>
                         </div>
                         <h2 className="text-2xl font-black">{chatName}</h2>

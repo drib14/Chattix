@@ -14,7 +14,7 @@ const NavSidebar = ({ activeTab = 'chats', setActiveTab }) => {
 
     const handleLogout = () => {
         showConfirm({
-            title: 'Log Out of Messenger',
+            title: 'Log Out of Chattix',
             message: 'Are you sure you want to log out of your account?',
             type: 'warning',
             confirmText: 'Log Out',

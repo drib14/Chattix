@@ -140,7 +140,7 @@ const LeftSidebar = ({ activeTab, setActiveTab }) => {
                     </div>
                     <input
                         type="text"
-                        placeholder="Search Messenger"
+                        placeholder="Search Chattix"
                         value={search}
                         onChange={handleSearch}
                         className="w-full pl-10 pr-4 py-2.5 rounded-full bg-neutral-800/40 border border-white/5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:bg-neutral-800/80 focus:border-[#0099ff] transition-all"

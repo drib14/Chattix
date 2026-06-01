@@ -28,7 +28,7 @@ const MessengerLogo = () => (
             </svg>
         </div>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-neutral-100 to-neutral-300 bg-clip-text text-transparent">
-            Messenger
+            Chattix
         </h1>
         <p className="mt-1 text-sm text-neutral-400 font-medium">Be together, whenever.</p>
     </div>
@@ -60,7 +60,7 @@ const LoginPage = () => {
                 config
             );
 
-            toast.success('Welcome back to Messenger!');
+            toast.success('Welcome back to Chattix!');
             login(data);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Login failed. Please verify credentials.');
