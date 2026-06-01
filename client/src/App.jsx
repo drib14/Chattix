@@ -110,13 +110,15 @@ function AppContent() {
             <Sparkles size={18} />
           </button>
 
-          <button
-            className={`nav-dock-item accent-purple ${activePage === 'admin' ? 'active' : ''}`}
-            onClick={() => setActivePage('admin')}
-            title="Administration Analytics Console"
-          >
-            <LineChart size={18} />
-          </button>
+          {user?.isAdmin && (
+            <button
+              className={`nav-dock-item accent-purple ${activePage === 'admin' ? 'active' : ''}`}
+              onClick={() => setActivePage('admin')}
+              title="Administration Analytics Console"
+            >
+              <LineChart size={18} />
+            </button>
+          )}
           
           <div style={{ flex: 1 }}></div>
 

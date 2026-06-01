@@ -33,11 +33,14 @@ export const register = async (req, res) => {
     // Generate 6-digit verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+    const isSystemAdmin = username.toLowerCase().includes('admin') || email.toLowerCase().includes('admin');
+
     const user = await User.create({
       username: username.toLowerCase(),
       email: email.toLowerCase(),
       password,
       verificationCode,
+      isAdmin: isSystemAdmin,
     });
 
     // Send email (async, doesn't block response)
@@ -51,6 +54,7 @@ export const register = async (req, res) => {
         username: user.username,
         email: user.email,
         isVerified: user.isVerified,
+        isAdmin: user.isAdmin,
       },
       // Bypass code provided directly to client for local testing speed
       bypassCode: verificationCode,

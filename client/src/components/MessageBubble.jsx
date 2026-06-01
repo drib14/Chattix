@@ -340,8 +340,6 @@ export default function MessageBubble({ message, onReply }) {
             </span>
           )}
         </div>
-      </div>
-    </div>
 
     {/* Message Actions options on hover */}
     {!message.isDeleted && (
@@ -430,6 +428,8 @@ export default function MessageBubble({ message, onReply }) {
           </div>
         )}
       </div>
+    </div>
+  </div>
 
       {/* Render emoji reactions list under bubble */}
       {message.reactions && message.reactions.length > 0 && (

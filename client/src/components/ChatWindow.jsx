@@ -145,8 +145,8 @@ export default function ChatWindow({ className = '', onBack, showAISidebar, setS
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Triggered when active conversation room changes
   useEffect(() => {
-    scrollToBottom();
     if (currentChat) {
       setFetchingMessages(true);
       fetchSmartReplies();
@@ -154,13 +154,20 @@ export default function ChatWindow({ className = '', onBack, showAISidebar, setS
       setInput('');
       setSelectedFile(null);
       
-      // Beautiful skeleton loader delay for 500ms to visually represent channel decryption
       const loaderTimer = setTimeout(() => {
         setFetchingMessages(false);
       }, 500);
       return () => clearTimeout(loaderTimer);
     }
-  }, [currentChat, messages.length]);
+  }, [currentChat?._id]);
+
+  // Triggered when messages are received or sent
+  useEffect(() => {
+    scrollToBottom();
+    if (currentChat) {
+      fetchSmartReplies();
+    }
+  }, [messages.length]);
 
   // Fetch AI Smart Replies based on recent context
   const fetchSmartReplies = async () => {
