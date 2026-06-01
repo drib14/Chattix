@@ -10,6 +10,8 @@ const userSchema = new Schema(
     isOnline: { type: Boolean, default: false },
     lastSeen: { type: Date, default: Date.now },
     theme: { type: String, default: 'default' },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );

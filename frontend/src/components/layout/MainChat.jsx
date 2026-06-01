@@ -4,7 +4,7 @@ import useAuthStore from '../../store/authStore';
 import useChatStore from '../../store/chatStore';
 import { Send, Image as ImageIcon, Smile, MapPin, CreditCard, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import ImageUploadPopover from '../chat/popovers/ImageUploadPopover';
 import GiphyPopover from '../chat/popovers/GiphyPopover';
 import EmojiPopover from '../chat/popovers/EmojiPopover';
@@ -13,7 +13,7 @@ import PaymongoPopover from '../chat/popovers/PaymongoPopover';
 import { MessageSkeleton } from './Skeletons';
 
 const ENDPOINT = import.meta.env.VITE_API_URL;
-var socket: Socket, selectedChatCompare: any;
+var socket, selectedChatCompare;
 
 const MainChat = () => {
     const { user } = useAuthStore();
@@ -21,7 +21,7 @@ const MainChat = () => {
     const [newMessage, setNewMessage] = useState('');
     const [, setSocketConnected] = useState(false);
     const [loadingMessages, setLoadingMessages] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         socket = io(ENDPOINT, { withCredentials: true });
@@ -30,7 +30,7 @@ const MainChat = () => {
 
         socket.on('message recieved', (newMessageRecieved) => {
             if (!selectedChatCompare || selectedChatCompare._id !== newMessageRecieved.conversationId._id) {
-                // give notification
+                // notification
             } else {
                 addMessage(newMessageRecieved);
             }
@@ -75,7 +75,7 @@ const MainChat = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const sendDataMessage = async (payload: any) => {
+    const sendDataMessage = async (payload) => {
         try {
              const config = {
                 headers: {
@@ -94,9 +94,9 @@ const MainChat = () => {
         } catch (error) {
             toast.error('Failed to send the Message');
         }
-    }
+    };
 
-    const invokeAI = async (prompt: string) => {
+    const invokeAI = async (prompt) => {
          try {
              const config = {
                 headers: {
@@ -106,14 +106,6 @@ const MainChat = () => {
                 withCredentials: true,
             };
 
-            // First emit user's prompt (Optimistically update UI, but wait for DB result in the AI endpoint to be reliable)
-            // Or, let the backend AI endpoint save BOTH the user's prompt AND the AI response.
-            // Currently, the backend AI endpoint saves both. We just need to trigger the AI endpoint.
-            // But wait, the backend ai endpoint only returns the ai message. Let's inspect backend code.
-            // If backend `generateAIResponse` creates the user message but DOESN'T return it, we only get the AI response back here.
-            // So we should send the user message through socket first before calling the backend.
-
-            // We'll let the user see their own prompt right away without duplicating in DB.
             const tempUserMessage = {
                 _id: Date.now().toString(),
                 text: prompt,
@@ -123,8 +115,6 @@ const MainChat = () => {
             };
             addMessage(tempUserMessage);
 
-            // Fetch AI response
-            // The backend ai endpoint creates both messages in DB.
             const { data: aiData } = await axios.post(
                 `${import.meta.env.VITE_API_URL}/api/ai`,
                 { prompt: prompt, conversationId: selectedChat._id },
@@ -135,10 +125,10 @@ const MainChat = () => {
         } catch (error) {
             toast.error('AI invocation failed');
         }
-    }
+    };
 
-    const sendMessage = async (e: React.KeyboardEvent | React.MouseEvent) => {
-        if ((e as React.KeyboardEvent).key === 'Enter' || e.type === 'click') {
+    const sendMessage = async (e) => {
+        if (e.key === 'Enter' || e.type === 'click') {
             if (newMessage) {
                 const messageText = newMessage;
                 setNewMessage('');
@@ -167,7 +157,7 @@ const MainChat = () => {
         );
     }
 
-    const getOtherUser = (users: any[]) => {
+    const getOtherUser = (users) => {
         return users[0]._id === user._id ? users[1] : users[0];
     };
 
@@ -200,7 +190,7 @@ const MainChat = () => {
                         <MessageSkeleton isOwn />
                         <MessageSkeleton isOwn />
                     </div>
-                ) : messages.map((m: any) => {
+                ) : messages.map((m) => {
                     const isMyMessage = m.sender._id === user._id;
                     return (
                         <div key={m._id} className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}>
@@ -238,26 +228,26 @@ const MainChat = () => {
                 <div className="flex items-end space-x-2">
                     <div className="flex space-x-1 mb-2 text-[var(--color-primary)]">
                         <ImageUploadPopover onImageUpload={(url) => sendDataMessage({ image: url })}>
-                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition"><ImageIcon size={20} /></button>
+                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition cursor-pointer"><ImageIcon size={20} /></button>
                         </ImageUploadPopover>
 
                         <GiphyPopover onGifSelect={(url) => sendDataMessage({ gifUrl: url })}>
-                             <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition font-bold text-xs flex items-center justify-center">GIF</button>
+                             <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition font-bold text-xs flex items-center justify-center cursor-pointer">GIF</button>
                         </GiphyPopover>
 
                         <EmojiPopover onEmojiSelect={(emoji) => setNewMessage((prev) => prev + emoji)}>
-                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition"><Smile size={20} /></button>
+                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition cursor-pointer"><Smile size={20} /></button>
                         </EmojiPopover>
 
                         <LocationPopover onLocationShare={(loc) => sendDataMessage({ location: loc })}>
-                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition"><MapPin size={20} /></button>
+                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition cursor-pointer"><MapPin size={20} /></button>
                         </LocationPopover>
 
                         <PaymongoPopover onPaymentSuccess={(id) => sendDataMessage({ paymentIntentId: id })}>
-                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition"><CreditCard size={20} /></button>
+                            <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition cursor-pointer"><CreditCard size={20} /></button>
                         </PaymongoPopover>
 
-                        <button onClick={() => setNewMessage((prev) => prev + '/chat ')} className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition"><Sparkles size={20} className="text-[var(--color-secondary)]" /></button>
+                        <button onClick={() => setNewMessage((prev) => prev + '/chat ')} className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full transition cursor-pointer"><Sparkles size={20} className="text-[var(--color-secondary)]" /></button>
                     </div>
                     <div className="flex-1 bg-[var(--color-bg-dark-secondary)] rounded-3xl flex items-center pr-2">
                         <input
@@ -268,7 +258,7 @@ const MainChat = () => {
                             onChange={(e) => setNewMessage(e.target.value)}
                             onKeyDown={sendMessage}
                         />
-                        <button onClick={sendMessage} className="p-2 text-[var(--color-primary)] hover:bg-[var(--color-bg-dark-hover)] rounded-full transition">
+                        <button onClick={sendMessage} className="p-2 text-[var(--color-primary)] hover:bg-[var(--color-bg-dark-hover)] rounded-full transition cursor-pointer">
                             <Send size={20} />
                         </button>
                     </div>

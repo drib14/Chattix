@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Popover } from '@headlessui/react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../../store/authStore';
 
-interface PaymongoPopoverProps {
-    onPaymentSuccess: (paymentIntentId: string, amount: number) => void;
-    children: React.ReactNode;
-}
-
-const PaymongoPopover: React.FC<PaymongoPopoverProps> = ({ onPaymentSuccess, children }) => {
+const PaymongoPopover = ({ onPaymentSuccess, children }) => {
     const [amount, setAmount] = useState('');
     const [loading, setLoading] = useState(false);
     const { user } = useAuthStore();
@@ -29,7 +24,6 @@ const PaymongoPopover: React.FC<PaymongoPopoverProps> = ({ onPaymentSuccess, chi
                 withCredentials: true,
             };
 
-            // Amount in centavos
             const amountInCentavos = Math.round(Number(amount) * 100);
 
             const { data } = await axios.post(
@@ -38,8 +32,6 @@ const PaymongoPopover: React.FC<PaymongoPopoverProps> = ({ onPaymentSuccess, chi
                 config
             );
 
-            // In a real app, we would redirect to a checkout page here or use Paymongo Elements.
-            // Since we are mocking the UI flow for the clone, we will just simulate success.
             toast.success(`Payment Intent Created! Simulating success...`);
             onPaymentSuccess(data, Number(amount));
             setAmount('');

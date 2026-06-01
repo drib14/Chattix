@@ -1,14 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Popover } from '@headlessui/react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-interface LocationPopoverProps {
-    onLocationShare: (locationData: { lat: number; lng: number; address: string }) => void;
-    children: React.ReactNode;
-}
-
-const LocationPopover: React.FC<LocationPopoverProps> = ({ onLocationShare, children }) => {
+const LocationPopover = ({ onLocationShare, children }) => {
     const [loading, setLoading] = useState(false);
 
     const handleShareLocation = () => {
@@ -24,7 +19,6 @@ const LocationPopover: React.FC<LocationPopoverProps> = ({ onLocationShare, chil
                 const { latitude, longitude } = position.coords;
 
                 try {
-                    // Optional: Get Address from LocationIQ Reverse Geocoding
                     const res = await axios.get(`https://us1.locationiq.com/v1/reverse.php?key=${import.meta.env.VITE_LOCATIONIQ_ACCESS_TOKEN}&lat=${latitude}&lon=${longitude}&format=json`);
                     const address = res.data.display_name;
 

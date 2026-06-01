@@ -1,16 +1,6 @@
 import { create } from 'zustand';
 
-interface ChatState {
-  selectedChat: any;
-  chats: any[];
-  messages: any[];
-  setSelectedChat: (chat: any) => void;
-  setChats: (chats: any[]) => void;
-  setMessages: (messages: any[]) => void;
-  addMessage: (message: any) => void;
-}
-
-const useChatStore = create<ChatState>((set) => ({
+const useChatStore = create((set) => ({
   selectedChat: null,
   chats: [],
   messages: [],

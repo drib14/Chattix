@@ -30,7 +30,7 @@ const SettingsDrawer = () => {
   const { showConfirm } = useConfirmStore();
   const { setChats, setSelectedChat } = useChatStore();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'accounts'>('profile');
+  const [activeTab, setActiveTab] = useState('profile');
   
   // Profile edit state
   const [username, setUsername] = useState(user?.username || '');
@@ -38,7 +38,7 @@ const SettingsDrawer = () => {
   const [updating, setUpdating] = useState(false);
 
   // Accounts state
-  const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
+  const [savedAccounts, setSavedAccounts] = useState([]);
   const [showAddAccountForm, setShowAddAccountForm] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -49,12 +49,10 @@ const SettingsDrawer = () => {
       setUsername(user.username);
       setProfilePic(user.profilePic || '');
       
-      // Sync active account into saved accounts in localStorage
       const accounts = localStorage.getItem('chattix_saved_accounts');
       let parsed = accounts ? JSON.parse(accounts) : [];
       
-      // Update or add the current active account
-      const existsIdx = parsed.findIndex((acc: any) => acc._id === user._id);
+      const existsIdx = parsed.findIndex((acc) => acc._id === user._id);
       const accData = {
         _id: user._id,
         username: user.username,
@@ -74,7 +72,6 @@ const SettingsDrawer = () => {
     }
   }, [user]);
 
-  // Load saved accounts from localStorage initially
   useEffect(() => {
     const accounts = localStorage.getItem('chattix_saved_accounts');
     if (accounts) {
@@ -82,7 +79,7 @@ const SettingsDrawer = () => {
     }
   }, [isOpen]);
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
     if (!username.trim()) {
       toast.error('Username cannot be empty');
@@ -105,16 +102,16 @@ const SettingsDrawer = () => {
         config
       );
 
-      login(data); // update global Zustand state + localStorage user info
+      login(data);
       toast.success('Profile updated successfully!');
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.response?.data?.message || 'Update failed');
     } finally {
       setUpdating(false);
     }
   };
 
-  const changeThemePalette = (t: typeof THEMES[0]) => {
+  const changeThemePalette = (t) => {
     document.documentElement.style.setProperty('--color-primary', t.primary);
     document.documentElement.style.setProperty('--color-primary-hover', `${t.primary}ee`);
     document.documentElement.style.setProperty('--color-secondary', t.secondary);
@@ -122,12 +119,12 @@ const SettingsDrawer = () => {
     toast.success(`Theme set to ${t.name}`);
   };
 
-  const changeChatBackground = (bg: typeof BACKGROUNDS[0]) => {
+  const changeChatBackground = (bg) => {
     document.documentElement.style.setProperty('--chat-bg-gradient', bg.gradient);
     toast.success(`Chat background set to ${bg.name}`);
   };
 
-  const handleSwitchAccount = (targetAcc: any) => {
+  const handleSwitchAccount = (targetAcc) => {
     if (targetAcc._id === user._id) {
       toast.error('You are already logged into this account');
       return;
@@ -140,9 +137,7 @@ const SettingsDrawer = () => {
       confirmText: 'Switch Now',
       cancelText: 'Cancel',
       onConfirm: () => {
-        // Log in with the target account data
         login(targetAcc);
-        // Clear active conversation
         setSelectedChat(null);
         setChats([]);
         toast.success(`Welcome back, ${targetAcc.username}!`);
@@ -151,7 +146,7 @@ const SettingsDrawer = () => {
     });
   };
 
-  const handleRemoveAccount = (targetId: string, e: React.MouseEvent) => {
+  const handleRemoveAccount = (targetId, e) => {
     e.stopPropagation();
     
     if (targetId === user._id) {
@@ -165,7 +160,7 @@ const SettingsDrawer = () => {
     toast.success('Account removed from saved list');
   };
 
-  const handleAddAccount = async (e: React.FormEvent) => {
+  const handleAddAccount = async (e) => {
     e.preventDefault();
     if (!newEmail || !newPassword) {
       toast.error('Please fill all login fields');
@@ -180,7 +175,6 @@ const SettingsDrawer = () => {
         { withCredentials: true }
       );
 
-      // Successfully authenticated a secondary account!
       const newSaved = [...savedAccounts];
       const accData = {
         _id: data._id,
@@ -200,7 +194,6 @@ const SettingsDrawer = () => {
       localStorage.setItem('chattix_saved_accounts', JSON.stringify(newSaved));
       setSavedAccounts(newSaved);
 
-      // Now log in as the newly added account
       login(data);
       setSelectedChat(null);
       setChats([]);
@@ -209,7 +202,7 @@ const SettingsDrawer = () => {
       setShowAddAccountForm(false);
       setNewEmail('');
       setNewPassword('');
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.response?.data?.message || 'Login failed');
     } finally {
       setLoggingIn(false);

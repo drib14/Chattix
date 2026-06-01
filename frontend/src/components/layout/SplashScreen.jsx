@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const SplashScreen: React.FC = () => {
+const SplashScreen = () => {
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsVisible(false);
-        }, 2000); // 2 seconds splash screen
+        }, 2000);
 
         return () => clearTimeout(timer);
     }, []);

@@ -14,8 +14,8 @@ const CreateGroupModal = () => {
 
   const [groupName, setGroupName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
 
@@ -28,7 +28,7 @@ const CreateGroupModal = () => {
     }
   }, [isOpen]);
 
-  const handleSearch = async (val: string) => {
+  const handleSearch = async (val) => {
     setSearchTerm(val);
     if (!val.trim()) {
       setSearchResults([]);
@@ -55,7 +55,7 @@ const CreateGroupModal = () => {
     }
   };
 
-  const toggleUser = (u: any) => {
+  const toggleUser = (u) => {
     if (selectedUsers.some((sel) => sel._id === u._id)) {
       setSelectedUsers(selectedUsers.filter((sel) => sel._id !== u._id));
     } else {
@@ -98,7 +98,7 @@ const CreateGroupModal = () => {
       setSelectedChat(data);
       toast.success(`Group "${groupName}" created successfully!`);
       closeModal();
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create group');
     } finally {
       setLoading(false);

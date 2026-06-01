@@ -24,7 +24,7 @@ export const ChatSkeleton = () => {
     );
 };
 
-export const MessageSkeleton = ({ isOwn }: { isOwn?: boolean }) => {
+export const MessageSkeleton = ({ isOwn }) => {
     return (
         <div className={`flex w-full mb-4 ${isOwn ? 'justify-end' : 'justify-start'}`}>
             {!isOwn && (

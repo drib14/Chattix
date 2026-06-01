@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 
-interface GroupModalState {
-  isOpen: boolean;
-  openModal: () => void;
-  closeModal: () => void;
-}
-
-const useGroupModalStore = create<GroupModalState>((set) => ({
+const useGroupModalStore = create((set) => ({
   isOpen: false,
   openModal: () => set({ isOpen: true }),
   closeModal: () => set({ isOpen: false }),

@@ -1,17 +1,11 @@
-import React from 'react';
 import { Popover } from '@headlessui/react';
 import { Grid } from '@giphy/react-components';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 
-const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY as string);
+const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY || '');
 
-interface GiphyPopoverProps {
-    onGifSelect: (gifUrl: string) => void;
-    children: React.ReactNode;
-}
-
-const GiphyPopover: React.FC<GiphyPopoverProps> = ({ onGifSelect, children }) => {
-    const fetchGifs = (offset: number) => gf.trending({ offset, limit: 10 });
+const GiphyPopover = ({ onGifSelect, children }) => {
+    const fetchGifs = (offset) => gf.trending({ offset, limit: 10 });
 
     return (
         <Popover className="relative">

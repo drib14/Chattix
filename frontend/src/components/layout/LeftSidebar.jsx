@@ -41,7 +41,7 @@ const LeftSidebar = () => {
         }
     }, [user]);
 
-    const handleSearch = async (e: any) => {
+    const handleSearch = async (e) => {
         setSearch(e.target.value);
         if (!e.target.value) {
             setSearchResults([]);
@@ -62,7 +62,7 @@ const LeftSidebar = () => {
         }
     };
 
-    const accessChat = async (userId: string) => {
+    const accessChat = async (userId) => {
         try {
             const config = {
                 headers: {
@@ -72,16 +72,16 @@ const LeftSidebar = () => {
                 withCredentials: true,
             };
             const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/conversations`, { userId }, config);
-            if (!chats.find((c: any) => c._id === data._id)) setChats([data, ...chats]);
+            if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
             setSelectedChat(data);
             setSearchResults([]);
             setSearch('');
-        } catch (error: any) {
+        } catch (error) {
             toast.error(error.message);
         }
     };
 
-    const getOtherUser = (users: any[]) => {
+    const getOtherUser = (users) => {
         return users[0]._id === user._id ? users[1] : users[0];
     };
 
@@ -121,8 +121,8 @@ const LeftSidebar = () => {
                     </div>
                 ) : searchResults.length > 0 ? (
                     <div>
-                        {searchResults.map((searchUser: any) => (
-                            <div
+                        {searchResults.map((searchUser) => (
+                          <div
                                 key={searchUser._id}
                                 onClick={() => accessChat(searchUser._id)}
                                 className="flex items-center p-3 hover:bg-[var(--color-bg-dark-hover)] cursor-pointer"
@@ -138,7 +138,7 @@ const LeftSidebar = () => {
                     </div>
                 ) : (
                     <div>
-                        {chats.map((chat: any) => {
+                        {chats.map((chat) => {
                             const otherUser = !chat.isGroup ? getOtherUser(chat.participants) : null;
                             const chatName = chat.isGroup ? chat.groupName : otherUser?.username;
                             const chatPic = chat.isGroup ? chat.groupAvatar : otherUser?.profilePic;
@@ -169,9 +169,9 @@ const LeftSidebar = () => {
             <div className="p-4 border-t border-[var(--color-border-dark)] flex items-center justify-between">
                 <div onClick={openDrawer} className="flex items-center cursor-pointer hover:opacity-90 transition">
                     <div className="w-10 h-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
-                        {user.profilePic ? <img src={user.profilePic} alt="" className="w-full h-full object-cover"/> : user.username[0]}
+                        {user?.profilePic ? <img src={user.profilePic} alt="" className="w-full h-full object-cover"/> : (user?.username?.[0] || '?')}
                     </div>
-                    <span className="ml-3 text-white font-medium">{user.username}</span>
+                    <span className="ml-3 text-white font-medium">{user?.username || ''}</span>
                 </div>
             </div>
         </div>

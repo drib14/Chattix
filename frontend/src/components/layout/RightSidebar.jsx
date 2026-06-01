@@ -35,7 +35,7 @@ const RightSidebar = () => {
         return (
             <div className="w-1/4 h-full hidden lg:flex flex-col bg-[var(--color-bg-dark)] items-center justify-between p-6">
                 <div className="w-full"></div>
-                 <button onClick={handleLogout} className="flex items-center space-x-2 text-red-500 hover:text-red-400 p-2 rounded-lg hover:bg-[var(--color-bg-dark-hover)] w-full justify-center transition">
+                 <button onClick={handleLogout} className="flex items-center space-x-2 text-red-500 hover:text-red-400 p-2 rounded-lg hover:bg-[var(--color-bg-dark-hover)] w-full justify-center transition cursor-pointer">
                     <LogOut size={20} />
                     <span>Log Out</span>
                 </button>
@@ -43,7 +43,7 @@ const RightSidebar = () => {
         );
     }
 
-    const getOtherUser = (users: any[]) => {
+    const getOtherUser = (users) => {
         return users[0]._id === user._id ? users[1] : users[0];
     };
 
@@ -88,7 +88,7 @@ const RightSidebar = () => {
             </div>
 
             <div className="p-4 border-t border-[var(--color-border-dark)]">
-                 <button onClick={handleLogout} className="flex items-center space-x-2 text-red-500 hover:text-red-400 p-2 rounded-lg hover:bg-[var(--color-bg-dark-hover)] w-full justify-center transition">
+                 <button onClick={handleLogout} className="flex items-center space-x-2 text-red-500 hover:text-red-400 p-2 rounded-lg hover:bg-[var(--color-bg-dark-hover)] w-full justify-center transition cursor-pointer">
                     <LogOut size={20} />
                     <span>Log Out</span>
                 </button>

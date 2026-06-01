@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 
-interface AuthState {
-  user: any;
-  isAuthenticated: boolean;
-  login: (userData: any) => void;
-  logout: () => void;
-}
-
-const useAuthStore = create<AuthState>((set) => {
+const useAuthStore = create((set) => {
   const storedUser = localStorage.getItem('user');
   const initialUser = storedUser ? JSON.parse(storedUser) : null;
 

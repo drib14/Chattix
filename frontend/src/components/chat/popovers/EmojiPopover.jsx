@@ -1,13 +1,7 @@
-import React from 'react';
 import { Popover } from '@headlessui/react';
 import Picker, { Theme } from 'emoji-picker-react';
 
-interface EmojiPopoverProps {
-    onEmojiSelect: (emoji: string) => void;
-    children: React.ReactNode;
-}
-
-const EmojiPopover: React.FC<EmojiPopoverProps> = ({ onEmojiSelect, children }) => {
+const EmojiPopover = ({ onEmojiSelect, children }) => {
     return (
         <Popover className="relative">
             <Popover.Button as="div" className="cursor-pointer focus:outline-none">
