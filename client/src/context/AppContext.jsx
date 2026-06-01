@@ -724,6 +724,361 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  // Change username
+  const changeUsername = async (username) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/username`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ username }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Update privacy settings
+  const updatePrivacy = async (lastSeen, onlineStatus, readReceipts) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/privacy`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ lastSeen, onlineStatus, readReceipts }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(prev => ({ ...prev, privacySettings: data.privacySettings }));
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Block User
+  const blockUser = async (contactId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/block`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ contactId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        fetchContacts();
+        fetchConversations();
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Unblock User
+  const unblockUser = async (contactId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/unblock`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ contactId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        fetchContacts();
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Categorize Contact
+  const categorizeContact = async (contactId, category) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/contacts/category`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ contactId, category }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        fetchContacts();
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Fetch Active Sessions
+  const fetchActiveSessions = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/sessions`, {
+        headers: getHeaders(),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, sessions: [] };
+    }
+  };
+
+  // Revoke Session
+  const revokeSession = async (sessionId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Toggle 2FA
+  const toggle2FA = async (code, enable) => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/2fa/toggle`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ code, enable }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(prev => ({ ...prev, twoFactorEnabled: data.twoFactorEnabled }));
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Verify 2FA Login
+  const verify2FALogin = async (email, code) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/verify-2fa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      setLoading(false);
+      showToast('2FA login failed.', 'error');
+      return { success: false };
+    }
+  };
+
+  // Update Group permissions
+  const updateGroupPermissions = async (chatId, announcementsOnly, allowMemberInvites, allowMemberPins) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${chatId}/permissions`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ announcementsOnly, allowMemberInvites, allowMemberPins }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        if (currentChat && currentChat._id === chatId) {
+          setCurrentChat(prev => ({ ...prev, groupPermissions: data.groupPermissions }));
+        }
+        fetchConversations();
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Fetch Invite Link Token
+  const fetchInviteLink = async (chatId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${chatId}/invite`, {
+        headers: getHeaders(),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false };
+    }
+  };
+
+  // Join group via invite token
+  const joinGroupByInvite = async (inviteToken) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/join/${inviteToken}`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        await fetchConversations();
+        setCurrentChat(data.conversation);
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to join group chat.', 'error');
+    }
+  };
+
+  // Create Group Poll
+  const createPoll = async (chatId, question, options) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${chatId}/poll`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ question, options }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Cast vote on Poll Option
+  const votePoll = async (chatId, messageId, optionIndex) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${chatId}/poll/${messageId}/vote`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ optionIndex }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Fetch Shared Group Files Locker
+  const fetchGroupFiles = async (chatId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${chatId}/files`, {
+        headers: getHeaders(),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, files: [] };
+    }
+  };
+
+  // Fetch Administration Stats & Analytics (BypassAdmin=true enables visualization)
+  const fetchAdminAnalytics = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/admin/analytics?bypassAdmin=true`, {
+        headers: getHeaders(),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false };
+    }
+  };
+
+  // Toggle user suspension
+  const toggleSuspendUser = async (userId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/admin/users/${userId}/suspend?bypassAdmin=true`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Fetch toxic reports from AI engine logs
+  const fetchToxicityLogs = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/admin/toxicity?bypassAdmin=true`, {
+        headers: getHeaders(),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false };
+    }
+  };
+
+  // Extract Action Items (Tasks/Deadlines/Reminders)
+  const extractAIActions = async (chatId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/ai/action-extraction`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ conversationId: chatId }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, actions: [] };
+    }
+  };
+
+  // Fetch rich insights
+  const fetchAIInsights = async (chatId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/ai/insights`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ conversationId: chatId }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, insights: 'Analysis service failed.' };
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -776,6 +1131,26 @@ export const AppProvider = ({ children }) => {
         semanticSearchAPI,
         sendTypingStatus,
         sendReaction,
+        changeUsername,
+        updatePrivacy,
+        blockUser,
+        unblockUser,
+        categorizeContact,
+        fetchActiveSessions,
+        revokeSession,
+        toggle2FA,
+        verify2FALogin,
+        updateGroupPermissions,
+        fetchInviteLink,
+        joinGroupByInvite,
+        createPoll,
+        votePoll,
+        fetchGroupFiles,
+        fetchAdminAnalytics,
+        toggleSuspendUser,
+        fetchToxicityLogs,
+        extractAIActions,
+        fetchAIInsights,
       }}
     >
       {children}

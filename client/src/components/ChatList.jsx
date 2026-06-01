@@ -4,6 +4,7 @@ import Logo from './Logo';
 import { ContactListSkeleton } from './SkeletonLoader';
 import { MessageSquare, Users, UserPlus, LogOut, Search, Star, Check, X, Plus, Sparkles } from 'lucide-react';
 import { useEffect } from 'react';
+import ControlCenter from './ControlCenter';
 
 export default function ChatList({ className = '', showAISidebar, setShowAISidebar }) {
   const {
@@ -31,7 +32,7 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modals visibility
-  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showControlCenter, setShowControlCenter] = useState(false);
   const [showAddContactModal, setShowAddContactModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   
@@ -143,7 +144,7 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
       <div className="sidebar-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Logo size={32} />
-          <div className="user-profile-widget" onClick={() => setShowProfileModal(true)}>
+          <div className="user-profile-widget" onClick={() => setShowControlCenter(true)}>
             <div className="avatar-wrapper" style={{ width: '36px', height: '36px' }}>
               {user.profilePhoto ? (
                 <img className="avatar" src={user.profilePhoto} alt={user.username} />
@@ -339,7 +340,14 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
                       </div>
                       <div className="list-item-content">
                         <div className="list-item-header">
-                          <div className="list-item-name">{contact.username}</div>
+                          <div className="list-item-name" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {contact.username}
+                            {user?.contactCategories?.[contact._id] && (
+                              <span style={{ fontSize: '9px', fontWeight: 'bold', background: 'rgba(6,182,212,0.15)', color: 'var(--accent-cyan)', padding: '1px 5px', borderRadius: '4px' }}>
+                                {user.contactCategories[contact._id]}
+                              </span>
+                            )}
+                          </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <button
                               className="icon-btn"
@@ -376,46 +384,8 @@ export default function ChatList({ className = '', showAISidebar, setShowAISideb
       </div>
 
       {/* PROFILE CONFIG MODAL */}
-      {showProfileModal && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-panel">
-            <div className="modal-header">
-              <h2 className="modal-title">Edit Profile Config</h2>
-              <button className="icon-btn" onClick={() => setShowProfileModal(false)}><X size={18} /></button>
-            </div>
-            <form onSubmit={handleUpdateProfile}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>Status message</label>
-                  <input
-                    className="glass-input"
-                    type="text"
-                    placeholder="Hey there! I am using Chattix."
-                    value={statusText}
-                    onChange={(e) => setStatusText(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Profile photo URL</label>
-                  <input
-                    className="glass-input"
-                    type="text"
-                    placeholder="https://example.com/photo.jpg"
-                    value={profilePhoto}
-                    onChange={(e) => setProfilePhoto(e.target.value)}
-                  />
-                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    Tip: You can use Cloudinary links or direct image URLs.
-                  </p>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn-secondary" type="button" onClick={() => setShowProfileModal(false)}>Cancel</button>
-                <button className="btn-primary" type="submit">Save Changes</button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {showControlCenter && (
+        <ControlCenter onClose={() => setShowControlCenter(false)} />
       )}
 
       {/* ADD CONTACT SEARCH MODAL */}

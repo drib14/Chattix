@@ -7,7 +7,7 @@ dotenv.config();
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
 
 /**
  * Utility to clean markdown JSON wrappers from Gemini responses
@@ -324,5 +324,162 @@ Return a JSON array containing the IDs of the matching messages, ordered from mo
   } catch (error) {
     console.error('[AI Semantic Search Error]:', error);
     res.status(500).json({ success: false, message: 'AI semantic search failed.' });
+  }
+};
+
+// @desc    Extract tasks, deadlines, and reminders from chat log
+// @route   POST /api/ai/action-extraction
+// @access  Private
+export const extractActions = async (req, res) => {
+  const { conversationId } = req.body;
+
+  try {
+    if (!conversationId) {
+      return res.status(400).json({ success: false, message: 'Conversation ID is required' });
+    }
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: req.user._id,
+    });
+    if (!conversation) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Get last 30 messages
+    const messages = await Message.find({ conversationId, isDeleted: false })
+      .populate('sender', 'username')
+      .sort({ createdAt: -1 })
+      .limit(30);
+
+    if (messages.length === 0) {
+      return res.status(200).json({ success: true, actions: [] });
+    }
+
+    const transcript = messages
+      .reverse()
+      .map((msg) => `${msg.sender.username}: ${msg.content}`)
+      .join('\n');
+
+    const prompt = `
+You are an expert action extraction assistant. Scan the following conversation transcript and identify any explicit tasks, deadlines, reminders, or appointments.
+Output format MUST be a plain JSON array of objects. Do not include markdown code fences (like \`\`\`json), just the plain array. If nothing is found, return [].
+Each object in the array MUST have the exact following fields:
+- "type": (either "Task", "Deadline", "Appointment", or "Reminder")
+- "content": (a short description of the action/task)
+- "assignee": (the username mentioned, or "Everyone" if general)
+- "dueDate": (the mentioned date/time, e.g. "Friday at 2 PM", or "N/A" if none)
+
+Chat transcript to analyze:
+"""
+${transcript}
+"""
+`;
+
+    const result = await model.generateContent(prompt);
+    const text = cleanJSONString(result.response.text());
+
+    let actions = [];
+    try {
+      actions = JSON.parse(text);
+    } catch (e) {
+      console.warn('[AI Action Extraction JSON Parse Failed]:', text);
+      // Fallback
+      actions = [];
+    }
+
+    res.status(200).json({ success: true, actions });
+  } catch (error) {
+    console.error('[AI Action Extraction Error]:', error);
+    res.status(500).json({ success: false, message: 'AI failed to extract actions.' });
+  }
+};
+
+// @desc    Classify a single message automatically
+// @route   POST /api/ai/classify
+// @access  Private
+export const classifyMessage = async (req, res) => {
+  const { content } = req.body;
+
+  try {
+    if (!content) {
+      return res.status(400).json({ success: false, message: 'Message content is required' });
+    }
+
+    const prompt = `
+Analyze the following message and classify it into one of these categories: "Urgent", "Important", "Announcement", "Task", "Question", or "Normal".
+- Output ONLY the single category name, nothing else. No punctuation, no wrapping, no explanations.
+
+Message:
+"${content}"
+`;
+
+    const result = await model.generateContent(prompt);
+    const classification = result.response.text().trim().replace(/['"]/g, '');
+
+    res.status(200).json({ success: true, classification });
+  } catch (error) {
+    console.error('[AI Classification Error]:', error);
+    res.status(500).json({ success: false, message: 'AI failed to classify message.' });
+  }
+};
+
+// @desc    Generate rich conversation insights and trends
+// @route   POST /api/ai/insights
+// @access  Private
+export const getConversationInsights = async (req, res) => {
+  const { conversationId } = req.body;
+
+  try {
+    if (!conversationId) {
+      return res.status(400).json({ success: false, message: 'Conversation ID is required' });
+    }
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: req.user._id,
+    });
+    if (!conversation) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Get last 50 messages
+    const messages = await Message.find({ conversationId, isDeleted: false })
+      .populate('sender', 'username')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    if (messages.length === 0) {
+      return res.status(200).json({
+        success: true,
+        insights: 'Send messages first to generate communication insights.',
+      });
+    }
+
+    const transcript = messages
+      .reverse()
+      .map((msg) => `${msg.sender.username}: ${msg.content}`)
+      .join('\n');
+
+    const prompt = `
+You are a team manager's AI insights analyst. Review the following conversation transcript and compile a high-end visual communication insight report in markdown format.
+Please provide:
+1. **Core Topics**: List 3 main topics discussed (with dynamic engagement tags like 🔥 Active or 📦 Complete).
+2. **Engagement & Activity**: Summarize who is most active or driving the discussion.
+3. **Communication Trends**: A brief, encouraging 2-sentence summary of the team's dynamics.
+
+Chat log:
+"""
+${transcript}
+"""
+`;
+
+    const result = await model.generateContent(prompt);
+    const insights = result.response.text().trim();
+
+    res.status(200).json({ success: true, insights });
+  } catch (error) {
+    console.error('[AI Insights Error]:', error);
+    res.status(500).json({ success: false, message: 'AI failed to analyze conversation insights.' });
   }
 };

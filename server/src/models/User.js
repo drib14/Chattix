@@ -81,6 +81,40 @@ const userSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      default: '',
+    },
+    sessions: [
+      {
+        sessionId: { type: String, required: true },
+        deviceName: { type: String, default: 'Unknown Device' },
+        ipAddress: { type: String, default: '0.0.0.0' },
+        lastActive: { type: Date, default: Date.now },
+      },
+    ],
+    privacySettings: {
+      lastSeen: { type: String, default: 'Everyone' }, // Everyone, Contacts, Nobody
+      onlineStatus: { type: String, default: 'Everyone' }, // Everyone, Nobody
+      readReceipts: { type: Boolean, default: true },
+    },
+    contactCategories: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    isSuspended: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

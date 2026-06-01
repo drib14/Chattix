@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function MessageBubble({ message, onReply }) {
-  const { user, deleteMessage, togglePin, translateMessageAPI, sendReaction, showToast, onlineUsers } = useApp();
+  const { user, deleteMessage, togglePin, translateMessageAPI, sendReaction, showToast, onlineUsers, votePoll, currentChat } = useApp();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -229,6 +229,63 @@ export default function MessageBubble({ message, onReply }) {
       <div className={`message-bubble ${translating ? 'ai-highlight' : ''}`}>
         {/* Render media if any */}
         {renderAttachment()}
+
+        {/* Render group poll if type is poll */}
+        {message.messageType === 'poll' && message.pollDetails && (
+          <div style={{ padding: '4px 2px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '220px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '10px', background: 'rgba(168,85,247,0.15)', color: 'var(--accent-purple)', fontWeight: 'bold', textTransform: 'uppercase', padding: '2px 6px', borderRadius: '4px' }}>📊 Group Poll</span>
+            </div>
+            <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: 'white', margin: '2px 0 4px 0' }}>{message.pollDetails.question}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {message.pollDetails.options.map((opt, idx) => {
+                const totalVotes = message.pollDetails.options.reduce((sum, o) => sum + (o.votes?.length || 0), 0);
+                const hasVoted = opt.votes?.some(vId => vId.toString() === user.id);
+                const votesCount = opt.votes?.length || 0;
+                const percentage = totalVotes > 0 ? Math.round((votesCount / totalVotes) * 100) : 0;
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (message.isDeleted) return;
+                      votePoll(currentChat._id, message._id, idx);
+                    }}
+                    style={{
+                      position: 'relative',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: hasVoted ? '1px solid rgba(168,85,247,0.4)' : '1px solid var(--glass-border)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      overflow: 'hidden',
+                      transition: 'all 0.15s ease-out',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        height: '100%',
+                        width: `${percentage}%`,
+                        background: hasVoted ? 'rgba(168,85,247,0.15)' : 'rgba(255,255,255,0.03)',
+                        zIndex: 0,
+                        transition: 'width 0.3s ease-out'
+                      }}
+                    ></div>
+                    <span style={{ zIndex: 1, fontSize: '12px', fontWeight: hasVoted ? '600' : 'normal' }}>{opt.optionText}</span>
+                    <span style={{ zIndex: 1, fontSize: '10.5px', color: 'var(--text-muted)' }}>{votesCount} votes ({percentage}%)</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Text message */}
         {message.content && !message.isDeleted && (

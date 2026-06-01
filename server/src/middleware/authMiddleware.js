@@ -21,6 +21,10 @@ export const protect = async (req, res, next) => {
         return res.status(401).json({ success: false, message: 'Not authorized, user not found' });
       }
 
+      if (req.user.isSuspended) {
+        return res.status(403).json({ success: false, message: 'Your account has been suspended by an administrator.' });
+      }
+
       next();
     } catch (error) {
       console.error('[AuthMiddleware] Error:', error.message);

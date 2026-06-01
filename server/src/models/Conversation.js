@@ -37,6 +37,15 @@ const conversationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Message',
     },
+    groupPermissions: {
+      announcementsOnly: { type: Boolean, default: false },
+      allowMemberInvites: { type: Boolean, default: true },
+      allowMemberPins: { type: Boolean, default: true },
+    },
+    inviteToken: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

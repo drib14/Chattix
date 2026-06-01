@@ -20,7 +20,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'image', 'video', 'file', 'voice'],
+      enum: ['text', 'image', 'video', 'file', 'voice', 'poll'],
       default: 'text',
     },
     fileUrl: {
@@ -60,6 +60,15 @@ const messageSchema = new mongoose.Schema(
         ref: 'User', // Users who have read the message
       },
     ],
+    pollDetails: {
+      question: { type: String, default: '' },
+      options: [
+        {
+          optionText: { type: String, required: true },
+          votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        },
+      ],
+    },
   },
   { timestamps: true }
 );
