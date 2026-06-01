@@ -27,8 +27,8 @@ const SplashScreen = () => {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="text-center"
                     >
-                        <div className="w-24 h-24 mx-auto bg-gradient-to-tr from-[var(--color-primary)] to-[var(--color-secondary)] rounded-3xl shadow-[0_0_40px_rgba(170,59,255,0.4)] flex items-center justify-center mb-6">
-                            <span className="text-white font-bold text-4xl">C</span>
+                        <div className="w-24 h-24 mx-auto bg-gradient-to-tr from-[var(--color-primary)] to-[var(--color-secondary)] rounded-3xl shadow-[0_0_40px_rgba(170,59,255,0.4)] flex items-center justify-center mb-6 overflow-hidden border border-white/10">
+                            <img src="/mascot.png" alt="Chattix Chippy Mascot" className="w-full h-full object-cover scale-110" />
                         </div>
                         <h1 className="text-4xl font-extrabold text-white tracking-tight">Chattix</h1>
                         <p className="text-[var(--color-text-dark-secondary)] mt-2">Connecting you securely</p>

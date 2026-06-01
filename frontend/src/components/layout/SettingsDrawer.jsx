@@ -279,6 +279,16 @@ const SettingsDrawer = () => {
             <div className="flex-1 overflow-y-auto p-5">
               {activeTab === 'profile' && (
                 <form onSubmit={handleUpdateProfile} className="space-y-5">
+                  {/* Chippy Active Card */}
+                  <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-3xl mb-4 flex items-center space-x-3.5 shadow-sm">
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden flex-shrink-0 bg-neutral-950 border border-neutral-800 p-0.5 flex items-center justify-center">
+                          <img src="/mascot.png" alt="Chippy" className="w-full h-full object-cover scale-110" />
+                      </div>
+                      <div>
+                          <div className="text-[10px] font-extrabold text-[var(--color-primary)] uppercase tracking-wider">Chattix Security Mascot</div>
+                          <div className="text-sm font-bold text-white">Chippy is active</div>
+                      </div>
+                  </div>
                   <div className="flex flex-col items-center py-4 space-y-3">
                     <div className="w-24 h-24 rounded-full border-2 border-[var(--color-primary)] flex items-center justify-center bg-neutral-800 text-3xl font-bold overflow-hidden shadow-lg shadow-[var(--color-primary)]/10">
                       {profilePic ? (

@@ -112,8 +112,11 @@ const LoginPage = () => {
             <div className="w-full max-w-md p-8 space-y-8 bg-[var(--color-bg-dark-secondary)] rounded-xl shadow-lg border border-[var(--color-border-dark)]">
                 {view === 'login' && (
                     <>
-                        <div className="text-center">
-                            <h2 className="mt-6 text-3xl font-extrabold text-white">Chattix</h2>
+                        <div className="text-center flex flex-col items-center">
+                            <div className="w-20 h-20 rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(170,59,255,0.25)] mb-3 bg-neutral-900/50 p-1 flex items-center justify-center">
+                                <img src="/mascot.png" alt="Chattix Mascot" className="w-full h-full object-cover scale-110" />
+                            </div>
+                            <h2 className="text-3xl font-extrabold text-white">Chattix</h2>
                             <p className="mt-2 text-sm text-[var(--color-text-dark-secondary)]">Sign in to your account</p>
                         </div>
                         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
