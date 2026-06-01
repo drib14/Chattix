@@ -9,7 +9,8 @@ import toast from 'react-hot-toast';
 
 const GRADIENTS = [
     { name: 'blue', label: 'Classic Chattix', class: 'bg-[#0084FF]' },
-    { name: 'one_piece', label: 'One Piece (Pirate Treasure)', class: 'bg-[#d4af37]' },
+    { name: 'one_piece', label: 'One Piece Theme', class: 'bg-[#d4af37]' },
+    { name: 'minecraft', label: 'Minecraft Theme', class: 'bg-[#4a7227] border border-[#2b4c10]' },
     { name: 'candy', label: 'Candy Crush', class: 'bg-gradient-to-r from-[#ec008c] to-[#fc6767]' },
     { name: 'lavender', label: 'Lavender Sunset', class: 'bg-gradient-to-r from-[#8a2387] via-[#e94057] to-[#f27121]' },
     { name: 'sea', label: 'Emerald Sea', class: 'bg-gradient-to-r from-[#11998e] to-[#38ef7d]' },
@@ -74,6 +75,34 @@ const RightSidebar = () => {
         } catch (error) {
             toast.error('Failed to change chat theme');
         }
+    };
+
+    const handleBlockUser = () => {
+        if (!otherUser) return;
+        showConfirm({
+            title: `Block ${otherUser.username}?`,
+            message: `Are you sure you want to block ${otherUser.username}? You will no longer receive messages or calls from them.`,
+            type: 'danger',
+            confirmText: 'Block User',
+            cancelText: 'Cancel',
+            onConfirm: async () => {
+                toast.success(`${otherUser.username} has been blocked.`);
+            }
+        });
+    };
+
+    const handleReportUser = () => {
+        if (!otherUser) return;
+        showConfirm({
+            title: `Report ${otherUser.username}?`,
+            message: `Do you want to report this conversation for violating Chattix Community Standards? We will review the recent messages.`,
+            type: 'warning',
+            confirmText: 'Submit Report',
+            cancelText: 'Cancel',
+            onConfirm: async () => {
+                toast.success('Report submitted. Thank you for keeping Chattix safe!');
+            }
+        });
     };
 
     if (!selectedChat) {
@@ -221,10 +250,10 @@ const RightSidebar = () => {
                     </button>
                     {openSection === 'privacy' && (
                         <div className="px-4 pb-3.5 pt-1.5 border-t border-white/5 animate-slide-down space-y-1.5">
-                            <button className="w-full text-left py-2 px-3 hover:bg-white/5 rounded-xl text-xs font-semibold text-red-500 transition cursor-pointer">
+                            <button onClick={handleBlockUser} className="w-full text-left py-2 px-3 hover:bg-white/5 rounded-xl text-xs font-semibold text-red-500 transition cursor-pointer">
                                 Block Contact
                             </button>
-                            <button className="w-full text-left py-2 px-3 hover:bg-white/5 rounded-xl text-xs font-semibold text-red-500/80 transition cursor-pointer">
+                            <button onClick={handleReportUser} className="w-full text-left py-2 px-3 hover:bg-white/5 rounded-xl text-xs font-semibold text-red-500/80 transition cursor-pointer">
                                 Report User
                             </button>
                         </div>

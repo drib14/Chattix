@@ -117,38 +117,78 @@ const stopRingingSynth = () => {
 
 const CONVERSATION_THEMES = {
     default: {
-        bgStyle: { backgroundColor: '#0e0f14', backgroundImage: 'radial-gradient(at top, #14151f 0%, #0e0f14 100%)' },
-        bubbleStyle: 'bg-[#0084FF] text-white',
+        bgStyle: { background: 'var(--chat-bg-gradient)' },
+        bubbleStyle: 'rounded-[20px] rounded-br-sm bg-[#0084FF] text-white',
+        incomingBubbleStyle: 'rounded-[20px] rounded-bl-sm bg-neutral-800 text-white border border-white/5',
         textStyle: 'text-[#0084FF]',
+        fontClass: 'font-sans font-medium',
+        quickAction: '👍',
+        name: 'default'
     },
     blue: {
-        bgStyle: { backgroundColor: '#0e0f14', backgroundImage: 'radial-gradient(at top, #14151f 0%, #0e0f14 100%)' },
-        bubbleStyle: 'bg-[#0084FF] text-white',
+        bgStyle: { background: 'var(--chat-bg-gradient)' },
+        bubbleStyle: 'rounded-[20px] rounded-br-sm bg-[#0084FF] text-white',
+        incomingBubbleStyle: 'rounded-[20px] rounded-bl-sm bg-neutral-800 text-white border border-white/5',
         textStyle: 'text-[#0084FF]',
+        fontClass: 'font-sans font-medium',
+        quickAction: '👍',
+        name: 'blue'
     },
     one_piece: {
         bgStyle: { 
-            backgroundColor: '#070b19', 
-            backgroundImage: 'radial-gradient(at top, #0f172a 0%, #070b19 100%)',
+            backgroundColor: '#050a14', 
+            backgroundImage: 'radial-gradient(at top, #112240 0%, #020c1b 100%)',
         },
-        bubbleStyle: 'bg-gradient-to-r from-[#d4af37] via-[#a67c1e] to-[#8c620d] text-neutral-950 font-bold border border-[#d4af37]/35 shadow-[0_0_12px_rgba(212,175,55,0.25)]',
-        textStyle: 'text-[#d4af37]',
-        watermark: true
+        bubbleStyle: 'rounded-[24px] rounded-br-[4px] bg-gradient-to-br from-[#f39c12] via-[#e67e22] to-[#d35400] text-white font-bold border border-[#f39c12]/50 shadow-[0_4px_15px_rgba(243,156,18,0.3)]',
+        incomingBubbleStyle: 'rounded-[24px] rounded-bl-[4px] bg-[#1a2238] text-[#ecd8c6] border border-[#d4af37]/35 shadow-[0_2px_8px_rgba(212,175,55,0.15)]',
+        textStyle: 'text-[#f39c12]',
+        fontClass: 'font-serif tracking-wide',
+        watermark: 'one_piece',
+        quickAction: '🏴‍☠️',
+        avatarClass: 'ring-2 ring-[#d4af37] ring-offset-2 ring-offset-[#020c1b]',
+        name: 'one_piece'
+    },
+    minecraft: {
+        bgStyle: { 
+            backgroundColor: '#1b1b1b',
+            backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+        },
+        bubbleStyle: 'rounded-none bg-[#4a7227] text-white border-2 border-t-[#85af5c] border-l-[#85af5c] border-b-[#2c4516] border-r-[#2c4516] shadow-[inset_1px_1px_0px_#85af5c,inset_-1px_-1px_0px_#2c4516] tracking-wider text-xs',
+        incomingBubbleStyle: 'rounded-none bg-[#313233] text-[#dedede] border-2 border-t-[#555] border-l-[#555] border-b-[#111] border-r-[#111] shadow-[inset_1px_1px_0px_#555,inset_-1px_-1px_0px_#111] tracking-wider text-xs',
+        textStyle: 'text-[#85af5c]',
+        fontClass: 'font-mono uppercase text-[#dedede]',
+        quickAction: '⛏️',
+        watermark: 'minecraft',
+        avatarClass: 'rounded-none border-2 border-[#555] scale-95',
+        name: 'minecraft'
     },
     candy: {
         bgStyle: { backgroundColor: '#180a13', backgroundImage: 'linear-gradient(135deg, #2b0e22 0%, #180a13 100%)' },
-        bubbleStyle: 'bg-gradient-to-r from-[#ec008c] to-[#fc6767] text-white font-bold',
+        bubbleStyle: 'rounded-[20px] rounded-br-sm bg-gradient-to-r from-[#ec008c] to-[#fc6767] text-white font-bold',
+        incomingBubbleStyle: 'rounded-[20px] rounded-bl-sm bg-neutral-800 text-white border border-white/5',
         textStyle: 'text-pink-400',
+        fontClass: 'font-sans font-medium',
+        quickAction: '🍬',
+        name: 'candy'
     },
     lavender: {
         bgStyle: { backgroundColor: '#0f0a1d', backgroundImage: 'linear-gradient(135deg, #1f1235 0%, #0f0a1d 100%)' },
-        bubbleStyle: 'bg-gradient-to-r from-[#8a2387] via-[#e94057] to-[#f27121] text-white font-bold',
+        bubbleStyle: 'rounded-[20px] rounded-br-sm bg-gradient-to-r from-[#8a2387] via-[#e94057] to-[#f27121] text-white font-bold',
+        incomingBubbleStyle: 'rounded-[20px] rounded-bl-sm bg-neutral-800 text-white border border-white/5',
         textStyle: 'text-purple-400',
+        fontClass: 'font-sans font-medium',
+        quickAction: '💜',
+        name: 'lavender'
     },
     sea: {
         bgStyle: { backgroundColor: '#051111', backgroundImage: 'linear-gradient(135deg, #0a2020 0%, #051111 100%)' },
-        bubbleStyle: 'bg-gradient-to-r from-[#11998e] to-[#38ef7d] text-black font-bold',
+        bubbleStyle: 'rounded-[20px] rounded-br-sm bg-gradient-to-r from-[#11998e] to-[#38ef7d] text-neutral-950 font-bold',
+        incomingBubbleStyle: 'rounded-[20px] rounded-bl-sm bg-neutral-800 text-white border border-white/5',
         textStyle: 'text-teal-400',
+        fontClass: 'font-sans font-medium',
+        quickAction: '🌊',
+        name: 'sea'
     },
 };
 
@@ -323,9 +363,9 @@ const MainChat = () => {
         }
     };
 
-    // Thumbs up quick trigger
+    // Thumbs up / quick action trigger
     const sendThumbsUp = async () => {
-        await sendDataMessage({ content: '👍' });
+        await sendDataMessage({ content: themeSettings.quickAction || '👍' });
     };
 
     // Calling triggers
@@ -437,6 +477,15 @@ const MainChat = () => {
                         </svg>
                     </div>
                 )}
+                {themeSettings.watermark && activeTheme === 'minecraft' && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.02] select-none z-0">
+                        <svg viewBox="0 0 100 100" className="w-80 h-80 fill-white">
+                            <path d="M 10 90 L 10 70 L 50 30 L 70 50 Z" />
+                            <path d="M 60 40 L 70 20 L 90 10 L 80 30 L 60 40 Z" />
+                            <path d="M 70 20 L 80 20 L 80 10 L 70 10 Z" />
+                        </svg>
+                    </div>
+                )}
                 {loadingMessages ? (
                     <div>
                         <MessageSkeleton />
@@ -452,17 +501,17 @@ const MainChat = () => {
                     return (
                         <div key={m._id} className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'} items-end group`}>
                             {!isMyMessage && (
-                                <div className="w-7 h-7 rounded-full bg-neutral-800 mr-2 flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 text-[10px] font-bold text-white mb-0.5">
+                                <div className={`w-7 h-7 bg-neutral-800 mr-2 flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 text-[10px] font-bold text-white mb-0.5 ${themeSettings.avatarClass || 'rounded-full'}`}>
                                     {senderPic ? <img src={senderPic} alt="" className="w-full h-full object-cover" /> : senderInitial}
                                 </div>
                             )}
                             <div className="flex flex-col max-w-[70%]">
-                                <div className={`rounded-[20px] px-3.5 py-2.5 text-sm ${
+                                <div className={`px-3.5 py-2.5 text-sm ${
                                     isMyMessage 
                                         ? `${bubbleStyle} rounded-br-sm shadow-md` 
-                                        : 'bg-neutral-800 text-white rounded-bl-sm border border-white/5'
+                                        : `${themeSettings.incomingBubbleStyle || 'bg-neutral-800 text-white rounded-bl-sm border border-white/5'}`
                                 } ${m.isAiGenerated ? 'border-2 border-fuchsia-500 shadow-lg shadow-fuchsia-500/10' : ''}`}>
-                                    {m.text && <p className="leading-relaxed break-words font-sans font-medium">{m.text}</p>}
+                                    {m.text && <p className={`leading-relaxed break-words ${themeSettings.fontClass || 'font-sans font-medium'}`}>{m.text}</p>}
                                     {m.image && <img src={m.image} alt="attachment" className="rounded-2xl mt-1.5 max-w-full max-h-60 object-cover shadow border border-white/5" />}
                                     {m.gifUrl && <img src={m.gifUrl} alt="gif" className="rounded-2xl mt-1.5 max-w-full max-h-60 object-cover shadow border border-white/5" />}
                                     
@@ -508,13 +557,13 @@ const MainChat = () => {
                 {/* Jumping Typing indicator bubble */}
                 {otherUserTyping && (
                     <div className="flex justify-start items-end">
-                        <div className="w-7 h-7 rounded-full bg-neutral-800 mr-2 flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 text-[10px] font-bold text-white mb-0.5">
+                        <div className={`w-7 h-7 bg-neutral-800 mr-2 flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 text-[10px] font-bold text-white mb-0.5 ${themeSettings.avatarClass || 'rounded-full'}`}>
                             {chatPic ? <img src={chatPic} alt="" className="w-full h-full object-cover" /> : chatName?.[0]?.toUpperCase()}
                         </div>
-                        <div className="bg-neutral-800 text-neutral-400 rounded-[20px] rounded-bl-sm px-4 py-3.5 flex items-center space-x-1 border border-white/5">
-                            <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                            <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                            <span className="w-2 h-2 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                        <div className={`${activeTheme === 'minecraft' ? 'rounded-none bg-[#313233] border-2 border-t-[#555] border-l-[#555] border-b-[#111] border-r-[#111]' : 'bg-neutral-800 rounded-[20px] rounded-bl-sm'} text-neutral-400 px-4 py-3.5 flex items-center space-x-1 border border-white/5`}>
+                            <span className={`${activeTheme === 'minecraft' ? 'w-2.5 h-2.5 bg-[#85af5c] rounded-none' : 'w-2 h-2 bg-neutral-500 rounded-full'} animate-bounce`} style={{ animationDelay: '0ms' }}></span>
+                            <span className={`${activeTheme === 'minecraft' ? 'w-2.5 h-2.5 bg-[#85af5c] rounded-none' : 'w-2 h-2 bg-neutral-500 rounded-full'} animate-bounce`} style={{ animationDelay: '150ms' }}></span>
+                            <span className={`${activeTheme === 'minecraft' ? 'w-2.5 h-2.5 bg-[#85af5c] rounded-none' : 'w-2 h-2 bg-neutral-500 rounded-full'} animate-bounce`} style={{ animationDelay: '300ms' }}></span>
                         </div>
                     </div>
                 )}
@@ -565,8 +614,12 @@ const MainChat = () => {
                         
                         {/* Swapping Thumbs-Up / Send button based on text entry */}
                         {newMessage.trim() === '' ? (
-                            <button onClick={sendThumbsUp} className="p-2 text-[#0099ff] hover:bg-white/5 rounded-full transition active:scale-90 cursor-pointer">
-                                <ThumbsUp size={18} className="fill-[#0099ff] stroke-none" />
+                            <button onClick={sendThumbsUp} className="p-2 text-xl hover:bg-white/5 rounded-full transition active:scale-90 cursor-pointer flex items-center justify-center w-9 h-9 select-none">
+                                {themeSettings.quickAction === '👍' ? (
+                                    <ThumbsUp size={18} className="fill-[#0099ff] stroke-none" />
+                                ) : (
+                                    <span>{themeSettings.quickAction}</span>
+                                )}
                             </button>
                         ) : (
                             <button onClick={sendMessage} className="p-2 text-[#0099ff] hover:bg-white/5 rounded-full transition cursor-pointer">

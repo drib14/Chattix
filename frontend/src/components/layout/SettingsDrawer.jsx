@@ -67,7 +67,7 @@ const SettingsDrawer = () => {
       );
 
       setProfilePic(data.profilePic);
-      login(data);
+      login({ ...data, username });
       toast.success('Profile picture uploaded successfully!');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Upload failed');
