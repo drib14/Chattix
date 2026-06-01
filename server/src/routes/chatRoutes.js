@@ -14,6 +14,7 @@ import {
   votePollOption,
   getGroupFiles,
   updateConversationCustomization,
+  deleteConversation,
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { uploadMiddleware } from '../config/cloudinary.js';
@@ -24,6 +25,7 @@ router.use(protect); // All chat routes are protected
 
 router.post('/', createConversation);
 router.get('/', getConversations);
+router.delete('/:conversationId', deleteConversation);
 router.post('/join/:inviteToken', joinGroupByInvite);
 router.get('/:conversationId/messages', getMessages);
 router.post('/:conversationId/messages', uploadMiddleware.single('file'), sendMessage);

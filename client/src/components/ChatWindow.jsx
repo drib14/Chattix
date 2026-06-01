@@ -57,7 +57,8 @@ export default function ChatWindow({ className = '', onBack }) {
     blockedUsers,
     token,
     uploadCustomSticker,
-    getCustomStickers
+    getCustomStickers,
+    deleteConversation
   } = useApp();
 
   const [input, setInput] = useState('');
@@ -79,8 +80,69 @@ export default function ChatWindow({ className = '', onBack }) {
   const ringtoneIntervalRef = useRef(null);
   const localVideoRef = useRef(null);
   
+  const activeCallTimerRef = useRef(null);
+  const callDurationIntervalRef = useRef(null);
+  const [isCameraOff, setIsCameraOff] = useState(false);
+  
   // Custom message switcher skeleton loading delay
   const [fetchingMessages, setFetchingMessages] = useState(false);
+
+  const [isConvoMuted, setIsConvoMuted] = useState(false);
+  const [isUserRestricted, setIsUserRestricted] = useState(false);
+
+  useEffect(() => {
+    if (currentChat) {
+      const muted = JSON.parse(localStorage.getItem('chattix_muted_chats') || '[]');
+      setIsConvoMuted(muted.includes(currentChat._id));
+    }
+  }, [currentChat?._id]);
+
+  useEffect(() => {
+    if (currentChat && !currentChat.isGroup) {
+      const rec = currentChat.participants?.find((p) => p._id !== user?.id);
+      if (rec) {
+        const restricted = JSON.parse(localStorage.getItem('chattix_restricted_users') || '[]');
+        setIsUserRestricted(restricted.includes(rec._id));
+        return;
+      }
+    }
+    setIsUserRestricted(false);
+  }, [currentChat?._id, user?.id]);
+
+  const handleToggleMute = (checked) => {
+    if (!currentChat) return;
+    let muted = JSON.parse(localStorage.getItem('chattix_muted_chats') || '[]');
+    if (checked) {
+      if (!muted.includes(currentChat._id)) {
+        muted.push(currentChat._id);
+      }
+      showToast('Conversation muted.', 'info');
+    } else {
+      muted = muted.filter(id => id !== currentChat._id);
+      showToast('Conversation unmuted.', 'info');
+    }
+    localStorage.setItem('chattix_muted_chats', JSON.stringify(muted));
+    setIsConvoMuted(checked);
+  };
+
+  const handleToggleRestrict = () => {
+    if (!currentChat || currentChat.isGroup) return;
+    const rec = currentChat.participants?.find((p) => p._id !== user?.id);
+    if (!rec) return;
+    let restricted = JSON.parse(localStorage.getItem('chattix_restricted_users') || '[]');
+    const nextVal = !isUserRestricted;
+    if (nextVal) {
+      if (!restricted.includes(rec._id)) {
+        restricted.push(rec._id);
+      }
+      showToast('Contact restricted.', 'info');
+    } else {
+      restricted = restricted.filter(id => id !== rec._id);
+      showToast('Contact unrestricted.', 'info');
+    }
+    localStorage.setItem('chattix_restricted_users', JSON.stringify(restricted));
+    setIsUserRestricted(nextVal);
+  };
 
   // Voice recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -665,7 +727,8 @@ export default function ChatWindow({ className = '', onBack }) {
     chatName = recipientUser?.username || 'Chattix User';
     chatPhoto = recipientUser?.profilePhoto;
     fallback = (recipientUser?.username || 'CU').substring(0, 2);
-    isOnline = onlineUsers.includes(recipientUser?._id);
+    const isRestrictedLocal = recipientUser && JSON.parse(localStorage.getItem('chattix_restricted_users') || '[]').includes(recipientUser._id);
+    isOnline = onlineUsers.includes(recipientUser?._id) && !isRestrictedLocal;
     statusText = isOnline ? 'Active Now' : recipientUser?.lastSeen ? `Last active ${new Date(recipientUser.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Offline';
   }
 
@@ -1461,13 +1524,14 @@ export default function ChatWindow({ className = '', onBack }) {
                 {accordionOpen.privacy && (
                   <div style={{ padding: '4px 8px 12px 8px', display: 'flex', flexDirection: 'column', gap: '10px', animation: 'fadeIn 0.2s' }}>
                     
-                    {/* Simulated Mute */}
+                    {/* Working Mute */}
                     <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', cursor: 'pointer' }}>
                       <span>Mute Notifications</span>
                       <input
                         type="checkbox"
+                        checked={isConvoMuted}
                         style={{ accentColor: getThemeColor() }}
-                        onChange={(e) => showToast(e.target.checked ? 'Conversation muted.' : 'Conversation unmuted.', 'info')}
+                        onChange={(e) => handleToggleMute(e.target.checked)}
                       />
                     </label>
 
@@ -1498,12 +1562,37 @@ export default function ChatWindow({ className = '', onBack }) {
                       </div>
                     )}
 
+                    {/* Restrict / Unrestrict Contact (for 1-to-1 chats) */}
+                    {!isGroup && recipientUser && (
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <button
+                          className="btn-secondary"
+                          type="button"
+                          onClick={handleToggleRestrict}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            border: isUserRestricted ? '1px solid var(--accent-purple)' : '1px solid rgba(255,255,255,0.1)',
+                            color: isUserRestricted ? 'var(--accent-purple)' : 'var(--text-primary)',
+                            fontSize: '12px',
+                            padding: '8px'
+                          }}
+                        >
+                          <Shield size={14} /> {isUserRestricted ? 'Unrestrict Contact' : 'Restrict Contact'}
+                        </button>
+                      </div>
+                    )}
+
                     {/* Block / Unblock Contact (for 1-to-1 chats) */}
                     {!isGroup && recipientUser && (
-                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '10px', marginTop: '4px' }}>
+                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
                         {isUserBlocked ? (
                           <button
                             className="btn-secondary"
+                            type="button"
                             onClick={() => unblockUser(recipientUser._id)}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)', fontSize: '12px', padding: '8px' }}
                           >
@@ -1512,6 +1601,7 @@ export default function ChatWindow({ className = '', onBack }) {
                         ) : (
                           <button
                             className="btn-secondary"
+                            type="button"
                             onClick={() => blockUser(recipientUser._id)}
                             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1px solid #ef4444', color: '#ef4444', fontSize: '12px', padding: '8px' }}
                           >
@@ -1521,10 +1611,40 @@ export default function ChatWindow({ className = '', onBack }) {
                       </div>
                     )}
 
-                    {/* Simulated Mute */}
+                    {/* Delete Conversation permanently */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
+                      <button
+                        className="btn-secondary"
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to permanently delete this conversation and all its messages? This action cannot be undone.')) {
+                            deleteConversation(currentChat._id);
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          border: '1px solid #ef4444',
+                          color: 'white',
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          fontSize: '12px',
+                          padding: '8px'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
+                      >
+                        <Trash size={14} /> Delete Conversation
+                      </button>
+                    </div>
+
+                    {/* Leave Group Chat */}
                     {isGroup && (
                       <button
                         className="btn-secondary"
+                        type="button"
                         onClick={() => showToast('Leaving group simulated successfully.', 'success')}
                         style={{ width: '100%', border: '1px solid #ef4444', color: '#ef4444', fontSize: '11.5px', padding: '6px' }}
                       >

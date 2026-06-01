@@ -1037,6 +1037,28 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Delete conversation completely
+  const deleteConversation = async (conversationId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${conversationId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        setCurrentChat(null);
+        fetchConversations();
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to delete conversation.', 'error');
+    }
+  };
+
   // Fetch Invite Link Token
   const fetchInviteLink = async (chatId) => {
     try {
@@ -1221,6 +1243,7 @@ export const AppProvider = ({ children }) => {
         votePoll,
         fetchGroupFiles,
         fetchAdminAnalytics,
+        deleteConversation,
         toggleSuspendUser,
         fetchToxicityLogs,
         updateConversationCustomization,

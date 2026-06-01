@@ -676,3 +676,40 @@ export const updateConversationCustomization = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to update chat customization.' });
   }
 };
+
+// @desc    Delete conversation and all its messages
+// @route   DELETE /api/chats/:conversationId
+// @access  Private
+export const deleteConversation = async (req, res) => {
+  const { conversationId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: userId,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ success: false, message: 'Conversation not found or access denied' });
+    }
+
+    // Delete all messages in the conversation
+    await Message.deleteMany({ conversationId });
+
+    // Delete the conversation
+    await Conversation.findByIdAndDelete(conversationId);
+
+    // Broadcast conversation deletion via socket if needed
+    const io = req.app.get('socketio');
+    if (io) {
+      io.to(conversationId).emit('conversation_deleted', conversationId);
+    }
+
+    res.status(200).json({ success: true, message: 'Conversation deleted successfully' });
+  } catch (error) {
+    console.error('[Delete Conversation Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete conversation' });
+  }
+};
+
