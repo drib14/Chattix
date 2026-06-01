@@ -1,5 +1,6 @@
 import useAuthStore from '../../store/authStore';
 import useChatStore from '../../store/chatStore';
+import useConfirmStore from '../../store/confirmStore';
 import { Bell, Image as ImageIcon, Search, LogOut } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -8,16 +9,26 @@ import toast from 'react-hot-toast';
 const RightSidebar = () => {
     const { user, logout } = useAuthStore();
     const { selectedChat } = useChatStore();
+    const { showConfirm } = useConfirmStore();
     const navigate = useNavigate();
 
-    const handleLogout = async () => {
-        try {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {}, { withCredentials: true });
-            logout();
-            navigate('/login');
-        } catch (error) {
-            toast.error('Logout failed');
-        }
+    const handleLogout = () => {
+        showConfirm({
+            title: 'Log Out of Chattix',
+            message: 'Are you sure you want to log out? You will need to re-authenticate to access your conversations.',
+            type: 'warning',
+            confirmText: 'Log Out',
+            cancelText: 'Cancel',
+            onConfirm: async () => {
+                try {
+                    await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {}, { withCredentials: true });
+                    logout();
+                    navigate('/login');
+                } catch (error) {
+                    toast.error('Logout failed');
+                }
+            }
+        });
     };
 
     if (!selectedChat) {

@@ -1,8 +1,7 @@
 import { Server } from 'socket.io';
-import { Server as HttpServer } from 'http';
-import { User } from '../models/User.js';
+import User from '../models/User.js';
 
-export const initSocket = (server: HttpServer) => {
+export const initSocket = (server) => {
   const io = new Server(server, {
     cors: {
       origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173',
@@ -37,7 +36,7 @@ export const initSocket = (server: HttpServer) => {
 
       if (!chat.participants) return console.log('chat.participants not defined');
 
-      chat.participants.forEach((participant: any) => {
+      chat.participants.forEach((participant) => {
         if (participant._id === newMessageRecieved.sender._id) return;
 
         socket.in(participant._id).emit('message recieved', newMessageRecieved);

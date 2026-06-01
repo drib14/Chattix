@@ -1,22 +1,6 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IMessage extends Document {
-  conversationId: mongoose.Types.ObjectId;
-  sender: mongoose.Types.ObjectId;
-  text?: string;
-  image?: string;
-  gifUrl?: string;
-  location?: {
-    lat: number;
-    lng: number;
-    address?: string;
-  };
-  paymentIntentId?: string;
-  isAiGenerated?: boolean;
-  readBy: mongoose.Types.ObjectId[];
-}
-
-const messageSchema = new Schema<IMessage>(
+const messageSchema = new Schema(
   {
     conversationId: { type: Schema.Types.ObjectId, ref: 'Conversation', required: true },
     sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -35,4 +19,5 @@ const messageSchema = new Schema<IMessage>(
   { timestamps: true }
 );
 
-export const Message = mongoose.model<IMessage>('Message', messageSchema);
+export const Message = mongoose.model('Message', messageSchema);
+export default Message;

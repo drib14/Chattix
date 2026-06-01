@@ -1,13 +1,11 @@
-import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { AuthRequest } from '../middleware/authMiddleware.js';
 import { Message } from '../models/Message.js';
 import { Conversation } from '../models/Conversation.js';
 import { User } from '../models/User.js';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-export const generateAIResponse = async (req: AuthRequest, res: Response) => {
+export const generateAIResponse = async (req, res) => {
     const { prompt, conversationId } = req.body;
 
     if(!prompt || !conversationId) {
@@ -28,11 +26,8 @@ export const generateAIResponse = async (req: AuthRequest, res: Response) => {
             conversationId: conversationId,
         });
 
-        // Assuming there's a system 'AI' user or we just flag it. We will just use the current user but flag it as AI generated for simplicity in this clone,
-        // or we can create an AI dummy user. For now, we use a boolean flag `isAiGenerated`.
-
         let aiMessage = await Message.create({
-            sender: req.user?._id, // Ideally, this would be an AI User ID, but we use the current user and flag it.
+            sender: req.user?._id,
             text: text,
             conversationId: conversationId,
             isAiGenerated: true
@@ -51,7 +46,7 @@ export const generateAIResponse = async (req: AuthRequest, res: Response) => {
 
         res.status(200).json(aiMessage);
 
-    } catch (error: any) {
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
 }

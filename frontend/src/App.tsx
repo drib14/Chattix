@@ -4,6 +4,9 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import SplashScreen from './components/layout/SplashScreen';
+import ConfirmModal from './components/layout/ConfirmModal';
+import CreateGroupModal from './components/layout/CreateGroupModal';
+import SettingsDrawer from './components/layout/SettingsDrawer';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -18,6 +21,9 @@ function App() {
           <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
           <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
         </Routes>
+        <ConfirmModal />
+        <CreateGroupModal />
+        <SettingsDrawer />
         <Toaster position="bottom-center" />
       </div>
     </Router>

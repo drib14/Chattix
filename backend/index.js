@@ -11,7 +11,6 @@ import aiRoutes from './routes/aiRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import { createServer } from 'http';
 import { initSocket } from './config/socket.js';
-import { Request, Response, NextFunction } from 'express';
 
 dotenv.config();
 
@@ -21,8 +20,8 @@ const app = express();
 const httpServer = createServer(app);
 const io = initSocket(httpServer);
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-    (req as any).io = io;
+app.use((req, res, next) => {
+    req.io = io;
     if (next) {
         next();
     }

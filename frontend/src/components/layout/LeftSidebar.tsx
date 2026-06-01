@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import useAuthStore from '../../store/authStore';
 import useChatStore from '../../store/chatStore';
+import useGroupModalStore from '../../store/groupModalStore';
+import useSettingsDrawerStore from '../../store/settingsDrawerStore';
 import { Search, MoreVertical, Edit } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChatSkeleton } from './Skeletons';
@@ -9,6 +11,8 @@ import { ChatSkeleton } from './Skeletons';
 const LeftSidebar = () => {
     const { user } = useAuthStore();
     const { chats, setChats, setSelectedChat, selectedChat } = useChatStore();
+    const { openModal } = useGroupModalStore();
+    const { openDrawer } = useSettingsDrawerStore();
     const [search, setSearch] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [loadingChats, setLoadingChats] = useState(false);
@@ -86,8 +90,8 @@ const LeftSidebar = () => {
             <div className="p-4 flex items-center justify-between border-b border-[var(--color-border-dark)]">
                 <h1 className="text-2xl font-bold text-white">Chats</h1>
                 <div className="flex space-x-2 text-[var(--color-text-dark-secondary)]">
-                    <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full"><MoreVertical size={20} /></button>
-                    <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full"><Edit size={20} /></button>
+                    <button className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full cursor-pointer"><MoreVertical size={20} /></button>
+                    <button onClick={openModal} className="p-2 hover:bg-[var(--color-bg-dark-hover)] rounded-full cursor-pointer"><Edit size={20} /></button>
                 </div>
             </div>
 
@@ -163,7 +167,7 @@ const LeftSidebar = () => {
             </div>
 
             <div className="p-4 border-t border-[var(--color-border-dark)] flex items-center justify-between">
-                <div className="flex items-center cursor-pointer">
+                <div onClick={openDrawer} className="flex items-center cursor-pointer hover:opacity-90 transition">
                     <div className="w-10 h-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
                         {user.profilePic ? <img src={user.profilePic} alt="" className="w-full h-full object-cover"/> : user.username[0]}
                     </div>

@@ -1,9 +1,7 @@
-import { Response } from 'express';
 import { Conversation } from '../models/Conversation.js';
 import { User } from '../models/User.js';
-import { AuthRequest } from '../middleware/authMiddleware.js';
 
-export const accessConversation = async (req: AuthRequest, res: Response) => {
+export const accessConversation = async (req, res) => {
   const { userId } = req.body;
 
   if (!userId) {
@@ -42,13 +40,13 @@ export const accessConversation = async (req: AuthRequest, res: Response) => {
         '-password'
       );
       res.status(200).json(FullConversation);
-    } catch (error: any) {
+    } catch (error) {
       res.status(400).json({ message: error.message });
     }
   }
 };
 
-export const fetchConversations = async (req: AuthRequest, res: Response) => {
+export const fetchConversations = async (req, res) => {
   try {
     Conversation.find({ participants: { $elemMatch: { $eq: req.user?._id } } })
       .populate('participants', '-password')
@@ -62,12 +60,12 @@ export const fetchConversations = async (req: AuthRequest, res: Response) => {
         });
         res.status(200).send(results);
       });
-  } catch (error: any) {
+  } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const createGroupConversation = async (req: AuthRequest, res: Response) => {
+export const createGroupConversation = async (req, res) => {
   if (!req.body.users || !req.body.name) {
      res.status(400).send({ message: 'Please Fill all the feilds' });
      return;
@@ -97,7 +95,7 @@ export const createGroupConversation = async (req: AuthRequest, res: Response) =
       .populate('admin', '-password');
 
     res.status(200).json(fullGroupConversation);
-  } catch (error: any) {
+  } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };

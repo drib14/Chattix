@@ -1,21 +1,19 @@
-import { Response } from 'express';
 import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
 import { Conversation } from '../models/Conversation.js';
-import { AuthRequest } from '../middleware/authMiddleware.js';
 
-export const allMessages = async (req: AuthRequest, res: Response) => {
+export const allMessages = async (req, res) => {
   try {
     const messages = await Message.find({ conversationId: req.params.conversationId })
       .populate('sender', 'username profilePic email')
       .populate('conversationId');
     res.json(messages);
-  } catch (error: any) {
+  } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-export const sendMessage = async (req: AuthRequest, res: Response) => {
+export const sendMessage = async (req, res) => {
   const { content, conversationId, image, gifUrl, location, paymentIntentId, isAiGenerated } = req.body;
 
   if (!conversationId) {
@@ -50,7 +48,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     });
 
     res.json(message);
-  } catch (error: any) {
+  } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
