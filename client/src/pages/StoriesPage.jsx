@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plus, X, Play, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, X, BookOpen } from 'lucide-react';
 
-export default function StoriesPage() {
+export default function StoriesPage({ activeUserIndex, setActiveUserIndex, postStoryModalOpen, setPostStoryModalOpen }) {
   const { user, createStory, getStories, showToast } = useApp();
   const [storiesFeed, setStoriesFeed] = useState([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [localShowCreateModal, setLocalShowCreateModal] = useState(false);
   const [newStoryUrl, setNewStoryUrl] = useState('');
   const [newStoryText, setNewStoryText] = useState('');
   
+  // Backwards compatibility for internal modal states
+  const showCreateModal = postStoryModalOpen !== undefined ? postStoryModalOpen : localShowCreateModal;
+  const setShowCreateModal = setPostStoryModalOpen || setLocalShowCreateModal;
+
   // Fullscreen Viewer state
-  const [activeUserIndex, setActiveUserIndex] = useState(null); // Index in storiesFeed
   const [activeStoryIndex, setActiveStoryIndex] = useState(0); // Index in that user's stories array
   const [storyTimer, setStoryTimer] = useState(0);
 
@@ -81,7 +84,7 @@ export default function StoriesPage() {
   // Story autoplay interval timer (5 seconds per slide)
   useEffect(() => {
     let interval;
-    if (activeUserIndex !== null) {
+    if (activeUserIndex !== null && storiesFeed[activeUserIndex]) {
       setStoryTimer(0);
       interval = setInterval(() => {
         setStoryTimer((prev) => {
@@ -94,9 +97,10 @@ export default function StoriesPage() {
       }, 100);
     }
     return () => clearInterval(interval);
-  }, [activeUserIndex, activeStoryIndex]);
+  }, [activeUserIndex, activeStoryIndex, storiesFeed]);
 
   const handleNextStory = () => {
+    if (activeUserIndex === null || !storiesFeed[activeUserIndex]) return;
     const userStories = storiesFeed[activeUserIndex].stories;
     if (activeStoryIndex < userStories.length - 1) {
       setActiveStoryIndex(prev => prev + 1);
@@ -113,6 +117,7 @@ export default function StoriesPage() {
   };
 
   const handlePrevStory = () => {
+    if (activeUserIndex === null) return;
     if (activeStoryIndex > 0) {
       setActiveStoryIndex(prev => prev - 1);
     } else {
@@ -138,10 +143,18 @@ export default function StoriesPage() {
       setNewStoryText('');
       setShowCreateModal(false);
       loadStoriesFeed();
+      // Notify sidebar lists to refresh
+      window.dispatchEvent(new Event('refresh_stories_feed'));
     }
   };
 
-  const activeUser = activeUserIndex !== null ? storiesFeed[activeUserIndex] : null;
+  // Reset active story index when selected user index pivots
+  useEffect(() => {
+    setActiveStoryIndex(0);
+    setStoryTimer(0);
+  }, [activeUserIndex]);
+
+  const activeUser = activeUserIndex !== null && storiesFeed[activeUserIndex] ? storiesFeed[activeUserIndex] : null;
   const activeStory = activeUser ? activeUser.stories[activeStoryIndex] : null;
 
   return (
@@ -149,192 +162,24 @@ export default function StoriesPage() {
       flex: 1,
       height: '100%',
       overflowY: 'auto',
-      padding: '30px 40px',
+      padding: '30px',
       background: 'radial-gradient(circle at 50% 10%, rgba(168,85,247,0.05) 0%, transparent 50%)',
       display: 'flex',
       flexDirection: 'column',
-      gap: '24px'
+      gap: '20px'
     }}>
       
-      {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '16px' }}>
-        <div>
-          <h1 style={{ fontSize: '24px', background: 'linear-gradient(135deg, white 40%, var(--accent-purple) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Stories Deck
-          </h1>
-          <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>View visual clips from your contacts and publish your own daily moments.</p>
-        </div>
-
-        <button
-          className="btn-primary"
-          onClick={() => setShowCreateModal(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', padding: '8px 16px' }}
-        >
-          <Plus size={14} /> Post Story
-        </button>
-      </div>
-
-      {/* Stories Slider Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '16px', marginTop: '10px' }}>
-        
-        {/* Create Story card trigger */}
-        <div
-          onClick={() => setShowCreateModal(true)}
-          style={{
-            height: '200px',
-            borderRadius: '16px',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px dashed var(--glass-border)',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'transform 0.25s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(168,85,247,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-purple)' }}>
-            <Plus size={20} />
-          </div>
-          <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Create Story</span>
-        </div>
-
-        {/* Stories items list */}
-        {storiesFeed.map((feedItem, uIdx) => (
-          <div
-            key={feedItem._id}
-            onClick={() => {
-              setActiveUserIndex(uIdx);
-              setActiveStoryIndex(0);
-            }}
-            style={{
-              height: '200px',
-              borderRadius: '16px',
-              border: '1px solid var(--glass-border)',
-              backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.85) 100%), url(${feedItem.stories[0].imageUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              cursor: 'pointer',
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              padding: '12px',
-              transition: 'all 0.25s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.03)';
-              e.currentTarget.style.boxShadow = '0 8px 24px rgba(168,85,247,0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            {/* Round Avatar badge */}
-            <div style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '50%',
-              border: '2.5px solid var(--accent-purple)',
-              boxShadow: '0 0 10px rgba(168,85,247,0.5)',
-              overflow: 'hidden',
-              background: 'black'
-            }}>
-              {feedItem.profilePhoto ? (
-                <img src={feedItem.profilePhoto} alt={feedItem.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold' }}>
-                  {feedItem.username.substring(0, 2).toUpperCase()}
-                </div>
-              )}
-            </div>
-
-            {/* Username label */}
-            <span style={{
-              fontSize: '11px',
-              fontWeight: '600',
-              color: 'white',
-              textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
-              {feedItem.username === user.username ? 'My Story' : feedItem.username}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* CREATE STORY CARD MODAL */}
-      {showCreateModal && (
-        <div className="modal-overlay" style={{ zIndex: 300 }}>
-          <div className="modal-content glass-panel" style={{ width: '100%', maxWidth: '440px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title">Publish Story</h2>
-              <button className="icon-btn" onClick={() => setShowCreateModal(false)}><X size={18} /></button>
-            </div>
-            <form onSubmit={handleCreateSubmit}>
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div className="form-group">
-                  <label>Story Image URL</label>
-                  <input
-                    className="glass-input"
-                    type="url"
-                    placeholder="https://images.unsplash.com/photo-..."
-                    value={newStoryUrl}
-                    onChange={(e) => setNewStoryUrl(e.target.value)}
-                    required
-                    style={{ width: '100%' }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Story Caption Text</label>
-                  <input
-                    className="glass-input"
-                    type="text"
-                    placeholder="Describe your moment... ✨✍️"
-                    value={newStoryText}
-                    onChange={(e) => setNewStoryText(e.target.value)}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button className="btn-secondary" type="button" onClick={() => setShowCreateModal(false)}>Cancel</button>
-                <button className="btn-primary" type="submit" disabled={!newStoryUrl}>Publish Story</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* FULLSCREEN STORY DECK VIEW SPECTATOR OVERLAY */}
-      {activeUser && activeStory && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(5, 5, 8, 0.98)',
-          backdropFilter: 'blur(35px)',
-          zIndex: 400,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
+      {/* 1. EMBEDDED STORIES VIEW */}
+      {activeUser && activeStory ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', position: 'relative' }}>
+          
           {/* Main Viewer Card */}
           <div style={{
             width: '100%',
             maxWidth: '380px',
-            height: '90vh',
-            maxHeight: '680px',
+            height: '100%',
+            maxHeight: '600px',
+            minHeight: '480px',
             borderRadius: '24px',
             border: '1px solid var(--glass-border)',
             backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.1) 70%, rgba(0,0,0,0.9) 100%), url(${activeStory.imageUrl})`,
@@ -345,7 +190,8 @@ export default function StoriesPage() {
             flexDirection: 'column',
             justifyContent: 'space-between',
             padding: '20px',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+            boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+            animation: 'scaleUp 0.3s ease-out'
           }}>
             
             {/* Top progress indicators block */}
@@ -413,7 +259,7 @@ export default function StoriesPage() {
             {/* Bottom Caption slot */}
             <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center', paddingBottom: '16px' }}>
               <p style={{
-                fontSize: '14.5px',
+                fontSize: '14px',
                 fontWeight: '500',
                 color: 'white',
                 textShadow: '0 2px 4px rgba(0,0,0,0.9)',
@@ -423,12 +269,78 @@ export default function StoriesPage() {
                 borderRadius: '12px',
                 border: '1px solid rgba(255,255,255,0.05)',
                 backdropFilter: 'blur(10px)',
-                maxWidth: '90%'
+                maxWidth: '90%',
+                margin: 0
               }}>
                 {activeStory.text || 'No caption 📸'}
               </p>
             </div>
             
+          </div>
+        </div>
+      ) : (
+        /* 2. SPLASH PANE (DEFAULT WHEN NO STORY IS ACTIVE) */
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '20px', animation: 'fadeIn 0.3s ease-out' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-purple)' }}>
+            <BookOpen size={36} />
+          </div>
+          
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Stories Deck Spectator</h2>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '340px', lineHeight: '1.5' }}>
+              Select a friend's active story in the left sidebar to watch their daily moments, or post your own status photo!
+            </p>
+          </div>
+          
+          <button
+            className="btn-primary"
+            onClick={() => setShowCreateModal(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '10px 20px' }}
+          >
+            <Plus size={14} /> Create a Story
+          </button>
+        </div>
+      )}
+
+      {/* CREATE STORY CARD MODAL */}
+      {showCreateModal && (
+        <div className="modal-overlay" style={{ zIndex: 300 }}>
+          <div className="modal-content glass-panel" style={{ width: '100%', maxWidth: '440px' }}>
+            <div className="modal-header">
+              <h2 className="modal-title">Publish Story</h2>
+              <button className="icon-btn" onClick={() => setShowCreateModal(false)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleCreateSubmit}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className="form-group">
+                  <label>Story Image URL</label>
+                  <input
+                    className="glass-input"
+                    type="url"
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={newStoryUrl}
+                    onChange={(e) => setNewStoryUrl(e.target.value)}
+                    required
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Story Caption Text</label>
+                  <input
+                    className="glass-input"
+                    type="text"
+                    placeholder="Describe your moment... ✨✍️"
+                    value={newStoryText}
+                    onChange={(e) => setNewStoryText(e.target.value)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn-secondary" type="button" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                <button className="btn-primary" type="submit" disabled={!newStoryUrl}>Publish Story</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

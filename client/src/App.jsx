@@ -10,18 +10,49 @@ import SecurityPage from './pages/SecurityPage';
 import AdminPage from './pages/AdminPage';
 import StoriesPage from './pages/StoriesPage';
 import MarketplacePage from './pages/MarketplacePage';
+
+// Import newly created modular sidebars
+import ContactsSidebarList from './components/ContactsSidebarList';
+import StoriesSidebarList from './components/StoriesSidebarList';
+import MarketplaceSidebarFilters from './components/MarketplaceSidebarFilters';
+import SecuritySidebarMenu from './components/SecuritySidebarMenu';
+
 import { MessageSquare, Users, BookOpen, Store, Shield, LineChart, LogOut } from 'lucide-react';
 
 function AppContent() {
   const { user, token, toast, fetchConversations, fetchContacts, currentChat, logoutUser } = useApp();
   const [activePage, setActivePage] = useState('chats'); // chats, contacts, stories, marketplace, security, admin
   
+  // Shared States for Three-Pane Syncing
+  const [selectedContactId, setSelectedContactId] = useState(null);
+  const [activeStoryUserIndex, setActiveStoryUserIndex] = useState(null);
+  
+  const [marketCategory, setMarketCategory] = useState('All');
+  const [marketSearch, setMarketSearch] = useState('');
+  const [marketPriceRange, setMarketPriceRange] = useState({ min: '', max: '' });
+  
+  const [settingsSection, setSettingsSection] = useState('profile');
+  
+  // Modals status triggers
+  const [postStoryModalOpen, setPostStoryModalOpen] = useState(false);
+  const [sellItemModalOpen, setSellItemModalOpen] = useState(false);
+
   // Visual Polish Loaders
   const [splashLoading, setSplashLoading] = useState(true);
   const [fadeOutSplash, setFadeOutSplash] = useState(false);
   
   // Mobile panel toggle state (sidebar, chat)
   const [mobilePanel, setMobilePanel] = useState('sidebar');
+
+  const handleMarketPriceChange = (field, val) => {
+    setMarketPriceRange(prev => ({ ...prev, [field]: val }));
+  };
+
+  // Reset states on activePage change to make it mobile friendly and fresh
+  useEffect(() => {
+    setMobilePanel('sidebar');
+    setSelectedContactId(null);
+  }, [activePage]);
 
   // Splash Screen Lifecycle
   useEffect(() => {
@@ -150,27 +181,104 @@ function AppContent() {
           </button>
         </div>
 
-        {/* Dynamic workspace area depending on activePage state */}
-        {activePage === 'chats' && (
-          <>
-            {/* Sidebar displaying conversations & contacts directory */}
-            <ChatList
-              className={mobilePanel === 'chat' ? 'mobile-hide' : ''}
+        {/* Dynamic Center Sidebar Column (Pane 2) */}
+        <div className={`sidebar ${mobilePanel === 'chat' ? 'mobile-hide' : ''}`} style={{ flex: '0 0 320px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {activePage === 'chats' && (
+            <ChatList />
+          )}
+          {activePage === 'contacts' && (
+            <ContactsSidebarList
+              onSelectContact={(id) => {
+                setSelectedContactId(id);
+                setMobilePanel('chat');
+              }}
             />
+          )}
+          {activePage === 'stories' && (
+            <StoriesSidebarList
+              activeUserIndex={activeStoryUserIndex}
+              onSelectUserIndex={(index) => {
+                setActiveStoryUserIndex(index);
+                setMobilePanel('chat');
+              }}
+              onPostClick={() => setPostStoryModalOpen(true)}
+            />
+          )}
+          {activePage === 'marketplace' && (
+            <MarketplaceSidebarFilters
+              category={marketCategory}
+              onCategoryChange={setMarketCategory}
+              searchQuery={marketSearch}
+              onSearchChange={setMarketSearch}
+              priceRange={marketPriceRange}
+              onPriceChange={handleMarketPriceChange}
+              onSellClick={() => setSellItemModalOpen(true)}
+            />
+          )}
+          {activePage === 'security' && (
+            <SecuritySidebarMenu
+              activeSection={settingsSection}
+              onSectionChange={(sec) => {
+                setSettingsSection(sec);
+                setMobilePanel('chat');
+              }}
+            />
+          )}
+          {activePage === 'admin' && (
+            <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Analytics</h2>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Administration console is active. View stats on the right workspace.</p>
+            </div>
+          )}
+        </div>
 
-            {/* Dynamic chat feed window */}
+        {/* Dynamic Right Main Workspace (Pane 3) */}
+        <div className={`chat-window ${mobilePanel === 'chat' || activePage !== 'chats' ? 'active' : ''}`} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {activePage === 'chats' && (
             <ChatWindow
-              className={mobilePanel === 'chat' ? 'active' : ''}
+              className="active"
               onBack={() => setMobilePanel('sidebar')}
             />
-          </>
-        )}
+          )}
+          {activePage === 'contacts' && (
+            <ContactsPage
+              selectedContactId={selectedContactId}
+              onClearSelection={() => {
+                setSelectedContactId(null);
+                setMobilePanel('sidebar');
+              }}
+            />
+          )}
+          {activePage === 'stories' && (
+            <StoriesPage
+              activeUserIndex={activeStoryUserIndex}
+              setActiveUserIndex={setActiveStoryUserIndex}
+              postStoryModalOpen={postStoryModalOpen}
+              setPostStoryModalOpen={setPostStoryModalOpen}
+              onBack={() => setMobilePanel('sidebar')}
+            />
+          )}
+          {activePage === 'marketplace' && (
+            <MarketplacePage
+              category={marketCategory}
+              searchQuery={marketSearch}
+              priceRange={marketPriceRange}
+              sellItemModalOpen={sellItemModalOpen}
+              setSellItemModalOpen={setSellItemModalOpen}
+              onBack={() => setMobilePanel('sidebar')}
+            />
+          )}
+          {activePage === 'security' && (
+            <SecurityPage
+              activeSection={settingsSection}
+              onBack={() => setMobilePanel('sidebar')}
+            />
+          )}
+          {activePage === 'admin' && (
+            <AdminPage />
+          )}
+        </div>
 
-        {activePage === 'contacts' && <ContactsPage />}
-        {activePage === 'stories' && <StoriesPage />}
-        {activePage === 'marketplace' && <MarketplacePage />}
-        {activePage === 'security' && <SecurityPage />}
-        {activePage === 'admin' && <AdminPage />}
       </div>
     </div>
   );

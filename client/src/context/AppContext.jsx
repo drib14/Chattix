@@ -85,7 +85,6 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-<<<<<<< HEAD
   // Upload Custom Sticker to Cloudinary
   const uploadCustomSticker = async (file) => {
     const formData = new FormData();
@@ -171,9 +170,6 @@ export const AppProvider = ({ children }) => {
       return [];
     }
   };
-
-=======
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
   // Get current user session on load
   useEffect(() => {
     if (token) {
@@ -796,50 +792,8 @@ export const AppProvider = ({ children }) => {
   };
 
   // Upload Custom Sticker to Cloudinary
-  const uploadCustomSticker = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_URL}/api/users/stickers`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
-      const data = await res.json();
-      setLoading(false);
-      if (data.success) {
-        showToast(data.message, 'success');
-        setUser(prev => ({ ...prev, stickers: data.stickers }));
-        return data.stickers;
-      } else {
-        showToast(data.message, 'error');
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error(error);
-      showToast('Sticker upload failed.', 'error');
-    }
-  };
 
   // Get Custom Stickers
-  const getCustomStickers = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/users/stickers`, {
-        headers: getHeaders()
-      });
-      const data = await res.json();
-      if (data.success) {
-        return data.stickers;
-      }
-      return [];
-    } catch (error) {
-      console.error(error);
-      return [];
-    }
-  };
 
   // Emit typing indicators on input change
   const sendTypingStatus = (isTyping) => {
@@ -1270,18 +1224,12 @@ export const AppProvider = ({ children }) => {
         toggleSuspendUser,
         fetchToxicityLogs,
         updateConversationCustomization,
-<<<<<<< HEAD
         saveAccountSession,
         switchSavedAccount,
         uploadCustomSticker,
         getCustomStickers,
         createStory,
         getStories,
-=======
-        switchSavedAccount,
-        uploadCustomSticker,
-        getCustomStickers,
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
       }}
     >
       {children}

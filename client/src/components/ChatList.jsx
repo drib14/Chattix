@@ -31,7 +31,7 @@ export default function ChatList({ className = '' }) {
 
   // Saved accounts swapper
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
-  const { switchSavedAccount, getStories, createStory } = useApp();
+  const { getStories, createStory } = useApp();
 
   // Stories deck states
   const [storiesList, setStoriesList] = useState([]);
@@ -49,7 +49,6 @@ export default function ChatList({ className = '' }) {
   const [showControlCenter, setShowControlCenter] = useState(false);
   const [showAddContactModal, setShowAddContactModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
-  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   
   // Profile editing
   const [statusText, setStatusText] = useState(user?.statusText || '');

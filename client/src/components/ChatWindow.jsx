@@ -21,21 +21,17 @@ import {
   Download,
   AlertTriangle,
   FolderOpen,
-<<<<<<< HEAD
   Check,
   CheckCheck,
   Volume2,
   VolumeX,
   Camera,
-  UploadCloud
-=======
-  CheckCheck,
+  UploadCloud,
   PhoneOff,
   MicOff,
   VideoOff,
   Plus,
   Search
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
 } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 
@@ -94,24 +90,6 @@ export default function ChatWindow({ className = '', onBack }) {
   const recordingIntervalRef = useRef(null);
 
   // WebRTC calling states
-  const [activeCall, setActiveCall] = useState(null); // null | { type: 'audio' | 'video', status: 'ringing' | 'connected' }
-  const [localStream, setLocalStream] = useState(null);
-  const [callDuration, setCallDuration] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isCameraOff, setIsCameraOff] = useState(false);
-  const activeCallTimerRef = useRef(null);
-  const callDurationIntervalRef = useRef(null);
-  const localVideoRef = useRef(null);
-
-  // Triple media drawer states
-  const [mediaDrawerTab, setMediaDrawerTab] = useState('emojis'); // emojis, stickers, gifs
-  const [gifQuery, setGifQuery] = useState('');
-  const [customStickers, setCustomStickers] = useState([]);
-  const customStickerInputRef = useRef(null);
-  const { uploadCustomSticker, token } = useApp();
-
-  // Custom wallpaper state
-  const [customWallpaperUrl, setCustomWallpaperUrl] = useState('');
 
   // Procedural audio ringtone chime sequencer
   const startProceduralRingtone = () => {
@@ -410,171 +388,6 @@ export default function ChatWindow({ className = '', onBack }) {
       audioCtxRef.current = null;
     }
   };
-
-  const startCall = async (type) => {
-    setActiveCall(type);
-    setCallStatus('ringing');
-    setCallDuration(0);
-    setIsMuted(false);
-    setIsVideoOff(false);
-    playProceduralRingtone();
-
-    try {
-      const constraints = {
-        audio: true,
-        video: type === 'video'
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      setLocalStream(stream);
-      
-      // Simulate remote connection setup after 3 seconds of ringing chimes
-      setTimeout(() => {
-        setCallStatus('connected');
-        stopRingtone();
-      }, 3000);
-    } catch(e) {
-      console.error('getUserMedia access failed:', e);
-      showToast('Microphone or Camera permissions missing.', 'error');
-      endCall();
-    }
-  };
-
-  const endCall = async () => {
-    stopRingtone();
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      setLocalStream(null);
-    }
-
-    const durationString = formatSeconds(callDuration);
-    const callLogContent = activeCall === 'video'
-      ? `Video call ended (${durationString})`
-      : `Voice call ended (${durationString})`;
-
-    if (callDuration > 0) {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        await fetch(`${API_URL}/api/chats/${currentChat._id}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            content: callLogContent,
-            messageType: 'call'
-          })
-        });
-      } catch (e) {
-        console.error('Call logging failed:', e);
-      }
-    }
-
-    setCallStatus('ended');
-    setTimeout(() => {
-      setActiveCall(null);
-      setCallStatus('ringing');
-    }, 1000);
-  };
-
-  // Wire up video stream feed in local element
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream, callStatus]);
-
-  // Monitor timer increment
-  useEffect(() => {
-    let timer;
-    if (callStatus === 'connected') {
-      timer = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [callStatus]);
-
-  const toggleMute = () => {
-    if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMuted(!audioTrack.enabled);
-      }
-    }
-  };
-
-  const toggleVideo = () => {
-    if (localStream && activeCall === 'video') {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoOff(!videoTrack.enabled);
-      }
-    }
-  };
-
-  // Stickers load useEffect
-  useEffect(() => {
-    if (showEmojiDrawer && activeMediaTab === 'stickers') {
-      const fetchStickers = async () => {
-        const list = await getCustomStickers();
-        if (list) setCustomStickers(list);
-      };
-      fetchStickers();
-    }
-  }, [showEmojiDrawer, activeMediaTab]);
-
-  const handleStickerUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    showToast('Uploading custom sticker to Cloudinary...', 'info');
-    const updatedStickers = await uploadCustomSticker(file);
-    if (updatedStickers) {
-      setCustomStickers(updatedStickers);
-      showToast('Custom sticker uploaded successfully!', 'success');
-    }
-  };
-
-  const sendStickerMessage = async (stickerContent) => {
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await fetch(`${API_URL}/api/chats/${currentChat._id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          content: stickerContent,
-          messageType: 'sticker'
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setShowEmojiDrawer(false);
-      }
-    } catch(e) {
-      console.error(e);
-      showToast('Failed to send sticker.', 'error');
-    }
-  };
-
-  const curatedGifs = [
-    { name: 'excited', url: 'https://media.giphy.com/media/l0amJzVHIAfl7jMD6/giphy.gif' },
-    { name: 'clap', url: 'https://media.giphy.com/media/ytTYwIZuV1R1C/giphy.gif' },
-    { name: 'mind blown', url: 'https://media.giphy.com/media/l0IxYWDltdHEqujnO/giphy.gif' },
-    { name: 'funny', url: 'https://media.giphy.com/media/3o7aTskHEUdgCQAXde/giphy.gif' },
-    { name: 'facepalm', url: 'https://media.giphy.com/media/3og0INyM35DII9vGTV/giphy.gif' },
-    { name: 'thumbs up', url: 'https://media.giphy.com/media/5wWf7GW1AzV5gFTX0sI/giphy.gif' },
-    { name: 'shocked', url: 'https://media.giphy.com/media/26ufdipOdALOPWkmc/giphy.gif' },
-    { name: 'love', url: 'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif' },
-    { name: 'dancing', url: 'https://media.giphy.com/media/13CoXDiaCcC2EA/giphy.gif' },
-    { name: 'celebrate', url: 'https://media.giphy.com/media/l2JhI08hS35pI08OA/giphy.gif' },
-    { name: 'yes', url: 'https://media.giphy.com/media/nXxXxO1xCX6pa/giphy.gif' },
-    { name: 'no', url: 'https://media.giphy.com/media/12OMY457TuVJA4/giphy.gif' }
-  ];
 
   // Load right sidebar details when toggled
   useEffect(() => {
@@ -897,7 +710,6 @@ export default function ChatWindow({ className = '', onBack }) {
           </div>
 
           <div className="chat-header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-<<<<<<< HEAD
             {/* glowing unread security indicator lock */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--accent-cyan)', background: 'rgba(6,182,212,0.1)', padding: '4px 8px', borderRadius: '12px', border: '1px solid rgba(6,182,212,0.2)' }} title="Secure End-to-End Encrypted Session">
               <Shield size={10} />
@@ -918,12 +730,6 @@ export default function ChatWindow({ className = '', onBack }) {
               onClick={() => startCall('video')}
               style={{ color: 'var(--accent-purple)' }}
             >
-=======
-            <button className="icon-btn" title="Start Audio Call" onClick={() => startCall('audio')}>
-              <Phone size={16} />
-            </button>
-            <button className="icon-btn" title="Start Video Call" onClick={() => startCall('video')}>
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
               <Video size={16} />
             </button>
             <button
@@ -940,7 +746,6 @@ export default function ChatWindow({ className = '', onBack }) {
         {fetchingMessages ? (
           <ChatFeedSkeleton />
         ) : (
-<<<<<<< HEAD
           <div className="message-feed" style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '2px', ...getFeedBackgroundStyle(), transition: 'all 0.3s' }}>
             {currentChat.vanishMode && (
               <div style={{
@@ -964,19 +769,6 @@ export default function ChatWindow({ className = '', onBack }) {
                 </div>
               </div>
             )}
-=======
-          <div className="message-feed" style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '2px',
-            background: currentChat.themeBackground ? (currentChat.themeBackground.startsWith('linear-gradient') || currentChat.themeBackground.startsWith('rgba') ? currentChat.themeBackground : `url(${currentChat.themeBackground})`) : 'transparent',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}>
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
             {messages.length === 0 ? (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px', fontSize: '13px' }}>
                 This is the start of your secure conversation thread.<br />Messages are protected with session guards.
@@ -1103,7 +895,6 @@ export default function ChatWindow({ className = '', onBack }) {
                       </button>
                     </div>
 
-<<<<<<< HEAD
                     {/* Triple Tab Media Drawer Box */}
                     {showEmojiDrawer && (
                       <div className="emoji-drawer" style={{
@@ -1137,57 +928,15 @@ export default function ChatWindow({ className = '', onBack }) {
                                 fontSize: '11px',
                                 fontWeight: 'bold',
                                 textTransform: 'uppercase',
-=======
-                    {/* Premium Unified Media Drawer */}
-                    {showEmojiDrawer && (
-                      <div className="emoji-drawer glass-panel" style={{
-                        position: 'absolute',
-                        bottom: '50px',
-                        right: '0',
-                        width: '320px',
-                        background: 'var(--bg-tertiary)',
-                        border: '1px solid var(--glass-border-glow)',
-                        borderRadius: '16px',
-                        padding: '12px',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                        zIndex: 100,
-                        animation: 'fadeIn 0.2s ease-out'
-                      }}>
-                        {/* Tab Headers */}
-                        <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '8px', marginBottom: '8px' }}>
-                          {[
-                            { id: 'emojis', name: '😀 Emojis' },
-                            { id: 'stickers', name: '🎭 Stickers' },
-                            { id: 'gifs', name: '🎬 GIFs' }
-                          ].map(t => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => setActiveMediaTab(t.id)}
-                              style={{
-                                flex: 1,
-                                padding: '6px',
-                                fontSize: '11px',
-                                fontWeight: 'bold',
-                                background: activeMediaTab === t.id ? 'rgba(168,85,247,0.15)' : 'transparent',
-                                border: activeMediaTab === t.id ? '1px solid rgba(168,85,247,0.3)' : '1px solid transparent',
-                                color: activeMediaTab === t.id ? 'white' : 'var(--text-secondary)',
-                                borderRadius: '6px',
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                                 cursor: 'pointer',
                                 transition: 'all 0.2s'
                               }}
                             >
-<<<<<<< HEAD
                               {tab}
-=======
-                              {t.name}
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                             </button>
                           ))}
                         </div>
 
-<<<<<<< HEAD
                         {/* Drawer Body content depends on mediaDrawerTab */}
                         <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
                           
@@ -1195,16 +944,6 @@ export default function ChatWindow({ className = '', onBack }) {
                           {mediaDrawerTab === 'emojis' && (
                             <div className="emoji-grid">
                               {['😀', '😂', '🔥', '🚀', '✨', '👍', '🙏', '❤️', '🎉', '💡', '🤔', '👀', '💯', '👏', '🎨', '💻', '⚡', '☕', '🌟', '💥', '🍕', '🙌', '😎', '😜', '😍', '🥳', '😭', '😡', '😱', '🤫', '😴', '🍀', '🌈', '🍕', '🍩', '🍺'].map((emoji) => (
-=======
-                        {/* TAB 1: EMOJIS */}
-                        {activeMediaTab === 'emojis' && (
-                          <div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600', marginBottom: '6px' }}>
-                              Quick Emojis
-                            </div>
-                            <div className="emoji-grid">
-                              {['😀', '😂', '🔥', '🚀', '✨', '👍', '🙏', '❤️', '🎉', '💡', '🤔', '👀', '💯', '👏', '🎨', '💻', '⚡', '☕', '🌟', '💥', '🍕', '🙌', '😎', '😜'].map((emoji) => (
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                                 <button
                                   key={emoji}
                                   type="button"
@@ -1215,7 +954,6 @@ export default function ChatWindow({ className = '', onBack }) {
                                 </button>
                               ))}
                             </div>
-<<<<<<< HEAD
                           )}
 
                           {/* 2. STICKERS TAB */}
@@ -1309,120 +1047,10 @@ export default function ChatWindow({ className = '', onBack }) {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                               
                               {/* Simple input query */}
-=======
-                          </div>
-                        )}
-
-                        {/* TAB 2: STICKERS */}
-                        {activeMediaTab === 'stickers' && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>Choose Sticker</span>
-                              
-                              {/* Upload Custom Sticker trigger */}
-                              <label style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                padding: '4px 8px',
-                                background: 'rgba(6, 182, 212, 0.15)',
-                                border: '1px solid rgba(6, 182, 212, 0.3)',
-                                borderRadius: '4px',
-                                color: 'var(--accent-cyan)',
-                                fontSize: '10px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer'
-                              }}>
-                                <Plus size={10} /> Upload Custom
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  style={{ display: 'none' }}
-                                  onChange={handleStickerUpload}
-                                />
-                              </label>
-                            </div>
-
-                            {/* Stickers scroll wrapper */}
-                            <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }}>
-                              
-                              {/* Cute SVG Default Cute Animals stickers */}
-                              <div>
-                                <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Cute Decals</span>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                                  {['🐼', '🦊', '🦁', '🐨', '🐸', '🐷', '🦄', '🐰'].map((dec) => (
-                                    <button
-                                      key={dec}
-                                      type="button"
-                                      onClick={() => sendStickerMessage(dec)}
-                                      style={{
-                                        fontSize: '32px',
-                                        background: 'rgba(255,255,255,0.03)',
-                                        border: '1px solid var(--glass-border)',
-                                        borderRadius: '8px',
-                                        cursor: 'pointer',
-                                        padding: '4px',
-                                        transition: 'transform 0.2s'
-                                      }}
-                                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                    >
-                                      {dec}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Custom Cloudinary stickers */}
-                              <div>
-                                <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Custom Uploads ({customStickers.length})</span>
-                                {customStickers.length === 0 ? (
-                                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic', display: 'block', textAlign: 'center', padding: '10px 0' }}>
-                                    No custom stickers uploaded.
-                                  </span>
-                                ) : (
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                    {customStickers.map((stk, idx) => (
-                                      <img
-                                        key={idx}
-                                        src={stk}
-                                        alt={`custom sticker ${idx}`}
-                                        onClick={() => sendStickerMessage(stk)}
-                                        style={{
-                                          width: '100%',
-                                          height: '60px',
-                                          objectFit: 'contain',
-                                          background: 'rgba(255,255,255,0.02)',
-                                          border: '1px solid var(--glass-border)',
-                                          borderRadius: '8px',
-                                          cursor: 'pointer',
-                                          padding: '4px',
-                                          transition: 'transform 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-
-                            </div>
-                          </div>
-                        )}
-
-                        {/* TAB 3: GIFS */}
-                        {activeMediaTab === 'gifs' && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {/* Search bar */}
-                            <div className="search-container" style={{ display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '2px 8px' }}>
-                              <Search size={12} style={{ color: 'var(--text-muted)', marginRight: '6px' }} />
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                               <input
                                 className="glass-input"
                                 type="text"
                                 placeholder="Search reaction GIFs..."
-<<<<<<< HEAD
                                 value={gifQuery}
                                 onChange={(e) => setGifQuery(e.target.value)}
                                 style={{ padding: '4px 8px', fontSize: '11px', width: '100%' }}
@@ -1477,46 +1105,6 @@ export default function ChatWindow({ className = '', onBack }) {
                           )}
 
                         </div>
-=======
-                                value={gifSearch}
-                                onChange={(e) => setGifSearch(e.target.value)}
-                                style={{ flex: 1, padding: '4px 0', border: 'none', background: 'transparent', fontSize: '11px', boxShadow: 'none' }}
-                              />
-                              {gifSearch && (
-                                <button type="button" onClick={() => setGifSearch('')} className="icon-btn" style={{ width: '16px', height: '16px' }}>
-                                  <X size={10} />
-                                </button>
-                              )}
-                            </div>
-
-                            {/* GIF grid display */}
-                            <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', paddingRight: '4px' }}>
-                              {curatedGifs
-                                .filter(gif => gif.name.toLowerCase().includes(gifSearch.toLowerCase()))
-                                .map((gif, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={gif.url}
-                                    alt={gif.name}
-                                    onClick={() => sendStickerMessage(gif.url)}
-                                    style={{
-                                      width: '100%',
-                                      height: '70px',
-                                      objectFit: 'cover',
-                                      borderRadius: '8px',
-                                      cursor: 'pointer',
-                                      transition: 'transform 0.2s',
-                                      border: '1px solid var(--glass-border)'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.04)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                                  />
-                                ))}
-                            </div>
-                          </div>
-                        )}
-
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                       </div>
                     )}
                   </form>
@@ -1694,11 +1282,7 @@ export default function ChatWindow({ className = '', onBack }) {
                         ].map((t) => (
                           <button
                             key={t.key}
-<<<<<<< HEAD
                             onClick={() => handleUpdateCustomization(t.key, currentChat.themeEmoji || '👍', currentChat.themeBackground || '', currentChat.vanishMode || false)}
-=======
-                            onClick={() => updateConversationCustomization(currentChat._id, t.key, currentChat.themeEmoji || '👍', currentChat.themeBackground || '')}
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                             style={{
                               width: '22px',
                               height: '22px',
@@ -1721,11 +1305,7 @@ export default function ChatWindow({ className = '', onBack }) {
                         {['👍', '❤️', '😂', '🔥', '😮', '💯', '💥', '✨'].map((emoji) => (
                           <button
                             key={emoji}
-<<<<<<< HEAD
                             onClick={() => handleUpdateCustomization(currentChat.themeColor || 'purple', emoji, currentChat.themeBackground || '', currentChat.vanishMode || false)}
-=======
-                            onClick={() => updateConversationCustomization(currentChat._id, currentChat.themeColor || 'purple', emoji, currentChat.themeBackground || '')}
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                             style={{
                               background: currentChat?.themeEmoji === emoji ? 'rgba(255,255,255,0.1)' : 'transparent',
                               border: currentChat?.themeEmoji === emoji ? '1px solid white' : '1px solid transparent',
@@ -1742,7 +1322,6 @@ export default function ChatWindow({ className = '', onBack }) {
                       </div>
                     </div>
 
-<<<<<<< HEAD
                     {/* Wallpapers presets */}
                     <div>
                       <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Solid & Gradient Wallpapers</span>
@@ -1772,43 +1351,11 @@ export default function ChatWindow({ className = '', onBack }) {
                               whiteSpace: 'nowrap',
                               textOverflow: 'ellipsis'
                             }}
-=======
-                    {/* Wallpaper pickers */}
-                    <div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Chat Wallpaper</span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '10px' }}>
-                        {[
-                          { key: 'slate', name: 'Slate', value: 'rgba(15, 15, 22, 0.65)' },
-                          { key: 'sunset', name: 'Sunset', value: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)' },
-                          { key: 'ocean', name: 'Ocean', value: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)' },
-                          { key: 'forest', name: 'Forest', value: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(4, 120, 87, 0.15) 100%)' }
-                        ].map((wp) => (
-                          <button
-                            key={wp.key}
-                            onClick={() => updateConversationCustomization(currentChat._id, currentChat.themeColor || 'purple', currentChat.themeEmoji || '👍', wp.value)}
-                            style={{
-                              height: '32px',
-                              borderRadius: '6px',
-                              background: wp.value,
-                              border: currentChat?.themeBackground === wp.value ? '2px solid white' : '1px solid var(--glass-border)',
-                              cursor: 'pointer',
-                              fontSize: '9px',
-                              fontWeight: 'bold',
-                              color: 'white',
-                              textShadow: '0 1px 2px rgba(0,0,0,0.8)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: currentChat?.themeBackground === wp.value ? '0 0 6px rgba(255,255,255,0.4)' : 'none'
-                            }}
-                            title={wp.name}
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                           >
                             {wp.name}
                           </button>
                         ))}
                       </div>
-<<<<<<< HEAD
                     </div>
 
                     {/* Custom Wallpaper Image URL */}
@@ -1855,26 +1402,6 @@ export default function ChatWindow({ className = '', onBack }) {
                       </span>
                     </div>
 
-=======
-                      
-                      {/* Custom URL wallpaper input */}
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <input
-                          className="glass-input"
-                          type="text"
-                          placeholder="Or paste wallpaper URL..."
-                          style={{ padding: '6px 8px', fontSize: '11px', flex: 1 }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && e.target.value.trim() !== '') {
-                              updateConversationCustomization(currentChat._id, currentChat.themeColor || 'purple', currentChat.themeEmoji || '👍', e.target.value.trim());
-                              e.target.value = '';
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
                   </div>
                 )}
               </div>
@@ -2081,193 +1608,6 @@ export default function ChatWindow({ className = '', onBack }) {
         </div>
       )}
 
-<<<<<<< HEAD
-=======
-      {/* Real-time WebRTC Active Call Overlay */}
-      {activeCall && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(10, 10, 15, 0.95)',
-          backdropFilter: 'blur(30px)',
-          zIndex: 200,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px 20px',
-          animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}>
-          {/* Header showing chat details */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginBottom: '40px', textAlign: 'center' }}>
-            <div className="avatar-wrapper" style={{ width: '80px', height: '80px', position: 'relative' }}>
-              {chatPhoto ? (
-                <img className="avatar" src={chatPhoto} alt={chatName} style={{ borderRadius: '50%', border: `3px solid ${getThemeColor()}` }} />
-              ) : (
-                <div className="avatar-placeholder" style={{ fontSize: '28px', borderRadius: '50%', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{fallback}</div>
-              )}
-            </div>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: 'white', margin: 0 }}>{chatName}</h2>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              {callStatus === 'ringing' ? 'Ringing...' : 'Connected Call'}
-            </span>
-          </div>
-
-          {/* Active feeds rendering pane */}
-          <div style={{ flex: 1, width: '100%', maxWidth: '480px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderRadius: '16px', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--glass-border)' }}>
-            
-            {/* If ringing, show pulsing visual rings */}
-            {callStatus === 'ringing' && (
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <span className="dot" style={{ width: '12px', height: '12px', background: getThemeColor(), borderRadius: '50%', animation: 'pulse 1.2s infinite' }}></span>
-                <span className="dot" style={{ width: '12px', height: '12px', background: getThemeColor(), borderRadius: '50%', animation: 'pulse 1.2s infinite', animationDelay: '0.2s' }}></span>
-                <span className="dot" style={{ width: '12px', height: '12px', background: getThemeColor(), borderRadius: '50%', animation: 'pulse 1.2s infinite', animationDelay: '0.4s' }}></span>
-              </div>
-            )}
-
-            {/* If audio call is connected, show moving waveform visual chimes */}
-            {callStatus === 'connected' && activeCall === 'audio' && (
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '60px' }}>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                  <span
-                    key={i}
-                    style={{
-                      width: '6px',
-                      height: '20px',
-                      background: getThemeColor(),
-                      borderRadius: '3px',
-                      animation: 'audioWave 0.8s ease-in-out infinite alternate',
-                      animationDelay: `${i * 0.1}s`
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* If video call is connected, render the HTML5 Video stream feed */}
-            {callStatus === 'connected' && activeCall === 'video' && (
-              <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                {/* Remote stream video placeholder (large background) */}
-                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '10px' }}>
-                  <div className="avatar-placeholder" style={{ width: '60px', height: '60px', fontSize: '20px' }}>{fallback}</div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Waiting for video feed...</span>
-                </div>
-                
-                {/* Local stream video (mirrored corner bubble overlay) */}
-                {localStream && !isVideoOff && (
-                  <video
-                    ref={localVideoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={{
-                      position: 'absolute',
-                      bottom: '16px',
-                      right: '16px',
-                      width: '120px',
-                      height: '160px',
-                      objectFit: 'cover',
-                      borderRadius: '12px',
-                      border: '2px solid rgba(255,255,255,0.2)',
-                      transform: 'scaleX(-1)', // Mirror local preview
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                      background: '#000'
-                    }}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Connected Call details (Duration metric timer) */}
-          {callStatus === 'connected' && (
-            <div style={{ marginTop: '20px', fontSize: '16px', fontWeight: 'bold', color: 'white', letterSpacing: '0.5px' }}>
-              {formatSeconds(callDuration)}
-            </div>
-          )}
-
-          {/* Floating Actions console row */}
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
-            {/* Toggle Mic Mute */}
-            <button
-              onClick={toggleMute}
-              style={{
-                width: '50px',
-                height: '50px',
-                borderRadius: '50%',
-                border: 'none',
-                background: isMuted ? '#ef4444' : 'rgba(255,255,255,0.06)',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                transition: 'all 0.2s'
-              }}
-              title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
-            >
-              {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
-            </button>
-
-            {/* Red End Call Circular Button */}
-            <button
-              onClick={endCall}
-              style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                border: 'none',
-                background: '#ef4444',
-                color: 'white',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)',
-                transition: 'transform 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              title="Hang up call"
-            >
-              <PhoneOff size={24} />
-            </button>
-
-            {/* Toggle Camera Stream (Only for Video Calls) */}
-            {activeCall === 'video' ? (
-              <button
-                onClick={toggleVideo}
-                style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '50%',
-                  border: 'none',
-                  background: isVideoOff ? '#ef4444' : 'rgba(255,255,255,0.06)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                  transition: 'all 0.2s'
-                }}
-                title={isVideoOff ? 'Enable camera' : 'Disable camera'}
-              >
-                {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
-              </button>
-            ) : (
-              <div style={{ width: '50px' }} />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Spacers & keyframe animations inject */}
->>>>>>> bbc1502097bf26952dbf07c5cbd75efd484e583d
       <style>{`
         @keyframes pulse {
           0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
