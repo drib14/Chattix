@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+    --color-primary: #aa3bff;
+    --color-primary-hover: #902be3;
+    --color-secondary: #ff3b99;
+
+    --color-bg-dark: #16171d;
+    --color-bg-dark-secondary: #1f2028;
+    --color-bg-dark-hover: #2e303a;
+
+    --color-text-dark: #f3f4f6;
+    --color-text-dark-secondary: #9ca3af;
+    --color-border-dark: #2e303a;
+}
+
+body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-dark);
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+}
