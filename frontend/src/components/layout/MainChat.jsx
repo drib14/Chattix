@@ -115,13 +115,41 @@ const stopRingingSynth = () => {
     }
 };
 
-const THEME_BUBBLE_CLASSES = {
-    default: 'bg-[#0084FF] text-white',
-    blue: 'bg-[#0084FF] text-white',
-    lavender: 'bg-gradient-to-r from-[#8a2387] via-[#e94057] to-[#f27121] text-white',
-    candy: 'bg-gradient-to-r from-[#ec008c] to-[#fc6767] text-white',
-    sea: 'bg-gradient-to-r from-[#11998e] to-[#38ef7d] text-white',
-    cyberpunk: 'bg-gradient-to-r from-[#f12711] to-[#f5af19] text-white',
+const CONVERSATION_THEMES = {
+    default: {
+        bgStyle: { backgroundColor: '#0e0f14', backgroundImage: 'radial-gradient(at top, #14151f 0%, #0e0f14 100%)' },
+        bubbleStyle: 'bg-[#0084FF] text-white',
+        textStyle: 'text-[#0084FF]',
+    },
+    blue: {
+        bgStyle: { backgroundColor: '#0e0f14', backgroundImage: 'radial-gradient(at top, #14151f 0%, #0e0f14 100%)' },
+        bubbleStyle: 'bg-[#0084FF] text-white',
+        textStyle: 'text-[#0084FF]',
+    },
+    one_piece: {
+        bgStyle: { 
+            backgroundColor: '#070b19', 
+            backgroundImage: 'radial-gradient(at top, #0f172a 0%, #070b19 100%)',
+        },
+        bubbleStyle: 'bg-gradient-to-r from-[#d4af37] via-[#a67c1e] to-[#8c620d] text-neutral-950 font-bold border border-[#d4af37]/35 shadow-[0_0_12px_rgba(212,175,55,0.25)]',
+        textStyle: 'text-[#d4af37]',
+        watermark: true
+    },
+    candy: {
+        bgStyle: { backgroundColor: '#180a13', backgroundImage: 'linear-gradient(135deg, #2b0e22 0%, #180a13 100%)' },
+        bubbleStyle: 'bg-gradient-to-r from-[#ec008c] to-[#fc6767] text-white font-bold',
+        textStyle: 'text-pink-400',
+    },
+    lavender: {
+        bgStyle: { backgroundColor: '#0f0a1d', backgroundImage: 'linear-gradient(135deg, #1f1235 0%, #0f0a1d 100%)' },
+        bubbleStyle: 'bg-gradient-to-r from-[#8a2387] via-[#e94057] to-[#f27121] text-white font-bold',
+        textStyle: 'text-purple-400',
+    },
+    sea: {
+        bgStyle: { backgroundColor: '#051111', backgroundImage: 'linear-gradient(135deg, #0a2020 0%, #051111 100%)' },
+        bubbleStyle: 'bg-gradient-to-r from-[#11998e] to-[#38ef7d] text-black font-bold',
+        textStyle: 'text-teal-400',
+    },
 };
 
 const MainChat = () => {
@@ -361,7 +389,8 @@ const MainChat = () => {
     const chatName = selectedChat.isGroup ? selectedChat.groupName : otherUser?.username;
     const chatPic = selectedChat.isGroup ? selectedChat.groupAvatar : otherUser?.profilePic;
     const activeTheme = selectedChat.theme || 'default';
-    const bubbleStyle = THEME_BUBBLE_CLASSES[activeTheme] || THEME_BUBBLE_CLASSES.default;
+    const themeSettings = CONVERSATION_THEMES[activeTheme] || CONVERSATION_THEMES.default;
+    const bubbleStyle = themeSettings.bubbleStyle;
 
     return (
         <div className="flex-1 border-r border-white/5 h-full flex flex-col bg-[#0e0f14] relative overflow-hidden">
@@ -396,7 +425,18 @@ const MainChat = () => {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 select-text bg-[#0e0f14]" style={{ backgroundImage: 'radial-gradient(at top, #14151f 0%, #0e0f14 100%)' }}>
+            <div 
+                className="flex-1 overflow-y-auto p-4 space-y-4 select-text relative" 
+                style={themeSettings.bgStyle}
+            >
+                {/* Visual Watermark Overlay for Special themes like One Piece */}
+                {themeSettings.watermark && activeTheme === 'one_piece' && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] select-none z-0">
+                        <svg viewBox="0 0 100 100" className="w-80 h-80 fill-white">
+                            <path d="M50 5C45 5 41 9 41 14C41 15 41 16 41.5 17L30 25C25 21 18 22 14 27C10 32 11 39 16 43L25 50L16 57C11 61 10 68 14 73C18 78 25 79 30 75L41.5 83C41 84 41 85 41 86C41 91 45 95 50 95C55 95 59 91 59 86C59 85 59 84 58.5 83L70 75C75 79 82 78 86 73C90 68 89 61 84 57L75 50L84 43C89 39 90 32 86 27C82 22 75 21 70 25L58.5 17C59 16 59 15 59 14C59 9 55 5 50 5 Z M 50 25 C 58 25 65 31 65 39 C 65 47 58 53 50 53 C 42 53 35 47 35 39 C 35 31 42 25 50 25 Z" />
+                        </svg>
+                    </div>
+                )}
                 {loadingMessages ? (
                     <div>
                         <MessageSkeleton />

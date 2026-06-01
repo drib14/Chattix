@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { KeyRound, Mail, ArrowLeft, Send } from 'lucide-react';
+import { KeyRound, Mail, ArrowLeft, X as CloseIcon } from 'lucide-react';
 
 const ChattixLogo = () => (
     <div className="flex flex-col items-center justify-center select-none">
@@ -45,11 +45,25 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const login = useAuthStore((state) => state.login);
 
-    // Forgot password wizard state
-    const [view, setView] = useState('login'); // 'login' | 'forgot_email' | 'forgot_otp'
+    // Load saved accounts from localStorage on init
+    const [savedAccounts, setSavedAccounts] = useState(() => {
+        const saved = localStorage.getItem('chattix_saved_accounts');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [view, setView] = useState(() => {
+        return savedAccounts.length > 0 ? 'saved_accounts' : 'login';
+    });
+
+    const [selectedSavedAccount, setSelectedSavedAccount] = useState(null);
     const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Sync savedAccounts to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('chattix_saved_accounts', JSON.stringify(savedAccounts));
+    }, [savedAccounts]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -140,6 +154,21 @@ const LoginPage = () => {
         }
     };
 
+    const removeSavedAccount = (accId, e) => {
+        e.stopPropagation();
+        const filtered = savedAccounts.filter((acc) => acc._id !== accId);
+        setSavedAccounts(filtered);
+        if (filtered.length === 0) {
+            setView('login');
+        }
+    };
+
+    const selectSavedAccount = (acc) => {
+        setSelectedSavedAccount(acc);
+        setEmail(acc.email);
+        setView('password_confirm');
+    };
+
     return (
         <div className="relative flex w-full h-full min-h-screen justify-center items-center bg-[#090a0f] overflow-hidden px-4 select-none">
             {/* Animated backdrop gradient lights */}
@@ -153,6 +182,133 @@ const LoginPage = () => {
                 </div>
 
                 <AnimatePresence mode="wait">
+                    {view === 'saved_accounts' && (
+                        <motion.div
+                            key="saved-accounts-view"
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -15 }}
+                            transition={{ duration: 0.25 }}
+                            className="space-y-6"
+                        >
+                            <div className="text-center">
+                                <h3 className="text-lg font-bold text-white leading-tight">Recent Accounts</h3>
+                                <p className="text-xs text-neutral-400 mt-1">Click your avatar to log in quickly.</p>
+                            </div>
+
+                            {/* Saved Accounts Grid */}
+                            <div className="grid grid-cols-2 gap-4 py-2">
+                                {savedAccounts.map((acc) => (
+                                    <div
+                                        key={acc._id}
+                                        onClick={() => selectSavedAccount(acc)}
+                                        className="relative group cursor-pointer bg-neutral-800/40 hover:bg-neutral-800/70 border border-white/5 hover:border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center text-center transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] select-none"
+                                    >
+                                        {/* Remove card trigger */}
+                                        <button
+                                            onClick={(e) => removeSavedAccount(acc._id, e)}
+                                            className="absolute top-2 right-2 p-1 rounded-full text-neutral-500 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                                        >
+                                            <CloseIcon size={14} />
+                                        </button>
+
+                                        {/* Avatar */}
+                                        <div className="w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-neutral-800 flex items-center justify-center font-bold text-xl text-white mb-2">
+                                            {acc.profilePic ? (
+                                                <img src={acc.profilePic} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                acc.username ? acc.username[0].toUpperCase() : '?'
+                                            )}
+                                        </div>
+
+                                        {/* Username */}
+                                        <span className="text-xs font-bold text-white truncate max-w-full">
+                                            {acc.username || 'User'}
+                                        </span>
+                                        <span className="text-[10px] text-neutral-500 truncate max-w-full mt-0.5">
+                                            {acc.email}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                                <button
+                                    onClick={() => setView('login')}
+                                    className="w-full py-3 rounded-2xl text-[#0099ff] font-semibold text-sm border border-[#0099ff]/25 hover:border-[#0099ff]/50 bg-[#0099ff]/5 hover:bg-[#0099ff]/10 active:scale-[0.98] transition-all cursor-pointer text-center"
+                                >
+                                    Use a different account
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {view === 'password_confirm' && (
+                        <motion.div
+                            key="password-confirm-view"
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -15 }}
+                            transition={{ duration: 0.25 }}
+                            className="space-y-5"
+                        >
+                            <div className="flex flex-col items-center text-center">
+                                {/* Avatar */}
+                                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#06b6d4] bg-neutral-800 flex items-center justify-center font-bold text-2xl text-white shadow-lg mb-3">
+                                    {selectedSavedAccount?.profilePic ? (
+                                        <img src={selectedSavedAccount.profilePic} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        selectedSavedAccount?.username ? selectedSavedAccount.username[0].toUpperCase() : '?'
+                                    )}
+                                </div>
+                                <h3 className="text-lg font-bold text-white leading-tight">
+                                    Logging in as {selectedSavedAccount?.username}
+                                </h3>
+                                <p className="text-xs text-neutral-400 mt-1">{selectedSavedAccount?.email}</p>
+                            </div>
+
+                            <form className="space-y-4" onSubmit={handleSubmit}>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-500">
+                                        <KeyRound size={18} />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        required
+                                        autoFocus
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Password"
+                                        className="w-full pl-11 pr-4 py-3 rounded-2xl bg-neutral-800/40 text-white placeholder-neutral-500 border border-white/5 focus:outline-none focus:border-[#0099ff] focus:ring-2 focus:ring-[#0099ff]/20 transition-all sm:text-sm"
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full flex justify-center items-center py-3 px-4 rounded-2xl text-white font-semibold text-sm bg-gradient-to-r from-[#0099ff] to-[#a033ff] hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-[#0099ff]/20"
+                                    >
+                                        {loading ? 'Logging in...' : 'Log In'}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedSavedAccount(null);
+                                            setView('saved_accounts');
+                                            setPassword('');
+                                        }}
+                                        className="w-full flex items-center justify-center space-x-1.5 py-2 text-xs font-semibold text-neutral-400 hover:text-white transition cursor-pointer"
+                                    >
+                                        <ArrowLeft size={14} />
+                                        <span>Back to account list</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    )}
+
                     {view === 'login' && (
                         <motion.div
                             key="login-view"
@@ -191,11 +347,20 @@ const LoginPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end pr-1">
+                                <div className="flex justify-end pr-1 text-xs font-semibold text-[#0099ff] hover:text-[#33adff] space-x-4">
+                                    {savedAccounts.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setView('saved_accounts')}
+                                            className="hover:underline transition cursor-pointer"
+                                        >
+                                            Switch User
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => setView('forgot_email')}
-                                        className="text-xs font-semibold text-[#0099ff] hover:text-[#33adff] hover:underline transition cursor-pointer"
+                                        className="hover:underline transition cursor-pointer"
                                     >
                                         Forgot Password?
                                     </button>

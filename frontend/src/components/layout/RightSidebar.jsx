@@ -9,10 +9,10 @@ import toast from 'react-hot-toast';
 
 const GRADIENTS = [
     { name: 'blue', label: 'Classic Chattix', class: 'bg-[#0084FF]' },
+    { name: 'one_piece', label: 'One Piece (Pirate Treasure)', class: 'bg-[#d4af37]' },
     { name: 'candy', label: 'Candy Crush', class: 'bg-gradient-to-r from-[#ec008c] to-[#fc6767]' },
     { name: 'lavender', label: 'Lavender Sunset', class: 'bg-gradient-to-r from-[#8a2387] via-[#e94057] to-[#f27121]' },
     { name: 'sea', label: 'Emerald Sea', class: 'bg-gradient-to-r from-[#11998e] to-[#38ef7d]' },
-    { name: 'cyberpunk', label: 'Cyberpunk Spark', class: 'bg-gradient-to-r from-[#f12711] to-[#f5af19]' },
 ];
 
 const RightSidebar = () => {
