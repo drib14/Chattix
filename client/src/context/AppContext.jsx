@@ -1,0 +1,786 @@
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
+
+const AppContext = createContext();
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+export const AppProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [conversations, setConversations] = useState([]);
+  const [currentChat, setCurrentChat] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]);
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [favoriteContacts, setFavoriteContacts] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUsers, setTypingUsers] = useState({}); // { [conversationId]: [username] }
+  const [toast, setToast] = useState({ show: false, text: '', type: 'success' });
+  const [loading, setLoading] = useState(false);
+
+  const socketRef = useRef(null);
+
+  // Trigger Toast Alert Notification
+  const showToast = (text, type = 'success') => {
+    setToast({ show: true, text, type });
+    setTimeout(() => {
+      setToast({ show: false, text: '', type: 'success' });
+    }, 4000);
+  };
+
+  // Get current user session on load
+  useEffect(() => {
+    if (token) {
+      fetchMe();
+    }
+  }, [token]);
+
+  // Handle Socket initialization when user is loaded
+  useEffect(() => {
+    if (user && user.id) {
+      // Connect socket
+      const socket = io(API_URL);
+      socketRef.current = socket;
+
+      // Setup session
+      socket.emit('setup', user);
+
+      // Sockets Listeners
+      socket.on('connected_users', (users) => {
+        setOnlineUsers(users);
+      });
+
+      socket.on('user_status_change', (data) => {
+        // data: { userId, isOnline, lastSeen }
+        setOnlineUsers((prev) => {
+          if (data.isOnline) {
+            return Array.from(new Set([...prev, data.userId]));
+          } else {
+            return prev.filter((id) => id !== data.userId);
+          }
+        });
+        
+        // Dynamically update online status in conversation lists
+        setConversations((prev) =>
+          prev.map((c) => {
+            const updatedParticipants = c.participants.map((p) =>
+              p._id === data.userId ? { ...p, isOnline: data.isOnline, lastSeen: data.lastSeen } : p
+            );
+            return { ...c, participants: updatedParticipants };
+          })
+        );
+
+        if (currentChat) {
+          const updatedParticipants = currentChat.participants.map((p) =>
+            p._id === data.userId ? { ...p, isOnline: data.isOnline, lastSeen: data.lastSeen } : p
+          );
+          setCurrentChat((prev) => ({ ...prev, participants: updatedParticipants }));
+        }
+      });
+
+      socket.on('message_received', (newMessage) => {
+        const chatRoom = newMessage.conversationId;
+        
+        // If current active chat, append message
+        if (currentChat && currentChat._id === chatRoom) {
+          setMessages((prev) => {
+            if (prev.some((m) => m._id === newMessage._id)) return prev;
+            return [...prev, newMessage];
+          });
+          // Read receipts
+          socket.emit('message_read', {
+            messageId: newMessage._id,
+            conversationId: chatRoom,
+            userId: user.id,
+          });
+        }
+
+        // Update lastMessage pointer in conversations sidebar list
+        setConversations((prev) => {
+          const mapped = prev.map((c) => {
+            if (c._id === chatRoom) {
+              return { ...c, lastMessage: newMessage, updatedAt: new Date() };
+            }
+            return c;
+          });
+          return mapped.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        });
+      });
+
+      socket.on('message_edited', (updatedMessage) => {
+        if (currentChat && currentChat._id === updatedMessage.conversationId) {
+          setMessages((prev) => prev.map((m) => (m._id === updatedMessage._id ? updatedMessage : m)));
+        }
+      });
+
+      socket.on('message_deleted', (deletedMessage) => {
+        if (currentChat && currentChat._id === deletedMessage.conversationId) {
+          setMessages((prev) => prev.map((m) => (m._id === deletedMessage._id ? deletedMessage : m)));
+        }
+      });
+
+      socket.on('pinned_messages_updated', (data) => {
+        if (currentChat && currentChat._id === data.conversationId) {
+          setCurrentChat((prev) => ({ ...prev, pinnedMessages: data.pinnedMessages }));
+        }
+      });
+
+      socket.on('typing_received', (data) => {
+        setTypingUsers((prev) => {
+          const list = prev[data.conversationId] || [];
+          if (list.includes(data.username)) return prev;
+          return { ...prev, [data.conversationId]: [...list, data.username] };
+        });
+      });
+
+      socket.on('stop_typing_received', (data) => {
+        setTypingUsers((prev) => {
+          const list = prev[data.conversationId] || [];
+          return { ...prev, [data.conversationId]: list.filter((u) => u !== data.username) };
+        });
+      });
+
+      return () => {
+        socket.disconnect();
+        socketRef.current = null;
+      };
+    }
+  }, [user, currentChat]);
+
+  // Join chat rooms on change
+  useEffect(() => {
+    if (socketRef.current && currentChat) {
+      socketRef.current.emit('join_room', currentChat._id);
+      fetchMessages(currentChat._id);
+
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.emit('leave_room', currentChat._id);
+        }
+      };
+    }
+  }, [currentChat]);
+
+  // API Call Headers
+  const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    Authorization: token ? `Bearer ${token}` : '',
+  });
+
+  // fetch user session
+  const fetchMe = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+      } else {
+        logoutUser();
+      }
+    } catch (error) {
+      console.error(error);
+      logoutUser();
+    }
+  };
+
+  // Register
+  const registerUser = async (username, email, password) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      setLoading(false);
+      showToast('Connection failed. Server is offline.', 'error');
+      return { success: false };
+    }
+  };
+
+  // Email verification check
+  const verifyCode = async (email, code) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        showToast('Email verified successfully!', 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      setLoading(false);
+      showToast('Verification failed. Connection error.', 'error');
+      return { success: false };
+    }
+  };
+
+  // Login
+  const loginUser = async (loginIdentifier, password) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginIdentifier, password }),
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+        setUser(data.user);
+        showToast('Welcome back!', 'success');
+      } else {
+        showToast(data.message, data.isNotVerified ? 'info' : 'error');
+      }
+      return data;
+    } catch (error) {
+      setLoading(false);
+      showToast('Login failed. Connection error.', 'error');
+      return { success: false };
+    }
+  };
+
+  // Logout
+  const logoutUser = () => {
+    setUser(null);
+    setToken('');
+    localStorage.removeItem('token');
+    setConversations([]);
+    setCurrentChat(null);
+    setMessages([]);
+    showToast('Logged out successfully.', 'info');
+  };
+
+  // Forgot password request
+  const forgotPassword = async (email) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      setLoading(false);
+      showToast('Connection failed.', 'error');
+      return { success: false };
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (email, code, newPassword) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      setLoading(false);
+      showToast('Password reset connection error.', 'error');
+      return { success: false };
+    }
+  };
+
+  // Conversations retrieval
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats`, {
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setConversations(data.conversations);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Get messages for active conversation
+  const fetchMessages = async (chatId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${chatId}/messages`, {
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessages(data.messages);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Send a regular text message or quote-reply
+  const sendMessage = async (content, parentMessageId = null) => {
+    if (!currentChat) return;
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${currentChat._id}/messages`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ content, parentMessageId, messageType: 'text' }),
+      });
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to send message.', 'error');
+    }
+  };
+
+  // Send images, videos, audio voice notes or documents to Cloudinary
+  const sendMediaMessage = async (file, messageType, parentMessageId = null) => {
+    if (!currentChat) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('messageType', messageType);
+    if (parentMessageId) formData.append('parentMessageId', parentMessageId);
+
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/api/chats/${currentChat._id}/messages`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      setLoading(false);
+      return data;
+    } catch (error) {
+      setLoading(false);
+      console.error(error);
+      showToast('Media upload failed.', 'error');
+    }
+  };
+
+  // Edit Message
+  const editMessage = async (messageId, newContent) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/messages/${messageId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ content: newContent }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Delete message for everyone
+  const deleteMessage = async (messageId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Toggle Pinned status
+  const togglePin = async (messageId) => {
+    if (!currentChat) return;
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${currentChat._id}/messages/${messageId}/pin`, {
+        method: 'POST',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Create Conversation or Group
+  const createChat = async (isGroup, participants, name = '', avatar = '') => {
+    try {
+      const res = await fetch(`${API_URL}/api/chats`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ isGroup, participants, name, avatar }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Refresh and select
+        await fetchConversations();
+        setCurrentChat(data.conversation);
+      } else {
+        showToast(data.message, 'error');
+      }
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Update custom user profile details
+  const updateProfile = async (statusText, profilePhoto = '') => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/profile`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ statusText, profilePhoto }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        showToast(data.message, 'success');
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Fetch all Contacts and Requests
+  const fetchContacts = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/contacts`, {
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setContacts(data.contacts);
+        setPendingRequests(data.pendingRequests);
+        setSentRequests(data.sentRequests);
+        setBlockedUsers(data.blockedUsers);
+        setFavoriteContacts(data.favoriteContacts);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Search User by term
+  const searchUsers = async (query) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/search?query=${query}`, {
+        headers: getHeaders(),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, users: [] };
+    }
+  };
+
+  // Send contact request
+  const sendRequest = async (recipientId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/contacts/request`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ recipientId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        fetchContacts();
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Accept request
+  const acceptRequest = async (senderId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/contacts/accept`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ senderId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        fetchContacts();
+        fetchConversations();
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Decline request
+  const rejectRequest = async (senderId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/contacts/reject`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ senderId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'info');
+        fetchContacts();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Favorite toggle
+  const toggleFavorite = async (contactId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/contacts/favorite`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ contactId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        fetchContacts();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Remove contact
+  const removeContact = async (contactId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/contacts/${contactId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message, 'success');
+        fetchContacts();
+        fetchConversations();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // ---------------- AI Endpoints ----------------
+
+  // AI Summary
+  const getAIConversationSummary = async (chatId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/ai/summarize`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ conversationId: chatId }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, summary: 'AI summary request failed.' };
+    }
+  };
+
+  // AI Smart Replies
+  const getAISmartReplies = async (chatId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/ai/smart-replies`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ conversationId: chatId }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, replies: [] };
+    }
+  };
+
+  // AI Translate
+  const translateMessageAPI = async (text, targetLanguage) => {
+    try {
+      const res = await fetch(`${API_URL}/api/ai/translate`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ text, targetLanguage }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, translatedText: 'Translation service failed.' };
+    }
+  };
+
+  // AI Writing Assistant
+  const writeAssistAPI = async (text, tone) => {
+    try {
+      const res = await fetch(`${API_URL}/api/ai/write-assist`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ text, tone }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, rewrittenText: 'Writing helper failed.' };
+    }
+  };
+
+  // AI Semantic Search
+  const semanticSearchAPI = async (chatId, query) => {
+    try {
+      const res = await fetch(`${API_URL}/api/ai/semantic-search`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ conversationId: chatId, query }),
+      });
+      return await res.json();
+    } catch (error) {
+      console.error(error);
+      return { success: false, results: [] };
+    }
+  };
+
+  // Emit typing indicators on input change
+  const sendTypingStatus = (isTyping) => {
+    if (!socketRef.current || !currentChat) return;
+    const event = isTyping ? 'typing' : 'stop_typing';
+    socketRef.current.emit(event, {
+      conversationId: currentChat._id,
+      username: user.username,
+    });
+  };
+
+  // Send custom reactions
+  const sendReaction = (messageId, emoji) => {
+    if (!socketRef.current || !currentChat) return;
+    
+    // Optimistic state updates
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m._id === messageId) {
+          const cleanReactions = m.reactions.filter((r) => r.user.toString() !== user.id.toString());
+          return {
+            ...m,
+            reactions: [...cleanReactions, { user: user.id, emoji }],
+          };
+        }
+        return m;
+      })
+    );
+
+    socketRef.current.emit('reaction_add', {
+      messageId,
+      conversationId: currentChat._id,
+      reaction: { user: { id: user.id, username: user.username }, emoji },
+    });
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        user,
+        setUser,
+        token,
+        setToken,
+        conversations,
+        setConversations,
+        currentChat,
+        setCurrentChat,
+        messages,
+        setMessages,
+        contacts,
+        pendingRequests,
+        sentRequests,
+        blockedUsers,
+        favoriteContacts,
+        onlineUsers,
+        typingUsers,
+        toast,
+        showToast,
+        loading,
+        setLoading,
+        registerUser,
+        verifyCode,
+        loginUser,
+        logoutUser,
+        forgotPassword,
+        resetPassword,
+        fetchConversations,
+        sendMessage,
+        sendMediaMessage,
+        editMessage,
+        deleteMessage,
+        togglePin,
+        createChat,
+        updateProfile,
+        fetchContacts,
+        searchUsers,
+        sendRequest,
+        acceptRequest,
+        rejectRequest,
+        toggleFavorite,
+        removeContact,
+        getAIConversationSummary,
+        getAISmartReplies,
+        translateMessageAPI,
+        writeAssistAPI,
+        semanticSearchAPI,
+        sendTypingStatus,
+        sendReaction,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => useContext(AppContext);
