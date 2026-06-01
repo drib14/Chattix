@@ -138,7 +138,12 @@ export default function MessageBubble({ message, index, messages, onReply }) {
     borderRadius: getBubbleRadius()
   };
 
-  if (isSender && message.messageType !== 'poll' && !message.isDeleted) {
+  if (message.messageType === 'sticker') {
+    bubbleStyle.background = 'transparent';
+    bubbleStyle.border = 'none';
+    bubbleStyle.boxShadow = 'none';
+    bubbleStyle.padding = '0';
+  } else if (isSender && message.messageType !== 'poll' && !message.isDeleted) {
     bubbleStyle.background = getThemeGradient(currentChat?.themeColor);
   }
 
@@ -224,6 +229,50 @@ export default function MessageBubble({ message, index, messages, onReply }) {
         );
     }
   };
+
+  if (message.messageType === 'call') {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        width: '100%',
+        margin: '10px 0',
+        animation: 'fadeIn 0.25s ease-out'
+      }}>
+        <div className="glass-panel" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 14px',
+          borderRadius: '20px',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid var(--glass-border)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+        }}>
+          <span style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: message.content.includes('ended') ? '#ef4444' : '#10b981',
+            display: 'inline-block'
+          }}></span>
+          <span style={{
+            fontSize: '11.5px',
+            color: 'var(--text-secondary)',
+            fontWeight: '500'
+          }}>
+            {message.content}
+          </span>
+          <span style={{
+            fontSize: '10px',
+            color: 'var(--text-muted)'
+          }}>
+            • {formatMessageTime(message.createdAt)}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`message-wrapper ${isSender ? 'sender' : 'receiver'}`} style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', marginTop: !isPrevSameSender ? '12px' : '2px' }}>
@@ -326,8 +375,31 @@ export default function MessageBubble({ message, index, messages, onReply }) {
             )}
 
             {/* Text message */}
-            {message.content && !message.isDeleted && (
+            {message.content && message.messageType !== 'sticker' && !message.isDeleted && (
               <p style={{ margin: 0, fontSize: '13.5px' }}>{message.content}</p>
+            )}
+            
+            {/* Sticker message */}
+            {message.messageType === 'sticker' && !message.isDeleted && (
+              <div className="sticker-container" style={{ display: 'flex', userSelect: 'none' }}>
+                {message.content && (message.content.startsWith('http://') || message.content.startsWith('https://')) ? (
+                  <img
+                    src={message.content}
+                    alt="Sticker"
+                    style={{
+                      maxWidth: '120px',
+                      maxHeight: '120px',
+                      objectFit: 'contain',
+                      borderRadius: '8px',
+                      transition: 'transform 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  />
+                ) : (
+                  <span style={{ fontSize: '70px', lineHeight: 1 }}>{message.content}</span>
+                )}
+              </div>
             )}
             {message.isDeleted && (
               <p style={{ margin: 0, fontSize: '13px', fontStyle: 'italic', opacity: 0.6 }}>

@@ -595,3 +595,45 @@ export const getToxicityLogs = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch AI moderated logs.' });
   }
 };
+
+// @desc    Upload customized sticker
+// @route   POST /api/users/stickers
+// @access  Private
+export const uploadCustomSticker = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please attach a sticker image file' });
+    }
+    const buffer = req.file.buffer;
+    
+    // Dynamically import Cloudinary upload helper to avoid circular dependencies
+    const { uploadToCloudinary } = await import('../config/cloudinary.js');
+    const uploadResult = await uploadToCloudinary(buffer, 'image');
+    
+    const user = await User.findById(req.user._id);
+    user.stickers.push(uploadResult.secure_url);
+    await user.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Custom sticker uploaded successfully!',
+      stickers: user.stickers
+    });
+  } catch (error) {
+    console.error('[Upload Sticker Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to upload sticker' });
+  }
+};
+
+// @desc    Get custom stickers
+// @route   GET /api/users/stickers
+// @access  Private
+export const getCustomStickers = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    res.status(200).json({ success: true, stickers: user?.stickers || [] });
+  } catch (error) {
+    console.error('[Get Stickers Error]:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve stickers' });
+  }
+};

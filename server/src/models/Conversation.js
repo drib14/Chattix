@@ -54,6 +54,10 @@ const conversationSchema = new mongoose.Schema(
       type: String,
       default: '👍',
     },
+    themeBackground: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

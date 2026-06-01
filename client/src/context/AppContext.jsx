@@ -52,6 +52,39 @@ export const AppProvider = ({ children }) => {
     }, 4000);
   };
 
+  // Multiple Saved Accounts Switcher Helpers
+  const saveAccountSession = (usr, tkn) => {
+    if (!usr || !tkn) return;
+    try {
+      const saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+      const cleaned = saved.filter(acc => acc.id !== usr.id);
+      cleaned.push({
+        id: usr.id,
+        username: usr.username,
+        profilePhoto: usr.profilePhoto || '',
+        token: tkn
+      });
+      localStorage.setItem('chattix_saved_accounts', JSON.stringify(cleaned));
+    } catch(e) {
+      console.error('Error saving account session:', e);
+    }
+  };
+
+  const switchSavedAccount = (userId) => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+      const targetAcc = saved.find(acc => acc.id === userId);
+      if (targetAcc) {
+        localStorage.setItem('token', targetAcc.token);
+        window.location.reload();
+      } else {
+        showToast('Saved account session not found.', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Get current user session on load
   useEffect(() => {
     if (token) {
@@ -209,6 +242,7 @@ export const AppProvider = ({ children }) => {
       const data = await res.json();
       if (data.success) {
         setUser(data.user);
+        saveAccountSession(data.user, token);
       } else {
         logoutUser();
       }
@@ -257,6 +291,7 @@ export const AppProvider = ({ children }) => {
         setToken(data.token);
         localStorage.setItem('token', data.token);
         setUser(data.user);
+        saveAccountSession(data.user, data.token);
         showToast('Email verified successfully!', 'success');
       } else {
         showToast(data.message, 'error');
@@ -284,6 +319,7 @@ export const AppProvider = ({ children }) => {
         setToken(data.token);
         localStorage.setItem('token', data.token);
         setUser(data.user);
+        saveAccountSession(data.user, data.token);
         showToast('Welcome back!', 'success');
       } else {
         showToast(data.message, data.isNotVerified ? 'info' : 'error');
@@ -642,13 +678,13 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Update Chat customization (Theme & Emoji)
-  const updateConversationCustomization = async (chatId, themeColor, themeEmoji) => {
+  // Update Chat customization (Theme, Emoji & Background)
+  const updateConversationCustomization = async (chatId, themeColor, themeEmoji, themeBackground) => {
     try {
       const res = await fetch(`${API_URL}/api/chats/${chatId}/customization`, {
         method: 'PUT',
         headers: getHeaders(),
-        body: JSON.stringify({ themeColor, themeEmoji }),
+        body: JSON.stringify({ themeColor, themeEmoji, themeBackground }),
       });
       const data = await res.json();
       if (data.success) {
@@ -667,6 +703,52 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error(error);
       showToast('Failed to update chat customization.', 'error');
+    }
+  };
+
+  // Upload Custom Sticker to Cloudinary
+  const uploadCustomSticker = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_URL}/api/users/stickers`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        showToast(data.message, 'success');
+        setUser(prev => ({ ...prev, stickers: data.stickers }));
+        return data.stickers;
+      } else {
+        showToast(data.message, 'error');
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error(error);
+      showToast('Sticker upload failed.', 'error');
+    }
+  };
+
+  // Get Custom Stickers
+  const getCustomStickers = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/users/stickers`, {
+        headers: getHeaders()
+      });
+      const data = await res.json();
+      if (data.success) {
+        return data.stickers;
+      }
+      return [];
+    } catch (error) {
+      console.error(error);
+      return [];
     }
   };
 
@@ -875,6 +957,7 @@ export const AppProvider = ({ children }) => {
         setToken(data.token);
         localStorage.setItem('token', data.token);
         setUser(data.user);
+        saveAccountSession(data.user, data.token);
         showToast(data.message, 'success');
       } else {
         showToast(data.message, 'error');
@@ -1098,6 +1181,9 @@ export const AppProvider = ({ children }) => {
         toggleSuspendUser,
         fetchToxicityLogs,
         updateConversationCustomization,
+        switchSavedAccount,
+        uploadCustomSticker,
+        getCustomStickers,
       }}
     >
       {children}

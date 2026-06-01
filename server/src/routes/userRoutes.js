@@ -16,8 +16,11 @@ import {
   getAdminAnalytics,
   toggleSuspendUser,
   getToxicityLogs,
+  uploadCustomSticker,
+  getCustomStickers,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { uploadMiddleware } from '../config/cloudinary.js';
 
 const router = express.Router();
 
@@ -36,6 +39,9 @@ router.post('/contacts/accept', acceptContactRequest);
 router.post('/contacts/reject', rejectContactRequest);
 router.post('/contacts/favorite', toggleFavorite);
 router.delete('/contacts/:id', removeContact);
+
+router.post('/stickers', uploadMiddleware.single('file'), uploadCustomSticker);
+router.get('/stickers', getCustomStickers);
 
 // Admin Routes
 router.get('/admin/analytics', getAdminAnalytics);

@@ -115,6 +115,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    stickers: [
+      {
+        type: String
+      }
+    ],
   },
   { timestamps: true }
 );
