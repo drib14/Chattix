@@ -9,12 +9,17 @@ export const messageService = {
     if (data.receiverId) formData.append('receiverId', data.receiverId);
     if (data.groupId) formData.append('groupId', data.groupId);
     if (data.replyTo) formData.append('replyTo', data.replyTo);
+    if (data.gifUrl) formData.append('gifUrl', data.gifUrl);
 
     if (files?.length) {
-      files.forEach((file) => formData.append('attachments', file));
+      files.forEach((file) => formData.append('attachments', file, file.name || 'attachment'));
     }
 
-    const response = await api.post('/messages/send', formData);
+    const response = await api.post('/messages/send', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

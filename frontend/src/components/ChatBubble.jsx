@@ -1,7 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical } from 'lucide-react';
+import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 import PollMessage from './PollMessage';
+import MediaModal from './MediaModal';
+import { formatTime } from '../utils/dateUtils';
 
 const REACTIONS = ['❤️', '👍', '😂', '🔥', '😮', '😢'];
 
@@ -32,21 +35,22 @@ const ChatBubble = ({
   onReply,
   onReact,
   onEdit,
-  onDeleteMe,
-  onDeleteEveryone,
-  onForward,
   onStar,
   onCopy,
   onPin,
+  onDeleteRequest,
   onScrollToReply,
   onViewInfo,
+  onForward,
   searchQuery,
   messageRef,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [showCustomReaction, setShowCustomReaction] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
   const longPressRef = useRef(null);
 
   const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -75,10 +79,11 @@ const ChatBubble = ({
 
   if (message.deletedForEveryone) {
     return (
-      <div className={`flex mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-        <p className="text-xs text-gray-500 italic px-3 py-2 bg-gray-100 rounded-xl">
-          This message was deleted
-        </p>
+      <div className={`flex mb-2 group ${isOwn ? 'justify-end' : 'justify-start'}`}>
+        <div className={`flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 text-gray-500 italic text-sm ${isOwn ? 'rounded-2xl rounded-br-sm' : 'rounded-2xl rounded-bl-sm'}`}>
+          <Trash2 size={14} className="text-gray-400" />
+          <span>This message was deleted</span>
+        </div>
       </div>
     );
   }
@@ -93,11 +98,6 @@ const ChatBubble = ({
     );
   }
 
-  const formatTime = (date) => {
-    if (!date) return '';
-    return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
-
   const attachment = message.attachments?.[0];
   const senderAvatar = message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`;
   const receiverAvatar = message.receiver?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.receiver?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`;
@@ -109,6 +109,8 @@ const ChatBubble = ({
     return { isIgnored };
   };
 
+  const isPureMedia = attachment && (attachment.type === 'image' || attachment.type === 'gif' || attachment.type === 'video') && !message.text && !message.poll;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -118,13 +120,13 @@ const ChatBubble = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`flex gap-2 max-w-[min(85%,280px)] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+      <div className={`flex gap-2 max-w-full sm:max-w-[85%] min-w-0 items-end ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
         {/* Profile Image */}
-        <div className="flex-shrink-0 self-end mb-1">
-          <img src={senderAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+        <div className="flex-shrink-0 mb-1">
+          <img src={senderAvatar} alt="avatar" className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover shadow-sm" />
         </div>
 
-        <div className="relative min-w-0">
+        <div className="relative min-w-0 max-w-[min(85%,280px)] sm:max-w-[70%]">
         {message.replyTo && (
           <button
             type="button"
@@ -143,8 +145,10 @@ const ChatBubble = ({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
-          className={`relative px-3 py-2 rounded-xl message-bubble shadow-sm ${
-            isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'
+          className={`relative message-bubble shadow-sm ${
+            isPureMedia 
+              ? 'bg-transparent text-gray-900' 
+              : `px-3 py-2 rounded-xl ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`
           }`}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -152,10 +156,30 @@ const ChatBubble = ({
           }}
         >
           {(attachment?.type === 'image' || attachment?.type === 'gif') && (
-            <img src={attachment.url} alt="" className="rounded-lg max-w-full mb-1 max-h-60 object-cover" />
+            <div 
+              className={`relative cursor-pointer group/media ${isPureMedia ? 'mb-0.5' : 'mb-1'}`}
+              onClick={() => setShowMediaModal(true)}
+            >
+              <img src={attachment.url} alt="" className={`max-w-full max-h-60 object-cover ${isPureMedia ? 'rounded-2xl shadow-sm' : 'rounded-lg'}`} />
+              <div className={`absolute inset-0 bg-black/10 opacity-0 group-hover/media:opacity-100 transition-opacity ${isPureMedia ? 'rounded-2xl' : 'rounded-lg'}`} />
+            </div>
           )}
           {attachment?.type === 'video' && (
-            <video src={attachment.url} controls className="rounded-lg max-w-full mb-1 max-h-60" />
+            <div className={`relative ${isPureMedia ? 'mb-0.5' : 'mb-1'}`}>
+              <video 
+                src={attachment.url} 
+                className={`max-w-full max-h-60 bg-black cursor-pointer ${isPureMedia ? 'rounded-2xl shadow-sm' : 'rounded-lg'}`} 
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowMediaModal(true);
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white backdrop-blur-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </div>
+              </div>
+            </div>
           )}
           {attachment?.type === 'audio' && (
             <audio src={attachment.url} controls className="w-full max-w-full min-w-0 mb-1" />
@@ -259,11 +283,33 @@ const ChatBubble = ({
                     key={emoji}
                     type="button"
                     onClick={() => { onReact?.(message, emoji); setShowReactions(false); }}
-                    className="text-lg hover:scale-125 transition-transform"
+                    className="text-lg hover:scale-125 transition-transform px-1"
                   >
                     {emoji}
                   </button>
                 ))}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomReaction((v) => !v)}
+                    className="p-1 rounded-full text-gray-400 hover:bg-gray-100 flex items-center justify-center bg-gray-50 ml-1"
+                  >
+                    <Plus size={16} />
+                  </button>
+                  {showCustomReaction && (
+                    <div className="absolute bottom-full mb-2 z-50 right-0">
+                      <EmojiPicker
+                        onEmojiClick={(e) => {
+                          onReact?.(message, e.emoji);
+                          setShowCustomReaction(false);
+                          setShowReactions(false);
+                        }}
+                        width={280}
+                        height={320}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -302,13 +348,8 @@ const ChatBubble = ({
                       items.push({ icon: Copy, label: 'Copy', action: () => onCopy?.(message) });
                       items.push({ icon: Star, label: 'Star', action: () => onStar?.(message) });
                       items.push({ icon: Forward, label: 'Forward', action: () => onForward?.(message) });
-                      if (isOwn) items.push({ icon: Trash2, label: 'Edit', action: () => onEdit?.(message) });
-                      if (isOwn) {
-                        if (!message.group && onDeleteEveryone) items.push({ icon: Trash2, label: 'Delete For Everyone', action: () => onDeleteEveryone?.(message) });
-                        items.push({ icon: Trash2, label: 'Delete', action: () => onDeleteMe?.(message) });
-                      } else {
-                        items.push({ icon: Trash2, label: 'Delete', action: () => onDeleteMe?.(message) });
-                      }
+                      if (isOwn) items.push({ icon: Reply, label: 'Edit', action: () => onEdit?.(message) });
+                      items.push({ icon: Trash2, label: 'Delete', action: () => onDeleteRequest?.(message) });
                       if (message.group) {
                         items.push({ icon: Pin, label: 'Message Info', action: () => onViewInfo?.(message) });
                       }
@@ -382,7 +423,7 @@ const ChatBubble = ({
 
                   <button
                     type="button"
-                    onClick={() => { onDeleteMe?.(message); setShowMobileMenu(false); }}
+                    onClick={() => { onDeleteRequest?.(message); setShowMobileMenu(false); }}
                     className="w-full flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100"
                   >
                     <Trash2 size={18} />
@@ -433,6 +474,11 @@ const ChatBubble = ({
         </AnimatePresence>
         </div>
       </div>
+      <MediaModal
+        isOpen={showMediaModal}
+        onClose={() => setShowMediaModal(false)}
+        attachment={attachment}
+      />
     </motion.div>
   );
 };
