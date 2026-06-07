@@ -5,7 +5,7 @@ const User = require('../models/User');
 // Fetch all registered users (excluding password)
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find({}, 'firstName lastName username email');
+    const users = await User.find({}, 'firstName lastName username email lastActive');
     res.status(200).json(users);
   } catch (error) {
     console.error('Error fetching users', error);
