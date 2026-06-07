@@ -1,9 +1,10 @@
 import React, { useContext } from 'react';
-import { MessageSquare, User, ArrowRightLeft, LogOut } from 'lucide-react';
+import { MessageSquare, User, ArrowRightLeft, LogOut, Settings } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
+import Avatar from '../UI/Avatar';
 import Logo from '../UI/Logo';
 
-const NavRail = () => {
+const NavRail = ({ activePane, setActivePane }) => {
   const { currentUser, logout } = useContext(AuthContext);
 
   const handleSwitchAccount = () => {
@@ -17,27 +18,38 @@ const NavRail = () => {
           <Logo size={32} />
         </div>
         <div className="nav-icons">
-          <button className="nav-icon active" title="Chats">
+          <button 
+            className={`nav-icon ${activePane === 'chats' ? 'active' : ''}`} 
+            title="Chats"
+            onClick={() => setActivePane('chats')}
+          >
             <MessageSquare size={24} />
           </button>
-          <button className="nav-icon" title="People">
+          <button 
+            className={`nav-icon ${activePane === 'people' ? 'active' : ''}`} 
+            title="People"
+            onClick={() => setActivePane('people')}
+          >
             <User size={24} />
           </button>
         </div>
       </div>
       <div className="nav-rail-bottom">
+        <button 
+          className={`nav-icon ${activePane === 'settings' ? 'active' : ''}`} 
+          title="Settings"
+          onClick={() => setActivePane('settings')}
+        >
+          <Settings size={22} />
+        </button>
         <button className="nav-icon" onClick={handleSwitchAccount} title="Switch Profile">
           <ArrowRightLeft size={22} />
         </button>
         <button className="nav-icon" onClick={logout} title="Sign Out">
           <LogOut size={22} />
         </button>
-        <div className="nav-avatar">
-          {currentUser && (
-            <div className="user-avatar font-bold" style={{ width: '40px', height: '40px' }}>
-              {currentUser.firstName?.[0] || ''}{currentUser.lastName?.[0] || ''}
-            </div>
-          )}
+        <div className="nav-avatar" style={{ cursor: 'pointer', marginTop: '0.5rem' }} onClick={() => setActivePane('settings')} title={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : ''}>
+          <Avatar user={currentUser} size={40} />
         </div>
       </div>
     </div>

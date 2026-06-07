@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { SocketContext } from '../../context/SocketContext';
+import Avatar from '../UI/Avatar';
 
 const ActiveUsersBar = ({ allUsers, onSelectChat }) => {
   const { onlineUserIds } = useContext(SocketContext);
@@ -34,9 +35,7 @@ const ActiveUsersBar = ({ allUsers, onSelectChat }) => {
           return (
             <div key={user._id} className="active-user-item" onClick={() => onSelectChat(user)}>
                <div className={`active-avatar-ring ${isOnline ? 'online' : ''}`}>
-                 <div className="user-avatar">
-                   {user.firstName?.[0] || ''}{user.lastName?.[0] || ''}
-                 </div>
+                 <Avatar user={user} size={44} />
                </div>
                <span className="active-user-name">
                  {user.firstName}

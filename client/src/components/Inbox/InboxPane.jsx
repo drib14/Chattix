@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, X, Settings } from 'lucide-react';
 import ActiveUsersBar from './ActiveUsersBar';
+import Avatar from '../UI/Avatar';
 
 const InboxPane = ({ allUsers, conversations, activeChat, onSelectChat }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,9 +55,7 @@ const InboxPane = ({ allUsers, conversations, activeChat, onSelectChat }) => {
                   setSearchQuery('');
                 }}
               >
-                <div className="user-avatar">
-                  {user.firstName?.[0] || ''}{user.lastName?.[0] || ''}
-                </div>
+                <Avatar user={user} size={48} />
                 <div className="inbox-item-info">
                   <span className="inbox-item-name">{user.firstName} {user.lastName}</span>
                   <span className="inbox-item-sub">@{user.username}</span>
@@ -75,9 +74,7 @@ const InboxPane = ({ allUsers, conversations, activeChat, onSelectChat }) => {
                   className={`inbox-item ${isSelected ? 'selected' : ''}`}
                   onClick={() => onSelectChat(chat.recipient)}
                 >
-                  <div className="user-avatar font-bold">
-                    {chat.recipient?.firstName?.[0] || ''}{chat.recipient?.lastName?.[0] || ''}
-                  </div>
+                  <Avatar user={chat.recipient} size={48} />
                   <div className="inbox-item-info">
                     <span className="inbox-item-name">{chat.recipient.firstName} {chat.recipient.lastName}</span>
                     <span className="inbox-item-sub">

@@ -2,11 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import NavRail from '../../components/Navigation/NavRail';
 import InboxPane from '../../components/Inbox/InboxPane';
+import PeoplePane from '../../components/Inbox/PeoplePane';
+import SettingsPane from '../../components/Settings/SettingsPane';
 import ChatWindow from '../../components/Chat/ChatWindow';
 import api from '../../api/axios';
 
 const MessengerLayout = () => {
   const { currentUser } = useContext(AuthContext);
+  const [activePane, setActivePane] = useState('chats'); // 'chats', 'people', 'settings'
   const [activeChat, setActiveChat] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -35,13 +38,31 @@ const MessengerLayout = () => {
 
   return (
     <div className="messenger-layout">
-      <NavRail />
-      <InboxPane 
-        allUsers={allUsers} 
-        conversations={conversations} 
-        activeChat={activeChat} 
-        onSelectChat={handleSelectChat} 
-      />
+      <NavRail activePane={activePane} setActivePane={setActivePane} />
+      
+      {activePane === 'chats' && (
+        <InboxPane 
+          allUsers={allUsers} 
+          conversations={conversations} 
+          activeChat={activeChat} 
+          onSelectChat={handleSelectChat} 
+        />
+      )}
+      
+      {activePane === 'people' && (
+        <PeoplePane 
+          allUsers={allUsers} 
+          onSelectChat={(user) => {
+            handleSelectChat(user);
+            setActivePane('chats');
+          }} 
+        />
+      )}
+      
+      {activePane === 'settings' && (
+        <SettingsPane />
+      )}
+
       <ChatWindow 
         activeChat={activeChat} 
         conversations={conversations} 

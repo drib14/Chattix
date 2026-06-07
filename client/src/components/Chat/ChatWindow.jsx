@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { SocketContext } from '../../context/SocketContext';
 import api from '../../api/axios';
 import Logo from '../UI/Logo';
+import Avatar from '../UI/Avatar';
 
 const ChatWindow = ({ activeChat, conversations, setConversations, allUsers }) => {
   const { currentUser } = useContext(AuthContext);
@@ -171,9 +172,7 @@ const ChatWindow = ({ activeChat, conversations, setConversations, allUsers }) =
       <div className="chat-header">
         <div className="chat-header-profile">
           <div className={`active-avatar-ring ${isOnline ? 'online' : ''}`}>
-            <div className="user-avatar">
-              {activeChat?.firstName?.[0] || ''}{activeChat?.lastName?.[0] || ''}
-            </div>
+            <Avatar user={activeChat} size={40} />
           </div>
           <div className="chat-header-details">
             <h3>{activeChat.firstName} {activeChat.lastName}</h3>
@@ -202,8 +201,8 @@ const ChatWindow = ({ activeChat, conversations, setConversations, allUsers }) =
               style={{ marginBottom: isNextSame ? '2px' : '1rem' }}
             >
               {!isOwn && (
-                <div className="message-avatar" style={{ opacity: isNextSame ? 0 : 1 }}>
-                  {senderUser?.firstName?.[0] || ''}{senderUser?.lastName?.[0] || ''}
+                <div style={{ opacity: isNextSame ? 0 : 1 }}>
+                  <Avatar user={senderUser} size={28} />
                 </div>
               )}
               <div 
@@ -223,9 +222,7 @@ const ChatWindow = ({ activeChat, conversations, setConversations, allUsers }) =
 
         {typingUsers.has(activeChat._id) && (
           <div className="message-row incoming" style={{ marginBottom: '1rem' }}>
-            <div className="message-avatar">
-              {activeChat?.firstName?.[0] || ''}{activeChat?.lastName?.[0] || ''}
-            </div>
+            <Avatar user={activeChat} size={28} />
             <div className="message-bubble typing-bubble">
               <div className="typing-dots">
                 <span></span><span></span><span></span>
