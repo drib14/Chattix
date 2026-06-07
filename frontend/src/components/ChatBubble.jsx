@@ -125,7 +125,7 @@ const ChatBubble = ({
             setShowMenu(true);
           }}
         >
-          {attachment?.type === 'image' && (
+          {(attachment?.type === 'image' || attachment?.type === 'gif') && (
             <img src={attachment.url} alt="" className="rounded-lg max-w-full mb-1 max-h-60 object-cover" />
           )}
           {attachment?.type === 'video' && (

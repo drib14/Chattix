@@ -13,6 +13,8 @@ import { userService } from '../services/userService';
 import { t } from '../utils/translations';
 import { messageService } from '../services/messageService';
 import { groupService } from '../services/groupService';
+import { GiphyFetch } from '@giphy/js-fetch-api';
+import { Grid } from '@giphy/react-components';
 import {
   addMessage,
   setMessages,
@@ -27,6 +29,8 @@ import toast from 'react-hot-toast';
 const DEFAULT_AVATAR =
   'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
 
+const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY || 'GlVGYHqc3SyCEGqme3u11hCGd715KGBh');
+
 const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => {
   const { selectedChat, messages, onlineUsers, replyTo } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.auth);
@@ -37,6 +41,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const [loading, setLoading] = useState(false);
   const [fetchingMessages, setFetchingMessages] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifSearch, setGifSearch] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,10 +60,18 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const typingTimeoutRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const emojiRef = useRef(null);
+  const gifRef = useRef(null);
   const fileInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const dispatch = useDispatch();
+
+  const fetchGifs = useCallback((offset) => {
+    if (gifSearch) {
+      return gf.search(gifSearch, { offset, limit: 10 });
+    }
+    return gf.trending({ offset, limit: 10 });
+  }, [gifSearch]);
 
   const activeChat = selectedChat;
   const displayedMessages = Array.isArray(messages) ? messages : [];
@@ -258,6 +272,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   useEffect(() => {
     const handler = (e) => {
       if (emojiRef.current && !emojiRef.current.contains(e.target)) setShowEmojiPicker(false);
+      if (gifRef.current && !gifRef.current.contains(e.target)) setShowGifPicker(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -314,7 +329,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     setMentionResults([]);
   };
 
-  const sendPayload = async (text, files) => {
+  const sendPayload = async (text, files, gifUrl = null) => {
     if (announcementModeActive && !canSendGroupMessage) {
       throw new Error('Announcement mode enabled. Only admins can send in this group.');
     }
@@ -323,6 +338,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
       ? { groupId: activeChat._id, text }
       : { receiverId: activeChat._id, text };
     if (replyTo?._id) payload.replyTo = replyTo._id;
+    if (gifUrl) payload.gifUrl = gifUrl;
+
     const newMessage = await messageService.sendMessage(payload, files);
     dispatch(addMessage(newMessage));
     dispatch(updateRecentChat({ userId: activeChat._id, message: newMessage }));
@@ -341,11 +358,29 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     const text = messageText.trim();
     setMessageText('');
     setShowEmojiPicker(false);
+    setShowGifPicker(false);
     try {
       await sendPayload(text);
     } catch (error) {
       setMessageText(text);
       toast.error(error.response?.data?.message || error.message || 'Failed to send');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendGif = async (gifUrl) => {
+    if (!activeChat?._id) return;
+    if (announcementModeActive && !canSendGroupMessage) {
+      toast.error('Announcements only: only group admins can send messages here.');
+      return;
+    }
+    setLoading(true);
+    setShowGifPicker(false);
+    try {
+      await sendPayload('', null, gifUrl);
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || 'Failed to send GIF');
     } finally {
       setLoading(false);
     }
@@ -683,9 +718,38 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
             </div>
           </div>
         )}
+        {showGifPicker && (
+          <div ref={gifRef} className="absolute bottom-full left-0 right-0 sm:left-12 sm:right-auto mb-1 z-50 flex justify-center sm:justify-start px-1">
+            <div className="bg-white max-w-[calc(100vw-0.5rem)] overflow-hidden rounded-xl shadow-lg p-2 border border-gray-200 flex flex-col gap-2" style={{ width: 320 }}>
+              <input
+                type="text"
+                placeholder="Search GIFs..."
+                value={gifSearch}
+                onChange={(e) => setGifSearch(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none"
+              />
+              <div className="h-[300px] overflow-y-auto overflow-x-hidden" style={{ width: 300 }}>
+                <Grid
+                  key={gifSearch}
+                  fetchGifs={fetchGifs}
+                  width={300}
+                  columns={3}
+                  gutter={6}
+                  onGifClick={(gif, e) => {
+                    e.preventDefault();
+                    handleSendGif(gif.images.original.url);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSendMessage} className="flex items-center gap-1 min-w-0">
-          <button type="button" onClick={() => setShowEmojiPicker((v) => !v)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
+          <button type="button" onClick={() => { setShowEmojiPicker((v) => !v); setShowGifPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
             <Smile size={18} className="sm:w-5 sm:h-5" />
+          </button>
+          <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
+            GIF
           </button>
           <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
             <Paperclip size={17} className="sm:w-[18px] sm:h-[18px]" />

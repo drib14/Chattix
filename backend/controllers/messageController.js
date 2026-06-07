@@ -179,6 +179,16 @@ export const sendMessage = async (req, res) => {
       console.log('All attachments uploaded successfully');
     }
 
+    if (req.body.gifUrl) {
+      if (!messageData.attachments) messageData.attachments = [];
+      messageData.attachments.push({
+        url: req.body.gifUrl,
+        type: 'gif',
+        filename: 'giphy.gif',
+      });
+      messageData.messageType = 'gif';
+    }
+
     const message = await Message.create(messageData);
     await message.populate([
       { path: 'sender', select: 'fullName username avatar' },
