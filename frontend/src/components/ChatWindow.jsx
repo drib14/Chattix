@@ -249,12 +249,21 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
       setGroupInfo(group);
     };
 
+    const onWallpaperUpdated = (data) => {
+      if (data.chatId === chatId) {
+        if (data.wallpaper === 'custom') setWallpaperUrl(data.customUrl);
+        else if (data.wallpaper === 'default') setWallpaperUrl('');
+        else setWallpaperUrl(data.wallpaper);
+      }
+    };
+
     socketService.on('message_reaction', onUpdated);
     socketService.on('message_deleted', onDeleted);
     socketService.on('message_delivered', ({ messageId }) => dispatch(updateMessage({ _id: messageId, delivered: true })));
     socketService.on('message_seen', ({ messageId }) => dispatch(updateMessage({ _id: messageId, seen: true, delivered: true })));
     socketService.on('message_pinned', onPinnedMessage);
     socketService.on('group_settings_updated', onGroupSettings);
+    socketService.on('wallpaper_updated', onWallpaperUpdated);
 
     return () => {
       socketService.off('user_typing', typingHandler);
@@ -266,6 +275,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
       socketService.off('message_seen');
       socketService.off('message_pinned', onPinnedMessage);
       socketService.off('group_settings_updated', onGroupSettings);
+      socketService.off('wallpaper_updated', onWallpaperUpdated);
     };
   }, [chatId, dispatch, isGroup, user?._id, activeChat?._id]);
 
@@ -735,6 +745,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
                   width={300}
                   columns={3}
                   gutter={6}
+                  noLink={true}
+                  hideAttribution={true}
                   onGifClick={(gif, e) => {
                     e.preventDefault();
                     handleSendGif(gif.images.original.url);

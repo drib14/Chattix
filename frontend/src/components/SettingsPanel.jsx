@@ -18,6 +18,7 @@ import { setLanguage } from '../redux/slices/themeSlice';
 import { t } from '../utils/translations';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
+import { useConfirm } from '../context/ConfirmContext';
 import toast from 'react-hot-toast';
 
 const SettingsPanel = () => {
@@ -39,6 +40,13 @@ const SettingsPanel = () => {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    const isConfirmed = await confirm({
+      title: 'Logout',
+      message: 'Are you sure you want to log out?',
+      confirmText: 'Logout',
+    });
+    if (!isConfirmed) return;
+
     setLoggingOut(true);
     try {
       await authService.logout();
@@ -77,8 +85,16 @@ const SettingsPanel = () => {
     }
   };
 
+  const { confirm } = useConfirm();
+
   const handleDeleteAccount = async () => {
-    if (!window.confirm('Delete your account permanently? This cannot be undone.')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete your account permanently? This action cannot be undone and all your data will be lost.',
+      confirmText: 'Delete Account',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
 
     setDeleting(true);
     try {

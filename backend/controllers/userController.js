@@ -405,24 +405,68 @@ export const setChatWallpaper = async (req, res) => {
       return res.status(400).json({ message: 'Custom URL is required for custom wallpaper' });
     }
 
-    const user = await User.findById(req.user._id);
+    const currentUser = await User.findById(req.user._id);
 
-    // Remove existing wallpaper for this chat
-    user.chatWallpapers = user.chatWallpapers.filter(
-      (cw) => cw.chatId.toString() !== chatId.toString()
-    );
+    // To make it global, we must update all participants
+    let usersToUpdate = [currentUser];
+    if (chatType === 'group') {
+      const Group = (await import('../models/Group.js')).default;
+      const group = await Group.findById(chatId);
+      if (group) {
+        usersToUpdate = await User.find({ _id: { $in: group.members } });
+      }
+    } else {
+      const otherUser = await User.findById(chatId);
+      if (otherUser) {
+        usersToUpdate.push(otherUser);
+      }
+    }
 
-    // Add new wallpaper
-    user.chatWallpapers.push({
-      chatId,
-      chatType,
-      wallpaper,
-      customUrl: wallpaper === 'custom' ? customUrl : undefined,
-    });
+    for (const u of usersToUpdate) {
+      // Remove existing wallpaper for this chat
+      u.chatWallpapers = u.chatWallpapers.filter(
+        (cw) => cw.chatId.toString() !== chatId.toString()
+      );
+      // Add new wallpaper
+      u.chatWallpapers.push({
+        chatId,
+        chatType,
+        wallpaper,
+        customUrl: wallpaper === 'custom' ? customUrl : undefined,
+      });
+      await u.save();
+    }
 
-    await user.save();
+    // Create system message
+    const Message = (await import('../models/Message.js')).default;
+    const systemMessageData = {
+      text: `${currentUser.fullName} changed the wallpaper theme`,
+      messageType: 'system',
+    };
+    if (chatType === 'group') {
+      systemMessageData.group = chatId;
+    } else {
+      systemMessageData.receiver = chatId;
+      systemMessageData.sender = req.user._id; // System message originated by sender
+    }
+    const systemMessage = await Message.create(systemMessageData);
+    await systemMessage.populate([
+      { path: 'sender', select: 'fullName username avatar' },
+    ]);
 
-    res.json({ message: 'Wallpaper set successfully', wallpaper, customUrl });
+    // Emit socket event to all participants
+    const io = req.app.get('io');
+    if (chatType === 'group') {
+      io.to(chatId).emit('wallpaper_updated', { chatId, chatType, wallpaper, customUrl });
+      io.to(chatId).emit('receive_message', systemMessage);
+    } else {
+      io.to(chatId).emit('wallpaper_updated', { chatId: req.user._id.toString(), chatType, wallpaper, customUrl });
+      io.to(req.user._id.toString()).emit('wallpaper_updated', { chatId, chatType, wallpaper, customUrl });
+      io.to(chatId).emit('receive_message', systemMessage);
+      io.to(req.user._id.toString()).emit('receive_message', systemMessage);
+    }
+
+    res.json({ message: 'Wallpaper set globally', wallpaper, customUrl });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

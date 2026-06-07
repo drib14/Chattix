@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { groupService } from '../services/groupService';
 import { userService } from '../services/userService';
+import { useConfirm } from '../context/ConfirmContext';
 import toast from 'react-hot-toast';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
@@ -66,7 +67,8 @@ const GroupDetails = ({ group, onClose, onSettingsClick }) => {
   const handleSetWallpaper = async (val) => {
     setWallpaper(val);
     try {
-      await userService.setChatWallpaper(group._id, 'custom', 'group', val);
+      const type = val ? 'custom' : 'default';
+      await userService.setChatWallpaper(group._id, type, 'group', val || null);
       toast.success('Wallpaper updated');
     } catch {
       toast.error('Failed to update wallpaper');
@@ -115,8 +117,17 @@ const GroupDetails = ({ group, onClose, onSettingsClick }) => {
     toast.success('Invite link copied!');
   };
 
+  const { confirm } = useConfirm();
+
   const handleLeaveGroup = async () => {
-    if (!window.confirm('Leave this group?')) return;
+    const isConfirmed = await confirm({
+      title: 'Leave Group',
+      message: 'Are you sure you want to leave this group?',
+      confirmText: 'Leave',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
+
     try {
       await groupService.leaveGroup(group._id);
       toast.success('Left group');

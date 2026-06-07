@@ -10,6 +10,7 @@ import {
   Loader,
 } from 'lucide-react';
 import { groupService } from '../services/groupService';
+import { useConfirm } from '../context/ConfirmContext';
 import toast from 'react-hot-toast';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
@@ -50,8 +51,16 @@ const MemberManagement = ({ group, onClose, onUpdate }) => {
     }
   };
 
+  const { confirm } = useConfirm();
+
   const handleRemoveMember = async (memberId) => {
-    if (!window.confirm('Remove this member?')) return;
+    const isConfirmed = await confirm({
+      title: 'Remove Member',
+      message: 'Are you sure you want to remove this member from the group?',
+      confirmText: 'Remove',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
     setActionLoading(memberId);
     try {
       await groupService.removeMember(group._id, memberId);
@@ -87,7 +96,13 @@ const MemberManagement = ({ group, onClose, onUpdate }) => {
   };
 
   const handleDemoteAdmin = async (memberId) => {
-    if (!window.confirm('Demote this admin?')) return;
+    const isConfirmed = await confirm({
+      title: 'Demote Admin',
+      message: 'Are you sure you want to demote this admin?',
+      confirmText: 'Demote',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
     setActionLoading(memberId);
     try {
       const updatedGroup = await groupService.demoteAdmin(group._id, memberId);
@@ -109,9 +124,12 @@ const MemberManagement = ({ group, onClose, onUpdate }) => {
   };
 
   const handleTransferAdmin = async (memberId) => {
-    if (!window.confirm('Transfer admin role to this member? You will become a regular admin.')) {
-      return;
-    }
+    const isConfirmed = await confirm({
+      title: 'Transfer Admin Role',
+      message: 'Transfer admin role to this member? You will become a regular admin.',
+      confirmText: 'Transfer',
+    });
+    if (!isConfirmed) return;
     setActionLoading(memberId);
     try {
       const updatedGroup = await groupService.transferAdmin(group._id, memberId);

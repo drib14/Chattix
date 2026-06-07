@@ -5,6 +5,7 @@ import { Search, MessageCircle, UserMinus, Users } from 'lucide-react';
 import { friendService } from '../services/friendService';
 import { removeFriend } from '../redux/slices/friendSlice';
 import { setSelectedChat } from '../redux/slices/chatSlice';
+import { useConfirm } from '../context/ConfirmContext';
 import toast from 'react-hot-toast';
 
 const DEFAULT_AVATAR =
@@ -19,8 +20,16 @@ const FriendsList = () => {
 
   const friendList = Array.isArray(friends) ? friends : [];
 
+  const { confirm } = useConfirm();
+
   const handleRemoveFriend = async (friendId) => {
-    if (!window.confirm('Remove this friend?')) return;
+    const isConfirmed = await confirm({
+      title: 'Remove Friend',
+      message: 'Are you sure you want to remove this friend?',
+      confirmText: 'Remove',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
 
     setLoading(friendId);
     try {

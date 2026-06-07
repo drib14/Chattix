@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { X, Mail, Calendar, Shield, Users, Ban, Image as ImageIcon } from 'lucide-react';
 import { friendService } from '../services/friendService';
 import { userService } from '../services/userService';
+import { useConfirm } from '../context/ConfirmContext';
 import toast from 'react-hot-toast';
 
 const DEFAULT_AVATAR =
@@ -33,15 +34,24 @@ const UserProfile = ({ user, onClose }) => {
   const handleSetWallpaper = async (val) => {
     setWallpaper(val);
     try {
-      await userService.setChatWallpaper(user._id, 'custom', 'user', val);
+      const type = val ? 'custom' : 'default';
+      await userService.setChatWallpaper(user._id, type, 'user', val || null);
       toast.success('Wallpaper updated');
     } catch {
       toast.error('Failed to update wallpaper');
     }
   };
 
+  const { confirm } = useConfirm();
+
   const handleBlock = async () => {
-    if (!window.confirm(`Block ${user.fullName}?`)) return;
+    const isConfirmed = await confirm({
+      title: 'Block User',
+      message: `Are you sure you want to block ${user.fullName}?`,
+      confirmText: 'Block',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
     setLoading(true);
     try {
       await userService.blockUser(user._id);

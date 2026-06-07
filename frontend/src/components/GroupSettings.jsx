@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { groupService } from '../services/groupService';
+import { useConfirm } from '../context/ConfirmContext';
 import toast from 'react-hot-toast';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
@@ -29,7 +30,6 @@ const GroupSettings = ({ group, onClose, onUpdate }) => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(group?.groupAvatar);
 
@@ -90,8 +90,16 @@ const GroupSettings = ({ group, onClose, onUpdate }) => {
     }
   };
 
+  const { confirm } = useConfirm();
+
   const handleRemoveAvatar = async () => {
-    if (!window.confirm('Remove group avatar?')) return;
+    const isConfirmed = await confirm({
+      title: 'Remove Avatar',
+      message: 'Are you sure you want to remove the group avatar?',
+      confirmText: 'Remove',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
     try {
       await groupService.removeGroupAvatar(group._id);
       setPreviewUrl(DEFAULT_AVATAR);
@@ -103,7 +111,13 @@ const GroupSettings = ({ group, onClose, onUpdate }) => {
   };
 
   const handleDeleteGroup = async () => {
-    if (!window.confirm('Delete this group? This cannot be undone.')) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Group',
+      message: 'This action cannot be undone. All messages and files will be permanently deleted.',
+      confirmText: 'Delete',
+      isDestructive: true,
+    });
+    if (!isConfirmed) return;
     setLoading(true);
     try {
       await groupService.deleteGroup(group._id);
@@ -242,7 +256,7 @@ const GroupSettings = ({ group, onClose, onUpdate }) => {
           <h3 className="text-sm font-semibold text-red-600">Danger Zone</h3>
           <button
             type="button"
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={handleDeleteGroup}
             className="w-full flex items-center justify-center gap-2 py-2.5 border border-red-200 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm"
           >
             <Trash2 size={16} />
@@ -264,44 +278,6 @@ const GroupSettings = ({ group, onClose, onUpdate }) => {
         </button>
       </div>
 
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/40 flex items-end z-50"
-        >
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            className="w-full bg-white rounded-t-2xl p-6 safe-bottom"
-          >
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Group?</h3>
-            <p className="text-gray-600 mb-6">
-              This action cannot be undone. All messages and files will be permanently deleted.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteGroup}
-                disabled={loading}
-                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium text-sm transition-colors disabled:opacity-60"
-              >
-                {loading ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
     </div>
   );
 };

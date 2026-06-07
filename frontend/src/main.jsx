@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { store } from './redux/store';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ConfirmProvider } from './context/ConfirmContext';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -13,8 +14,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary>
       <Provider store={store}>
         <BrowserRouter>
-          <App />
-          <Toaster position="top-right" />
+          <ConfirmProvider>
+            <App />
+            <Toaster position="top-right" />
+          </ConfirmProvider>
         </BrowserRouter>
       </Provider>
     </ErrorBoundary>

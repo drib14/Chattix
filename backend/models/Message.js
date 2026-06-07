@@ -4,7 +4,7 @@ const messageSchema = new mongoose.Schema({
   sender: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: function() { return this.messageType !== 'system'; },
   },
   receiver: {
     type: mongoose.Schema.Types.ObjectId,
@@ -20,7 +20,7 @@ const messageSchema = new mongoose.Schema({
   },
   messageType: {
     type: String,
-    enum: ['text', 'image', 'video', 'audio', 'document', 'gif'],
+    enum: ['text', 'image', 'video', 'audio', 'document', 'gif', 'system'],
     default: 'text',
   },
   replyTo: {
