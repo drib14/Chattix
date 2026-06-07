@@ -1,0 +1,247 @@
+import { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  User,
+  Lock,
+  LogOut,
+  Trash2,
+  ArrowRight,
+  Mail,
+  AtSign,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import { logout } from '../redux/slices/authSlice';
+import { setLanguage } from '../redux/slices/themeSlice';
+import { t } from '../utils/translations';
+import { authService } from '../services/authService';
+import { userService } from '../services/userService';
+import toast from 'react-hot-toast';
+
+const SettingsPanel = () => {
+  const { user } = useSelector((state) => state.auth);
+  const { language } = useSelector((state) => state.theme);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await authService.logout();
+      dispatch(logout());
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch {
+      dispatch(logout());
+      navigate('/login');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwordData.newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await userService.changePassword(passwordData);
+      toast.success('Password changed successfully');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswordForm(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Delete your account permanently? This cannot be undone.')) return;
+
+    setDeleting(true);
+    try {
+      await userService.deleteAccount();
+      dispatch(logout());
+      toast.success('Account deleted');
+      navigate('/login');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete account');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
+      <div className="p-3 sm:p-4 border-b border-gray-100 shrink-0">
+        <h2 className="text-lg font-bold text-gray-900">{t('settings', language)}</h2>
+        <p className="text-xs text-gray-500 mt-0.5">Manage your Chattix account</p>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4">
+        <div className="modern-card !p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <User size={16} className="text-chattix-primary" />
+            Account Information
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <AtSign size={16} className="text-gray-400" />
+              <div>
+                <p className="text-xs text-gray-400">Username</p>
+                <p className="text-gray-900">@{user?.username}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Mail size={16} className="text-gray-400" />
+              <div>
+                <p className="text-xs text-gray-400">Email</p>
+                <p className="text-gray-900 break-all">{user?.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <User size={16} className="text-gray-400" />
+              <div>
+                <p className="text-xs text-gray-400">Full Name</p>
+                <p className="text-gray-900">{user?.fullName}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+        <div className="modern-card !p-4 space-y-3">
+          <button
+            type="button"
+            onClick={() => navigate('/profile')}
+            className="w-full py-2.5 rounded-xl bg-chattix-primary text-white font-medium text-sm flex items-center justify-center gap-2 hover:bg-chattix-primary-dark transition-colors"
+          >
+            <ArrowRight size={16} />
+            Edit Profile
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowPasswordForm((v) => !v)}
+            className="w-full py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+          >
+            <Lock size={16} />
+            {showPasswordForm ? 'Hide Password Form' : 'Change Password'}
+          </button>
+
+          {showPasswordForm && (
+            <motion.form
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              onSubmit={handleChangePassword}
+              className="space-y-3 pt-2"
+            >
+              <div className="relative">
+                <input
+                  type={showCurrent ? 'text' : 'password'}
+                  placeholder="Current password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                  }
+                  className="modern-input pr-10 text-sm !py-2"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrent((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showNew ? 'text' : 'password'}
+                  placeholder="New password"
+                  value={passwordData.newPassword}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, newPassword: e.target.value })
+                  }
+                  className="modern-input pr-10 text-sm !py-2"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={passwordData.confirmPassword}
+                onChange={(e) =>
+                  setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                }
+                className="modern-input text-sm !py-2"
+                required
+              />
+              <button
+                type="submit"
+                disabled={changingPassword}
+                className="w-full py-2.5 rounded-xl bg-chattix-primary text-white text-sm font-medium disabled:opacity-50"
+              >
+                {changingPassword ? 'Updating...' : 'Update Password'}
+              </button>
+            </motion.form>
+          )}
+        </div>
+
+        <div className="modern-card !p-4 space-y-3">
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <LogOut size={16} />
+            {loggingOut ? 'Logging out...' : 'Logout'}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            disabled={deleting}
+            className="w-full py-2.5 rounded-xl bg-red-50 text-red-600 font-medium text-sm flex items-center justify-center gap-2 hover:bg-red-100 disabled:opacity-50"
+          >
+            <Trash2 size={16} />
+            {deleting ? 'Deleting...' : 'Delete Account'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsPanel;
