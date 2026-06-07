@@ -53,7 +53,7 @@ const Login = () => {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
         localStorage.removeItem('chattix_logged_via_quick_login');
-        navigate('/dashboard');
+        navigate('/');
       } else {
         // Show the banner to describe saving the account
         setTempAuthData(response.data);
@@ -70,7 +70,7 @@ const Login = () => {
     localStorage.setItem('token', account.token);
     localStorage.setItem('user', JSON.stringify(account.user));
     localStorage.setItem('chattix_logged_via_quick_login', 'true'); // flag as quick login
-    navigate('/dashboard');
+    navigate('/');
   };
 
   const handleRemoveAccount = (e, accountId) => {
@@ -96,7 +96,7 @@ const Login = () => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.removeItem('chattix_logged_via_quick_login');
-    navigate('/dashboard');
+    navigate('/');
   };
 
   const handleSkipAndContinue = () => {
@@ -106,7 +106,7 @@ const Login = () => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.removeItem('chattix_logged_via_quick_login');
-    navigate('/dashboard');
+    navigate('/');
   };
 
   // Render the Successful Login Banner screen if triggered
@@ -186,8 +186,8 @@ const Login = () => {
                   >
                   <X size={12} />
                 </button>
-                <div className="saved-account-avatar">
-                  <User size={18} />
+                <div className="saved-account-avatar user-avatar">
+                  {account.user.firstName?.[0] || ''}{account.user.lastName?.[0] || ''}
                 </div>
                 <div className="saved-account-info">
                   <span className="saved-account-name">{account.user.firstName} {account.user.lastName}</span>
