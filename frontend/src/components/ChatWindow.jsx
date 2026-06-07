@@ -29,7 +29,7 @@ import toast from 'react-hot-toast';
 const DEFAULT_AVATAR =
   'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
 
-const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY || 'GlVGYHqc3SyCEGqme3u11hCGd715KGBh');
+const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY);
 
 const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => {
   const { selectedChat, messages, onlineUsers, replyTo } = useSelector((state) => state.chat);
