@@ -50,12 +50,15 @@ export const register = async (req, res) => {
     }
 
     // Create user
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=random&color=fff&bold=true`;
+
     const user = await User.create({
       fullName,
       username,
       email,
       mobileNumber,
       password,
+      avatar: avatarUrl,
     });
 
     // Generate OTP

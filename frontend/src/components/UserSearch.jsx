@@ -167,7 +167,7 @@ const UserSearch = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search users..."
+            placeholder="Search username, name or email..."
             className="w-full pl-9 pr-9 py-2 sm:py-2.5 bg-chattix-bg rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-chattix-primary/20"
             autoFocus
           />
@@ -186,7 +186,7 @@ const UserSearch = () => {
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <Search size={40} className="text-gray-300 mb-4" />
               <p className="text-gray-500">Search for users on Chattix</p>
-              <p className="text-xs text-gray-400 mt-1">Try username or email</p>
+              <p className="text-xs text-gray-400 mt-1">Try username, name or email</p>
             </div>
           ) : searchResults.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">

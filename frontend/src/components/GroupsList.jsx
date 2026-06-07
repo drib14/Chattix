@@ -123,9 +123,9 @@ const GroupsList = () => {
               className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 text-left min-w-0"
             >
               <img
-                src={group.groupAvatar || '/default-avatar.png'}
+                src={group.groupAvatar || `https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true&name=${encodeURIComponent(group.groupName || 'G')}`}
                 alt={group.groupName}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover shrink-0"
+                className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
               />
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-sm text-gray-900 truncate">{group.groupName}</p>

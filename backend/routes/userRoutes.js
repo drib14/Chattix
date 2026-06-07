@@ -35,7 +35,6 @@ router.post('/upload-cover', uploadProfile.single('coverImage'), uploadCover);
 router.delete('/delete', deleteAccount);
 router.get('/search', searchUsers);
 router.get('/blocked', getBlockedUsers);
-router.get('/:username', getUserByUsername);
 router.post('/block/:userId', blockUser);
 router.post('/unblock/:userId', unblockUser);
 router.put('/change-password', changePassword);
@@ -57,5 +56,7 @@ router.get('/status/:userId', getUserStatus);
 
 // Mention search route
 router.get('/mention-search', searchUsersForMentions);
+
+router.get('/:username', getUserByUsername);
 
 export default router;

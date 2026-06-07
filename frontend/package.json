@@ -9,17 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@giphy/js-fetch-api": "^5.8.0",
+    "@giphy/react-components": "^10.1.2",
+    "@reduxjs/toolkit": "^2.0.1",
+    "axios": "^1.6.5",
+    "emoji-picker-react": "^4.5.16",
+    "framer-motion": "^10.16.16",
+    "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.1",
-    "axios": "^1.6.5",
-    "@reduxjs/toolkit": "^2.0.1",
-    "react-redux": "^9.0.4",
-    "socket.io-client": "^4.6.1",
     "react-hot-toast": "^2.4.1",
-    "emoji-picker-react": "^4.5.16",
-    "lucide-react": "^0.303.0",
-    "framer-motion": "^10.16.16"
+    "react-redux": "^9.0.4",
+    "react-router-dom": "^6.21.1",
+    "socket.io-client": "^4.6.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.47",
