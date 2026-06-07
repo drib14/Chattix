@@ -9,7 +9,7 @@ export const createGroup = async (req, res) => {
   try {
     console.log('=== Group Creation Started ===');
     console.log('Request body:', req.body);
-    
+
     // Accept both 'name' and 'groupName' for flexibility
     const groupName = req.body.name || req.body.groupName;
     const members = req.body.members;
@@ -340,7 +340,7 @@ export const promoteToAdmin = async (req, res) => {
     // Check if user is admin or owner
     const isAdmin = group.admin.toString() === req.user._id.toString() ||
       group.admins.some(a => a._id.toString() === req.user._id.toString());
-    
+
     if (!isAdmin) {
       return res.status(403).json({ message: 'Only admin can promote members' });
     }
@@ -435,7 +435,7 @@ export const transferAdmin = async (req, res) => {
 
     const oldAdmin = group.admin;
     group.admin = newAdminId;
-    
+
     // Remove from admins array if present and add to admins
     group.admins = group.admins.filter(a => a.toString() !== newAdminId);
     if (!group.admins.includes(oldAdmin)) {

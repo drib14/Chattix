@@ -117,9 +117,9 @@ export const register = async (req, res) => {
       console.error('❌ Failed to send OTP email:', emailError.message);
       // Delete user if email fails
       await User.findByIdAndDelete(user._id);
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Failed to send verification email. Please try again or check your email address.',
-        error: emailError.message 
+        error: emailError.message
       });
     }
 
@@ -159,7 +159,7 @@ export const verifyOTP = async (req, res) => {
 
     // Verify OTP using the model method
     const verification = user.verifyOTP(otp);
-    
+
     if (!verification.valid) {
       console.log('❌ OTP verification failed:', verification.message);
       return res.status(400).json({ message: verification.message });
@@ -323,9 +323,9 @@ export const forgotPassword = async (req, res) => {
       console.log('📬 Email Message ID:', emailResult.messageId);
     } catch (emailError) {
       console.error('❌ Failed to send password reset email:', emailError.message);
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Failed to send password reset email. Please try again.',
-        error: emailError.message 
+        error: emailError.message
       });
     }
 
@@ -370,7 +370,7 @@ export const resetPassword = async (req, res) => {
 
     // Verify OTP
     const verification = user.verifyOTP(otp);
-    
+
     if (!verification.valid) {
       console.log('❌ OTP verification failed:', verification.message);
       return res.status(400).json({ message: verification.message });
@@ -463,13 +463,13 @@ export const resendOTP = async (req, res) => {
       console.log('📬 Email Message ID:', emailResult.messageId);
     } catch (emailError) {
       console.error('❌ Failed to resend OTP email:', emailError.message);
-      return res.status(500).json({ 
+      return res.status(500).json({
         message: 'Failed to resend OTP email. Please try again.',
-        error: emailError.message 
+        error: emailError.message
       });
     }
 
-    res.json({ 
+    res.json({
       message: 'New OTP sent successfully! Please check your email.',
       expiresIn: `${process.env.OTP_EXPIRE_MINUTES || 5} minutes`
     });

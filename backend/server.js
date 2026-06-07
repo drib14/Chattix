@@ -183,7 +183,7 @@ process.on('unhandledRejection', (err) => {
   if (err instanceof Error && err.stack) {
     console.error(err.stack);
   }
-  
+
   // Close HTTP server and then exit
   httpServer.close(() => {
     console.log('🚪 Server process exiting due to unhandled rejection.');
@@ -200,10 +200,10 @@ process.on('unhandledRejection', (err) => {
 // Graceful Shutdown Handler
 const gracefulShutdown = (signal) => {
   console.log(`🔌 ${signal} signal received. Starting graceful shutdown...`);
-  
+
   httpServer.close(async () => {
     console.log('🚪 HTTP server closed.');
-    
+
     try {
       const mongoose = await import('mongoose');
       await mongoose.default.connection.close();

@@ -65,7 +65,7 @@ const sendEmail = async (options) => {
   } catch (error) {
     console.error('❌ Email sending failed:', error.message);
     console.error('❌ Full error:', error);
-    
+
     // Provide helpful error messages
     if (error.code === 'EAUTH') {
       console.error('❌ Authentication failed. Please check:');
@@ -75,7 +75,7 @@ const sendEmail = async (options) => {
     } else if (error.code === 'ECONNECTION') {
       console.error('❌ Connection failed. Please check your internet connection');
     }
-    
+
     throw new Error(`Email sending failed: ${error.message}`);
   }
 };

@@ -116,14 +116,14 @@ const deleteUserByEmail = async () => {
     console.error('');
     console.error('Error:', error.message);
     console.error('');
-    
+
     if (error.message.includes('ECONNREFUSED')) {
       console.error('💡 Troubleshooting:');
       console.error('   1. Make sure MongoDB is running');
       console.error('   2. Check MONGODB_URI in .env file');
       console.error('   3. Verify database connection');
     }
-    
+
     console.error('');
     process.exit(1);
   }

@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { AnimatePresence } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import {
-  Send, Smile, Info, ImagePlus, Mic, Square, X, Search, ArrowLeft, BarChart3
+  Send, Smile, Info, Paperclip, Mic, Square, X, Search, ArrowLeft, BarChart3
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import ForwardModal from './ForwardModal';
@@ -121,7 +121,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
 
   useEffect(() => {
     let activeGroupId = null;
-    
+
     if (activeChat?._id) {
       userService.getChatWallpaper(activeChat._id)
         .then(res => {
@@ -571,7 +571,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-gray-900 text-sm truncate">{displayName}</h3>
-            <p className={`text-[11px] sm:text-xs truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none ${getTypingLabel() ? 'text-chattix-primary' : (isGroup ? 'text-gray-500' : 'text-chattix-primary font-medium')}`}>
+            <p className="text-[11px] sm:text-xs text-gray-500 truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
               {getTypingLabel() || (isGroup ? `${activeChat.members?.length || 0} members` : (isOnline ? t('online', language) : (chatStatusText || t('offline', language))))}
             </p>
           </div>
@@ -629,7 +629,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
         </div>
       )}
 
-      <div 
+      <div
         className="flex-1 overflow-y-auto p-3 chat-bg min-h-0"
         style={wallpaperUrl ? {
           backgroundImage: `url(${wallpaperUrl})`,
@@ -763,8 +763,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
             GIF
           </button>
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Media or Files">
-            <ImagePlus size={17} className="sm:w-[18px] sm:h-[18px]" />
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
+            <Paperclip size={17} className="sm:w-[18px] sm:h-[18px]" />
           </button>
           {isGroup && (
             <button type="button" onClick={() => setShowPollModal(true)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
@@ -795,7 +795,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           )}
         </form>
       </div>
-      <CreatePollModal 
+      <CreatePollModal
         isOpen={showPollModal}
         onClose={() => setShowPollModal(false)}
         groupId={activeChat._id}

@@ -47,12 +47,12 @@ const connectDB = async (retryCount = 5, delayMs = 5000) => {
       console.error(`   Error message: ${error.message}`);
       if (error.code) console.error(`   Error code: ${error.code}`);
       if (error.reason) console.error(`   Reason: ${JSON.stringify(error.reason)}`);
-      
+
       if (attempt === retryCount) {
         console.error('❌ CRITICAL DATABASE ERROR: Max connection attempts reached. Server shutting down.');
         process.exit(1);
       }
-      
+
       console.log(`⏱️ Waiting ${delayMs / 1000} seconds before retrying connection...`);
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }

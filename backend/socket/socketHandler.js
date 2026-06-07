@@ -123,7 +123,7 @@ export const initializeSocket = (io) => {
     // Handle private message
     socket.on('send_message', async (data) => {
       const { receiverId, message } = data;
-      
+
       // Send to receiver if online
       const receiverData = onlineUsers.get(receiverId);
       if (receiverData) {
@@ -140,7 +140,7 @@ export const initializeSocket = (io) => {
     // Handle group message
     socket.on('send_group_message', async (data) => {
       const { groupId, message } = data;
-      
+
       // Broadcast to group members
       socket.to(groupId).emit('receive_group_message', {
         ...message,

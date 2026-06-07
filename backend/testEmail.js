@@ -116,7 +116,7 @@ sendEmail({
     console.log('');
     console.log('🔧 Troubleshooting:');
     console.log('');
-    
+
     if (error.message.includes('Authentication') || error.message.includes('Invalid login')) {
       console.log('❌ Authentication Error - Check these:');
       console.log('   1. EMAIL_USER is your full Gmail address');
@@ -137,7 +137,7 @@ sendEmail({
       console.log('');
       console.log('📖 Check the full error above and OTP_SETUP_GUIDE.md');
     }
-    
+
     console.log('');
     process.exit(1);
   });
