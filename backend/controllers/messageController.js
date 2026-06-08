@@ -45,8 +45,8 @@ export const sendMessage = async (req, res) => {
       // Check if users are friends before allowing message
       const currentUser = await User.findById(req.user._id);
       if (!includesId(currentUser.friends, receiverId)) {
-        return res.status(403).json({ 
-          message: 'You can only send messages to your friends. Send a friend request first.' 
+        return res.status(403).json({
+          message: 'You can only send messages to your friends. Send a friend request first.'
         });
       }
       messageData.receiver = receiverId;
@@ -65,7 +65,7 @@ export const sendMessage = async (req, res) => {
       while ((match = mentionRegex.exec(text)) !== null) {
         mentions.push(match[1]);
       }
-      
+
       if (mentions.length > 0) {
         const mentionedUsers = await User.find({ username: { $in: mentions } });
         if (mentionedUsers.length > 0) {
@@ -78,7 +78,7 @@ export const sendMessage = async (req, res) => {
     if (req.files && req.files.length > 0) {
       console.log('=== Media Upload Started ===');
       console.log('Number of files:', req.files.length);
-      
+
       if (!isCloudinaryConfigured()) {
         console.error('Cloudinary not configured for media upload');
         return res.status(503).json({
@@ -104,7 +104,7 @@ export const sendMessage = async (req, res) => {
         const isPowerPoint = file.mimetype.includes('mspowerpoint') || file.mimetype.includes('presentationml');
         const isZip = file.mimetype.includes('zip') || file.mimetype.includes('rar');
         const isText = file.mimetype === 'text/plain';
-        
+
         // Determine resource type for Cloudinary
         let resourceType = 'auto';
         if (isVideo || isAudio) resourceType = 'video';
@@ -115,8 +115,8 @@ export const sendMessage = async (req, res) => {
 
         const result = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { 
-              folder: 'chattix/messages', 
+            {
+              folder: 'chattix/messages',
               resource_type: resourceType,
               use_filename: true,
               unique_filename: true
@@ -136,7 +136,7 @@ export const sendMessage = async (req, res) => {
 
         let attachmentType = 'document';
         let attachmentFileType = 'document';
-        
+
         if (isImage) {
           attachmentType = 'image';
           attachmentFileType = 'image';
@@ -216,10 +216,10 @@ export const sendMessage = async (req, res) => {
       const groupInfo = groupId ? await Group.findById(groupId).select('groupName') : null;
       for (const mention of message.mentions) {
         if (mention.user.toString() !== req.user._id.toString()) {
-          const mentionTitle = groupId 
-            ? `Mentioned in ${groupInfo?.groupName || 'a group'}` 
+          const mentionTitle = groupId
+            ? `Mentioned in ${groupInfo?.groupName || 'a group'}`
             : 'You were mentioned';
-          
+
           await createNotification({
             recipient: mention.user,
             sender: req.user._id,

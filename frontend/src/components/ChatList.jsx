@@ -57,8 +57,8 @@ const ChatList = () => {
   const filteredChats = (Array.isArray(recentChats) ? recentChats : []).filter(
     c => !archivedIds.has(c._id?._id?.toString())
   );
-  
-  const displayChats = showArchived 
+
+  const displayChats = showArchived
     ? (Array.isArray(recentChats) ? recentChats : []).filter(c => archivedIds.has(c._id?._id?.toString()))
     : filteredChats;
 
@@ -106,7 +106,7 @@ const ChatList = () => {
               });
               const isSelected =
                 selectedChat?._id?.toString() === chatId;
-              
+
               const currentUnread = unreadCounts[chatId] !== undefined ? unreadCounts[chatId] : (chat.unreadCount || 0);
 
               return (

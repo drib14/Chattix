@@ -62,10 +62,10 @@ export const uploadAvatar = async (req, res) => {
   try {
     console.log('=== Avatar Upload Started ===');
     console.log('User:', req.user?._id);
-    console.log('File:', req.file ? { 
-      originalname: req.file.originalname, 
-      mimetype: req.file.mimetype, 
-      size: req.file.size 
+    console.log('File:', req.file ? {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
     } : 'NO FILE');
 
     if (!isCloudinaryConfigured()) {
@@ -124,7 +124,7 @@ export const uploadAvatar = async (req, res) => {
     });
   } catch (error) {
     console.error('Upload avatar error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: error.message,
       error: process.env.NODE_ENV === 'development' ? error.toString() : undefined
     });
@@ -423,18 +423,13 @@ export const setChatWallpaper = async (req, res) => {
     }
 
     for (const u of usersToUpdate) {
-      // For 1-on-1 chats, the 'chatId' for the other user is the current user's ID
-      const targetChatId = (chatType === 'user' && u._id.toString() !== currentUser._id.toString())
-        ? currentUser._id.toString()
-        : chatId;
-
       // Remove existing wallpaper for this chat
       u.chatWallpapers = u.chatWallpapers.filter(
-        (cw) => cw.chatId.toString() !== targetChatId.toString()
+        (cw) => cw.chatId.toString() !== chatId.toString()
       );
       // Add new wallpaper
       u.chatWallpapers.push({
-        chatId: targetChatId,
+        chatId,
         chatType,
         wallpaper,
         customUrl: wallpaper === 'custom' ? customUrl : undefined,
@@ -543,15 +538,12 @@ export const getUserStatus = async (req, res) => {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    const diffWeeks = Math.floor(diffDays / 7);
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffDays / 365);
-
     let lastSeenText = 'Offline';
     if (user.isOnline || user.status === 'online') {
       lastSeenText = 'Online';
     } else if (diffMins < 1) {
       lastSeenText = 'last seen just now';
+      lastSeenText = 'Last seen just now';
     } else if (diffMins < 60) {
       lastSeenText = `last seen ${diffMins}m ago`;
     } else if (diffHours < 24) {

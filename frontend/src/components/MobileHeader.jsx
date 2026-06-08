@@ -88,8 +88,8 @@ const MobileHeader = ({ activeTab, setActiveTab, onMenuOpen }) => {
       </div>
 
       {/* Hamburger Menu Drawer */}
-      <MobileHamburgerMenu 
-        isOpen={showMenu} 
+      <MobileHamburgerMenu
+        isOpen={showMenu}
         onClose={() => setShowMenu(false)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}

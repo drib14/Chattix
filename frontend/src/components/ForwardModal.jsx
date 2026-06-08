@@ -122,7 +122,7 @@ const ForwardModal = ({ isOpen, onClose, messageToForward }) => {
                   const isSelected = selectedIds.includes(id);
                   const name = item.fullName || item.groupName;
                   const avatar = item.avatar || item.groupAvatar || `${DEFAULT_AVATAR}&name=${encodeURIComponent(name || 'U')}`;
-                  
+
                   return (
                     <button
                       key={id}

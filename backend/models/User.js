@@ -154,7 +154,7 @@ userSchema.methods.generateOTP = function() {
   // Set expiry time (default 5 minutes)
   const expiryMinutes = parseInt(process.env.OTP_EXPIRE_MINUTES || 5);
   this.otpExpiry = Date.now() + expiryMinutes * 60 * 1000;
-  
+
   console.log(`🔐 OTP Generated: ${otp} | Expires in ${expiryMinutes} minutes`);
   return otp;
 };
@@ -164,15 +164,15 @@ userSchema.methods.verifyOTP = function(enteredOTP) {
   if (!this.otp) {
     return { valid: false, message: 'No OTP found. Please request a new one.' };
   }
-  
+
   if (this.otpExpiry < Date.now()) {
     return { valid: false, message: 'OTP has expired. Please request a new one.' };
   }
-  
+
   if (this.otp !== enteredOTP) {
     return { valid: false, message: 'Invalid OTP. Please try again.' };
   }
-  
+
   return { valid: true, message: 'OTP verified successfully.' };
 };
 

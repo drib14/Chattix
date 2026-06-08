@@ -16,7 +16,7 @@ const listAllUsers = async () => {
 
     // Get all users
     const users = await User.find({}).select('-password -otp -otpExpiry');
-    
+
     if (users.length === 0) {
       console.log('📭 No users found in database');
       console.log('');
@@ -60,14 +60,14 @@ const listAllUsers = async () => {
     console.error('');
     console.error('Error:', error.message);
     console.error('');
-    
+
     if (error.message.includes('ECONNREFUSED')) {
       console.error('💡 Troubleshooting:');
       console.error('   1. Make sure MongoDB is running');
       console.error('   2. Check MONGODB_URI in .env file');
       console.error('   3. Verify database connection');
     }
-    
+
     console.error('');
     process.exit(1);
   }

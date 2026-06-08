@@ -233,4 +233,3 @@ const ModernRegisterPage = () => {
 
 
 export default ModernRegisterPage;
-

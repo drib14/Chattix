@@ -41,13 +41,13 @@ for (const file of allFiles) {
   // Case sensitive replace
   content = content.replace(/Nexus/g, 'Chattix');
   content = content.replace(/NEXUS/g, 'CHATTIX');
-  
-  // Replace nexus to chattix but we need to be careful. 
+
+  // Replace nexus to chattix but we need to be careful.
   // Let's replace 'nexus-' to 'chattix-' (like classes and names)
   content = content.replace(/nexus-/g, 'chattix-');
   content = content.replace(/nexus\//g, 'chattix/'); // for cloudinary folders
   content = content.replace(/nexus:/g, 'chattix:'); // for tailwind
-  
+
   // also specifically replace 'nexus' in tailwind config and package json if any
   content = content.replace(/nexus/g, 'chattix');
 

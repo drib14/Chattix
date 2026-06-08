@@ -124,7 +124,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
 
   useEffect(() => {
     let activeGroupId = null;
-    
+
     if (activeChat?._id) {
       userService.getChatWallpaper(activeChat._id)
         .then(res => {
@@ -243,7 +243,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     const onPinnedMessage = ({ groupId }) => {
       if (groupId !== chatId) return;
       if (activeChat?._id) {
-        groupService.getGroupById(activeChat._id).then((details) => setGroupInfo(details)).catch(() => {});
+        groupService.getGroupById(activeChat._id).then((details) => setGroupInfo(details)).catch(() => { });
       }
     };
 
@@ -574,7 +574,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           </div>
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-gray-900 text-sm truncate">{displayName}</h3>
-            <p className={`text-[11px] sm:text-xs truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none ${getTypingLabel() ? 'text-chattix-primary' : (isGroup ? 'text-gray-500' : 'text-chattix-primary font-medium')}`}>
+            <p className="text-[11px] sm:text-xs text-gray-500 truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
               {getTypingLabel() || (isGroup ? `${activeChat.members?.length || 0} members` : (isOnline ? t('online', language) : (chatStatusText || t('offline', language))))}
             </p>
           </div>
@@ -632,7 +632,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
         </div>
       )}
 
-      <div 
+      <div
         className="flex-1 overflow-y-auto p-3 chat-bg min-h-0"
         style={wallpaperUrl ? {
           backgroundImage: `url(${wallpaperUrl})`,
@@ -798,7 +798,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           )}
         </form>
       </div>
-      <CreatePollModal 
+      <CreatePollModal
         isOpen={showPollModal}
         onClose={() => setShowPollModal(false)}
         groupId={activeChat._id}

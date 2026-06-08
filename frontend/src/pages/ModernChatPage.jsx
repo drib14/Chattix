@@ -242,7 +242,7 @@ const ModernChatPage = () => {
     <div className="h-[100dvh] flex flex-col bg-chattix-bg overflow-hidden max-w-[100vw] w-full lg:flex-row pb-nav lg:pb-0">
       {/* Mobile Header - only on mobile */}
       {isMobile && (
-        <MobileHeader 
+        <MobileHeader
           activeTab={activeTab}
           setActiveTab={handleTabChange}
           onMenuOpen={() => {}}
@@ -303,7 +303,7 @@ const ModernChatPage = () => {
           {/* Tablet top bar with search */}
           {isTablet && (
             <div className="shrink-0 border-b border-gray-100 bg-white">
-              <GlobalSearchBar 
+              <GlobalSearchBar
                 onSearch={setSearchQuery}
                 onClear={() => setSearchQuery('')}
               />

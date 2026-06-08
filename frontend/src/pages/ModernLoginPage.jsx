@@ -137,8 +137,8 @@ const ModernLoginPage = () => {
 
               {/* Forgot Password */}
               <div className="flex items-center justify-end">
-                <Link 
-                  to="/forgot-password" 
+                <Link
+                  to="/forgot-password"
                   className="text-sm font-medium text-chattix-primary hover:text-chattix-primary-dark transition-colors"
                 >
                   Forgot password?
