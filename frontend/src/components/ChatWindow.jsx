@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { AnimatePresence } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import {
-  Send, Smile, Info, ImagePlus, Mic, Square, X, Search, ArrowLeft, BarChart3
+  Send, Smile, Info, Image, Mic, Square, X, Search, ArrowLeft, BarChart3
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import ForwardModal from './ForwardModal';
@@ -76,7 +76,10 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const activeChat = selectedChat;
   const displayedMessages = Array.isArray(messages) ? messages : [];
   const chatId = activeChat?._id?.toString();
-  const isOnline = onlineUsers.some((uid) => uid?.toString() === chatId);
+  const isOnline = onlineUsers.some((u) => {
+    const uid = typeof u === 'object' && u !== null ? u.userId : u;
+    return uid?.toString() === chatId;
+  });
   const isGroup = activeChat?.isGroup;
   const isGroupAdmin = isGroup && (
     activeChat?.admin?._id?.toString() === user?._id?.toString() ||
@@ -763,8 +766,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
             GIF
           </button>
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Media or Files">
-            <ImagePlus size={17} className="sm:w-[18px] sm:h-[18px]" />
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Photos, Videos, or Files">
+            <Image size={18} className="sm:w-[19px] sm:h-[19px]" />
           </button>
           {isGroup && (
             <button type="button" onClick={() => setShowPollModal(true)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">

@@ -100,7 +100,10 @@ const ChatList = () => {
             {displayChats.map((chat, index) => {
               const chatUser = chat._id;
               const chatId = chatUser?._id?.toString();
-              const isOnline = onlineUsers.some((uid) => uid?.toString() === chatId);
+              const isOnline = onlineUsers.some((u) => {
+                const uid = typeof u === 'object' && u !== null ? u.userId : u;
+                return uid?.toString() === chatId;
+              });
               const isSelected =
                 selectedChat?._id?.toString() === chatId;
               
@@ -130,8 +133,10 @@ const ChatList = () => {
                         alt={chatUser?.fullName}
                         className="w-12 h-12 rounded-full object-cover"
                       />
-                      {isOnline && (
+                      {isOnline ? (
                         <div className="absolute bottom-0 right-0 online-indicator" />
+                      ) : (
+                        <div className="absolute bottom-0 right-0 offline-indicator" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">

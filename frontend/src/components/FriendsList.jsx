@@ -6,6 +6,7 @@ import { friendService } from '../services/friendService';
 import { removeFriend } from '../redux/slices/friendSlice';
 import { setSelectedChat } from '../redux/slices/chatSlice';
 import { useConfirm } from '../context/ConfirmContext';
+import { formatLastSeen } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
 const DEFAULT_AVATAR =
@@ -78,9 +79,10 @@ const FriendsList = () => {
         ) : (
           <div className="divide-y divide-gray-50">
             {filteredFriends.map((friend, index) => {
-              const isOnline = onlineUsers.some(
-                (uid) => uid?.toString() === friend._id?.toString()
-              );
+              const isOnline = onlineUsers.some((u) => {
+                const uid = typeof u === 'object' && u !== null ? u.userId : u;
+                return uid?.toString() === friend._id?.toString();
+              });
 
               return (
                 <motion.div
@@ -111,7 +113,7 @@ const FriendsList = () => {
                     </h3>
                     <p className="text-xs text-gray-500 truncate">@{friend.username}</p>
                     <span className={`text-[10px] ${isOnline ? 'text-emerald-600' : 'text-gray-400'}`}>
-                      {isOnline ? 'Online' : 'Offline'}
+                      {isOnline ? 'Online' : (friend.lastSeen ? `Active ${formatLastSeen(friend.lastSeen)}` : 'Offline')}
                     </span>
                   </div>
                   <div className="flex gap-1 shrink-0">

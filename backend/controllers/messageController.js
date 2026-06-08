@@ -14,7 +14,7 @@ export const sendMessage = async (req, res) => {
   try {
     const { receiverId, text, groupId, replyTo } = req.body;
 
-    if (!text && !req.files && !req.body.gifUrl) {
+    if (!text && (!req.files || req.files.length === 0) && !req.body.gifUrl) {
       return res.status(400).json({ message: 'Message cannot be empty' });
     }
 

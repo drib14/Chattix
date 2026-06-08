@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus } from 'lucide-react';
+import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus, Music, Download, FileText } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import PollMessage from './PollMessage';
 import MediaModal from './MediaModal';
@@ -109,6 +109,8 @@ const ChatBubble = ({
     return { isIgnored };
   };
 
+  const isDoc = attachment && (attachment.type === 'document' || attachment.type === 'pdf');
+  const isAudio = attachment && attachment.type === 'audio';
   const isPureMedia = attachment && (attachment.type === 'image' || attachment.type === 'gif' || attachment.type === 'video') && !message.text && !message.poll;
 
   return (
@@ -145,10 +147,10 @@ const ChatBubble = ({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
-          className={`relative message-bubble shadow-sm ${
-            isPureMedia 
-              ? 'bg-transparent text-gray-900' 
-              : `px-3 py-2 rounded-xl ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`
+          className={`relative message-bubble ${
+            isPureMedia || isDoc || isAudio
+              ? 'bg-transparent p-0 shadow-none border-none' 
+              : `px-3 py-2 rounded-xl shadow-sm ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`
           }`}
           onContextMenu={(e) => {
             e.preventDefault();
@@ -160,39 +162,68 @@ const ChatBubble = ({
               className={`relative cursor-pointer group/media ${isPureMedia ? 'mb-0.5' : 'mb-1'}`}
               onClick={() => setShowMediaModal(true)}
             >
-              <img src={attachment.url} alt="" className={`max-w-full max-h-60 object-cover ${isPureMedia ? 'rounded-2xl shadow-sm' : 'rounded-lg'}`} />
+              <img src={attachment.url} alt="" className={`max-w-full max-h-60 object-cover ${isPureMedia ? 'rounded-2xl shadow-md' : 'rounded-lg'}`} />
               <div className={`absolute inset-0 bg-black/10 opacity-0 group-hover/media:opacity-100 transition-opacity ${isPureMedia ? 'rounded-2xl' : 'rounded-lg'}`} />
             </div>
           )}
           {attachment?.type === 'video' && (
-            <div className={`relative ${isPureMedia ? 'mb-0.5' : 'mb-1'}`}>
+            <div className={`relative cursor-pointer group/media ${isPureMedia ? 'mb-0.5' : 'mb-1'}`} onClick={() => setShowMediaModal(true)}>
               <video 
                 src={attachment.url} 
-                className={`max-w-full max-h-60 bg-black cursor-pointer ${isPureMedia ? 'rounded-2xl shadow-sm' : 'rounded-lg'}`} 
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowMediaModal(true);
-                }}
+                className={`max-w-full max-h-60 bg-black ${isPureMedia ? 'rounded-2xl shadow-md' : 'rounded-lg'}`} 
               />
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white backdrop-blur-sm">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/15 group-hover/media:bg-black/25 transition-colors">
+                <div className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white backdrop-blur-sm shadow-md">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 </div>
               </div>
             </div>
           )}
-          {attachment?.type === 'audio' && (
-            <audio src={attachment.url} controls className="w-full max-w-full min-w-0 mb-1" />
+          {isAudio && (
+            <div className="flex flex-col gap-2 p-3 bg-gray-100 border border-gray-200 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm text-gray-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center shrink-0 text-gray-500 shadow-sm">
+                  <Music size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-gray-800 truncate" title={attachment.filename}>
+                    {attachment.filename || 'Voice Note / Audio'}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    Audio File
+                  </p>
+                </div>
+              </div>
+              <audio src={attachment.url} controls className="w-full h-8 mt-1 accent-chattix-primary" />
+            </div>
           )}
-          {(attachment?.type === 'document' || attachment?.type === 'pdf') && (
-            <a
-              href={attachment.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 text-sm text-chattix-secondary underline mb-1"
-            >
-              📎 {attachment.filename || 'Download file'}
-            </a>
+          {isDoc && (
+            <div className="flex items-center justify-between gap-3 p-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm text-gray-800 transition-colors">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center shrink-0 text-gray-500 font-bold text-[10px] uppercase shadow-sm">
+                  {attachment.type === 'pdf' ? 'PDF' : (attachment.filename?.split('.').pop() || 'DOC')}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-gray-800 truncate" title={attachment.filename}>
+                    {attachment.filename || 'Untitled document'}
+                  </p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                    {attachment.type || 'file'}
+                  </p>
+                </div>
+              </div>
+              <a
+                href={attachment.url}
+                download
+                target="_blank"
+                rel="noreferrer"
+                className="p-1.5 bg-white hover:bg-gray-50 text-gray-600 hover:text-chattix-primary border border-gray-200 rounded-full shadow-sm transition-colors shrink-0"
+                title="Download"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Download size={14} />
+              </a>
+            </div>
           )}
 
           {/* Poll Message */}

@@ -17,7 +17,7 @@ export const messageService = {
 
     const response = await api.post('/messages/send', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined,
       },
     });
     return response.data;

@@ -551,19 +551,19 @@ export const getUserStatus = async (req, res) => {
     if (user.isOnline || user.status === 'online') {
       lastSeenText = 'Online';
     } else if (diffMins < 1) {
-      lastSeenText = 'just now';
+      lastSeenText = 'last seen just now';
     } else if (diffMins < 60) {
-      lastSeenText = `${diffMins}m`;
+      lastSeenText = `last seen ${diffMins}m ago`;
     } else if (diffHours < 24) {
-      lastSeenText = `${diffHours}h`;
+      lastSeenText = `last seen ${diffHours}h ago`;
     } else if (diffDays < 7) {
-      lastSeenText = `${diffDays}d`;
+      lastSeenText = `last seen ${diffDays}d ago`;
     } else if (diffWeeks < 4) {
-      lastSeenText = `${diffWeeks}w`;
+      lastSeenText = `last seen ${diffWeeks}w ago`;
     } else if (diffMonths < 12) {
-      lastSeenText = `${diffMonths}mo`;
+      lastSeenText = `last seen ${diffMonths}mo ago`;
     } else {
-      lastSeenText = `${diffYears}yr`;
+      lastSeenText = `last seen ${diffYears}yr ago`;
     }
 
     res.json({
