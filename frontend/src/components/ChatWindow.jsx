@@ -3,11 +3,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { AnimatePresence } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import {
-  Send, Smile, Info, Image, Mic, Square, X, Search, ArrowLeft, BarChart3
+  Send, Smile, Info, Image, Mic, Square, X, Search, ArrowLeft, BarChart3, Paperclip
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import ForwardModal from './ForwardModal';
 import CreatePollModal from './CreatePollModal';
+import MediaModal from './MediaModal';
 import socketService from '../services/socket';
 import { userService } from '../services/userService';
 import { t } from '../utils/translations';
@@ -52,6 +53,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const [chatStatusText, setChatStatusText] = useState('');
   const [showPollModal, setShowPollModal] = useState(false);
   const [forwardMessage, setForwardMessage] = useState(null);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
   const [wallpaperUrl, setWallpaperUrl] = useState('');
@@ -62,6 +65,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const emojiRef = useRef(null);
   const gifRef = useRef(null);
   const fileInputRef = useRef(null);
+  const docInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const dispatch = useDispatch();
@@ -671,6 +675,11 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
                 }}
                 onScrollToReply={(messageId) => scrollToMessage(messageId)}
                 searchQuery={searchQuery}
+                onViewMedia={(attachment) => {
+                  if (navigator.vibrate) navigator.vibrate(50);
+                  setSelectedMedia(attachment);
+                  setShowMediaModal(true);
+                }}
                 {...messageActions}
               />
             ))}
@@ -687,6 +696,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      <MediaModal isOpen={showMediaModal} onClose={() => setShowMediaModal(false)} attachment={selectedMedia} />
 
       {replyTo && (
         <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
@@ -766,15 +777,19 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
             GIF
           </button>
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Photos, Videos, or Files">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Photos & Videos">
             <Image size={18} className="sm:w-[19px] sm:h-[19px]" />
+          </button>
+          <button type="button" onClick={() => docInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Documents & Files">
+            <Paperclip size={18} className="sm:w-[19px] sm:h-[19px]" />
           </button>
           {isGroup && (
             <button type="button" onClick={() => setShowPollModal(true)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
               <BarChart3 size={17} className="sm:w-[18px] sm:h-[18px]" />
             </button>
           )}
-          <input ref={fileInputRef} type="file" className="hidden" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.txt,audio/*" onChange={handleFileSelect} />
+          <input ref={fileInputRef} type="file" className="hidden" multiple accept="image/*,video/*" onChange={handleFileSelect} />
+          <input ref={docInputRef} type="file" className="hidden" multiple accept="*" onChange={handleFileSelect} />
           <input
             type="text"
             value={messageText}

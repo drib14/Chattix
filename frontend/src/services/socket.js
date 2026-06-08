@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+const isNetwork = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const SOCKET_URL = isNetwork ? import.meta.env.VITE_MOBILE_SOCKET_URL : import.meta.env.VITE_SOCKET_URL;
 
 class SocketService {
   constructor() {

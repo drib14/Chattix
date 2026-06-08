@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus, Music, Download, FileText } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import PollMessage from './PollMessage';
+import CustomAudioPlayer from './CustomAudioPlayer';
 
 const REACTIONS = ['❤️', '👍', '😂', '🔥', '😮', '😢'];
 
@@ -41,6 +42,7 @@ const ChatBubble = ({
   onPin,
   onScrollToReply,
   onViewInfo,
+  onViewMedia,
   searchQuery,
   messageRef,
 }) => {
@@ -63,8 +65,15 @@ const ChatBubble = ({
     ));
   };
 
+  const triggerHaptic = (duration = 50) => {
+    if (navigator.vibrate) navigator.vibrate(duration);
+  };
+
   const handleTouchStart = () => {
-    longPressRef.current = setTimeout(() => setShowMobileMenu(true), 600);
+    longPressRef.current = setTimeout(() => {
+      triggerHaptic(50);
+      setShowMobileMenu(true);
+    }, 500);
   };
 
   const handleTouchEnd = () => {
@@ -160,14 +169,14 @@ const ChatBubble = ({
             {(attachment?.type === 'image' || attachment?.type === 'gif') && (
               <div
                 className={`relative cursor-pointer group/media ${isPureMedia ? 'mb-0.5' : 'mb-1'}`}
-                onClick={() => setShowMediaModal(true)}
+                onClick={() => onViewMedia?.(attachment)}
               >
                 <img src={attachment.url} alt="" className={`max-w-full max-h-60 object-cover ${isPureMedia ? 'rounded-2xl shadow-md' : 'rounded-lg'}`} />
                 <div className={`absolute inset-0 bg-black/10 opacity-0 group-hover/media:opacity-100 transition-opacity ${isPureMedia ? 'rounded-2xl' : 'rounded-lg'}`} />
               </div>
             )}
             {attachment?.type === 'video' && (
-              <div className={`relative cursor-pointer group/media ${isPureMedia ? 'mb-0.5' : 'mb-1'}`} onClick={() => setShowMediaModal(true)}>
+              <div className={`relative cursor-pointer group/media ${isPureMedia ? 'mb-0.5' : 'mb-1'}`} onClick={() => onViewMedia?.(attachment)}>
                 <video
                   src={attachment.url}
                   className={`max-w-full max-h-60 bg-black ${isPureMedia ? 'rounded-2xl shadow-md' : 'rounded-lg'}`}
@@ -180,35 +189,37 @@ const ChatBubble = ({
               </div>
             )}
             {isAudio && (
-              <div className="flex flex-col gap-2 p-3 bg-gray-100 border border-gray-200 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm text-gray-800">
+              <div className={`flex flex-col gap-2 p-3 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'}`}>
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center shrink-0 text-gray-500 shadow-sm">
-                    <Music size={16} />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${isOwn ? 'bg-white/20 text-white' : 'bg-gray-100 text-chattix-primary'}`}>
+                    <Music size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-gray-800 truncate" title={attachment.filename}>
-                      {attachment.filename || 'Voice Note / Audio'}
+                    <p className={`text-sm font-semibold truncate ${isOwn ? 'text-white' : 'text-gray-800'}`} title={attachment.filename}>
+                      {attachment.filename || 'Voice Note'}
                     </p>
-                    <p className="text-[10px] text-gray-400">
-                      Audio File
+                    <p className={`text-[10px] uppercase tracking-wider ${isOwn ? 'text-white/70' : 'text-gray-400'}`}>
+                      Audio
                     </p>
                   </div>
                 </div>
-                <audio src={attachment.url} controls className="w-full h-8 mt-1 accent-chattix-primary" />
+                <div className="mt-2">
+                  <CustomAudioPlayer src={attachment.url} isOwn={isOwn} />
+                </div>
               </div>
             )}
             {isDoc && (
-              <div className="flex items-center justify-between gap-3 p-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm text-gray-800 transition-colors">
+              <div className={`flex items-center justify-between gap-3 p-3 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm transition-colors ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm hover:bg-gray-50'}`}>
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 bg-white border border-gray-200 rounded-xl flex items-center justify-center shrink-0 text-gray-500 font-bold text-[10px] uppercase shadow-sm">
-                    {attachment.type === 'pdf' ? 'PDF' : (attachment.filename?.split('.').pop() || 'DOC')}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs uppercase shadow-sm ${isOwn ? 'bg-white/20 text-white' : 'bg-gray-100 text-chattix-primary'}`}>
+                    {attachment.type === 'pdf' ? 'PDF' : (attachment.filename?.split('.').pop()?.substring(0, 4) || 'DOC')}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-gray-800 truncate" title={attachment.filename}>
+                    <p className={`text-sm font-semibold truncate ${isOwn ? 'text-white' : 'text-gray-800'}`} title={attachment.filename}>
                       {attachment.filename || 'Untitled document'}
                     </p>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-                      {attachment.type || 'file'}
+                    <p className={`text-[10px] uppercase tracking-wider ${isOwn ? 'text-white/70' : 'text-gray-400'}`}>
+                      {attachment.type || 'File'}
                     </p>
                   </div>
                 </div>
@@ -217,11 +228,11 @@ const ChatBubble = ({
                   download
                   target="_blank"
                   rel="noreferrer"
-                  className="p-1.5 bg-white hover:bg-gray-50 text-gray-600 hover:text-chattix-primary border border-gray-200 rounded-full shadow-sm transition-colors shrink-0"
+                  className={`p-2 rounded-full shadow-sm transition-colors shrink-0 ${isOwn ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-gray-100 hover:bg-gray-200 text-chattix-primary'}`}
                   title="Download"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <Download size={14} />
+                  <Download size={16} />
                 </a>
               </div>
             )}

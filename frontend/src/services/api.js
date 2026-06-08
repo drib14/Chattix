@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const isNetwork = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const API_URL = isNetwork ? import.meta.env.VITE_MOBILE_API_URL : import.meta.env.VITE_API_URL;
 
 const api = axios.create({
   baseURL: API_URL,

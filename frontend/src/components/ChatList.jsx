@@ -6,6 +6,7 @@ import { setSelectedChat, clearUnread } from '../redux/slices/chatSlice';
 import { userService } from '../services/userService';
 import { t } from '../utils/translations';
 import toast from 'react-hot-toast';
+import StoryTray from './StoryTray';
 
 const DEFAULT_AVATAR =
   'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
@@ -71,6 +72,7 @@ const ChatList = () => {
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
+      <StoryTray />
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         {archivedChats.length > 0 && (
           <button

@@ -107,9 +107,6 @@ export const sendMessage = async (req, res) => {
 
         // Determine resource type for Cloudinary
         let resourceType = 'auto';
-        if (isVideo || isAudio) resourceType = 'video';
-        else if (isImage) resourceType = 'image';
-        else resourceType = 'raw'; // For documents, PDFs, etc.
 
         console.log('File type detection:', { isAudio, isVideo, isImage, isPDF, isWordDoc, isExcel, resourceType });
 
@@ -147,7 +144,7 @@ export const sendMessage = async (req, res) => {
           attachmentType = 'audio';
           attachmentFileType = 'audio';
         } else if (isPDF) {
-          attachmentType = 'pdf';
+          attachmentType = 'document';
           attachmentFileType = 'pdf';
         } else if (isWordDoc) {
           attachmentType = 'document';

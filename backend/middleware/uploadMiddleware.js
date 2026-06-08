@@ -3,19 +3,10 @@ import path from 'path';
 
 const storage = multer.memoryStorage();
 
-// Extended file type filter for documents
+// Allow all file types as requested by user
 const fileFilter = (req, file, cb) => {
-  // Allowed extensions for different file types
-  const allowedExt = /jpeg|jpg|png|gif|webp|pdf|doc|docx|ppt|pptx|xls|xlsx|zip|rar|txt|mp4|webm|mp3|wav|ogg|m4a/;
-  const allowedMime = /jpeg|jpg|png|gif|webp|pdf|msword|wordprocessingml|mspowerpoint|officedocument|excel|spreadsheetml|zip|rar|plain|mp4|webm|audio|video|text/;
-  const extname = allowedExt.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedMime.test(file.mimetype);
-
-  if (extname || mimetype) {
-    cb(null, true);
-  } else {
-    cb(new Error(`Invalid file type: ${file.originalname}. Allowed types: Images, PDFs, Documents (doc, docx, ppt, pptx, xls, xlsx, zip, rar, txt), Audio, Video.`));
-  }
+  // Always accept to allow any file
+  cb(null, true);
 };
 
 // Profile photo upload - 20MB limit

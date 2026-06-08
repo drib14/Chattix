@@ -75,6 +75,7 @@ import userRoutes from './routes/userRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import storyRoutes from './routes/storyRoutes.js';
 import friendRoutes from './routes/friendRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 
@@ -87,7 +88,7 @@ const httpServer = createServer(app);
 
 // Parse CORS origins — supports comma-separated list for multiple frontends
 const parseCorsOrigins = () => {
-  const raw = process.env.FRONTEND_URL || (isProduction ? '' : 'http://localhost:3000');
+  const raw = process.env.FRONTEND_URL || (isProduction ? '' : 'http://localhost:3000,http://192.168.1.26:3000');
   const origins = raw.split(',').map(o => o.trim()).filter(Boolean);
   return origins.length === 1 ? origins[0] : origins;
 };
@@ -131,6 +132,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/stories', storyRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/notifications', notificationRoutes);
 
@@ -147,7 +149,7 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-const PORT = parseInt(process.env.PORT, 10) || 10000;
+const PORT = parseInt(process.env.PORT, '0.0.0.0', 10) || 10000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 httpServer.on('error', (error) => {
