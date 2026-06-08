@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { X, Image as ImageIcon, Video, Globe, Users, Lock, Loader2, Type, Clock, MapPin, Link as LinkIcon, Sticker, PenTool } from 'lucide-react';
 import { createStory } from '../redux/slices/storySlice';
+import { useConfirm } from '../context/ConfirmContext';
+import { LinkModal, LocationModal, GiphyModal } from './StoryModals';
 import toast from 'react-hot-toast';
 
 const bgGradients = [
@@ -17,8 +19,10 @@ const fontColors = ['text-white', 'text-black', 'text-yellow-300', 'text-pink-40
 
 const StoryCreator = ({ onClose }) => {
   const dispatch = useDispatch();
+  const { confirm } = useConfirm();
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
+  const previewRef = useRef(null);
   
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -36,16 +40,34 @@ const StoryCreator = ({ onClose }) => {
   const [overlays, setOverlays] = useState([]);
   const [isDoodling, setIsDoodling] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [draggedIdx, setDraggedIdx] = useState(null);
+
+  // Modals state
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [showLocModal, setShowLocModal] = useState(false);
+  const [showGiphyModal, setShowGiphyModal] = useState(false);
+
+  const handleClose = async () => {
+    if (selectedFile || textMode) {
+      const ok = await confirm({
+        title: 'Discard Story?',
+        message: 'If you go back now, your story will be lost.',
+        confirmText: 'Discard',
+        isDestructive: true
+      });
+      if (ok) onClose();
+    } else {
+      onClose();
+    }
+  };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
       toast.error('Only images and videos are allowed for stories.');
       return;
     }
-
     if (file.size > 20 * 1024 * 1024) {
       toast.error('File size must be less than 20MB');
       return;
@@ -104,36 +126,26 @@ const StoryCreator = ({ onClose }) => {
   // Overlay Actions
   const addTimeOverlay = () => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setOverlays([...overlays, { type: 'time', text: time, x: 50, y: 50 }]);
+    setOverlays([...overlays, { type: 'time', text: time, x: 50, y: 50, styleIdx: 0 }]);
   };
 
-  const addLocationOverlay = () => {
-    if (!navigator.geolocation) return toast.error('Geolocation not supported');
-    toast.loading('Finding location...', { id: 'loc' });
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      try {
-        const res = await fetch(`https://us1.locationiq.com/v1/reverse.php?key=${import.meta.env.VITE_LOCATIONIQ_ACCESS_TOKEN}&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
-        const data = await res.json();
-        const locName = data.address?.city || data.address?.town || data.address?.country || 'Current Location';
-        setOverlays([...overlays, { type: 'location', text: locName, lat: pos.coords.latitude, lng: pos.coords.longitude, x: 50, y: 50 }]);
-        toast.success('Location added!', { id: 'loc' });
-      } catch (err) {
-        toast.error('Failed to get location', { id: 'loc' });
+  const cycleTimeStyle = (idx) => {
+    setOverlays(prev => {
+      const next = [...prev];
+      if (next[idx].type === 'time') {
+        next[idx].styleIdx = ((next[idx].styleIdx || 0) + 1) % 4; // 4 styles
       }
-    }, () => toast.error('Location access denied', { id: 'loc' }));
+      return next;
+    });
   };
 
-  const addLinkOverlay = () => {
-    const url = window.prompt('Enter URL (e.g., https://example.com):');
-    if (url) {
-      setOverlays([...overlays, { type: 'link', url, text: '🔗 Visit Link', x: 50, y: 70 }]);
+  const getTimeStyle = (styleIdx) => {
+    switch(styleIdx) {
+      case 1: return 'bg-black text-white font-mono';
+      case 2: return 'bg-transparent text-white drop-shadow-xl font-serif text-4xl';
+      case 3: return 'bg-white/20 backdrop-blur text-white font-sans border border-white/50';
+      default: return 'bg-white text-black font-sans';
     }
-  };
-
-  const addStickerOverlay = () => {
-    // Basic mock for sticker since fetching Giphy requires search UI.
-    // In a full implementation, this opens a modal. For now, drop a static sticker.
-    setOverlays([...overlays, { type: 'sticker', text: '🔥', x: 50, y: 50 }]);
   };
 
   const toggleDoodle = () => setIsDoodling(!isDoodling);
@@ -164,8 +176,10 @@ const StoryCreator = ({ onClose }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
 
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -173,11 +187,37 @@ const StoryCreator = ({ onClose }) => {
     ctx.moveTo(x, y);
   };
 
+  // Dragging System
+  const handleDragStart = (idx, e) => {
+    if (isDoodling) return;
+    setDraggedIdx(idx);
+  };
+  
+  const handleDragMove = (e) => {
+    if (draggedIdx === null || !previewRef.current) return;
+    e.preventDefault();
+    const rect = previewRef.current.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
+    
+    setOverlays(prev => {
+      const next = [...prev];
+      next[draggedIdx] = { ...next[draggedIdx], x, y };
+      return next;
+    });
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/95 lg:p-8">
       {/* Header */}
       <div className="flex items-center justify-between p-4 shrink-0 text-white lg:absolute lg:top-4 lg:left-4 lg:right-4 z-10">
-        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+        <button onClick={handleClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
           <X size={24} />
         </button>
         <h2 className="text-lg font-semibold lg:hidden">Create Story</h2>
@@ -270,10 +310,10 @@ const StoryCreator = ({ onClose }) => {
           {(previewUrl || textMode) && (
             <div className="absolute top-4 right-4 flex flex-col gap-3 z-30">
               <button onClick={toggleDoodle} className={`p-2 rounded-full shadow-lg ${isDoodling ? 'bg-white text-black' : 'bg-black/50 text-white backdrop-blur-md'}`}><PenTool size={20} /></button>
-              <button onClick={addStickerOverlay} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><Sticker size={20} /></button>
+              <button onClick={() => setShowGiphyModal(true)} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><Sticker size={20} /></button>
               <button onClick={addTimeOverlay} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><Clock size={20} /></button>
-              <button onClick={addLocationOverlay} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><MapPin size={20} /></button>
-              <button onClick={addLinkOverlay} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><LinkIcon size={20} /></button>
+              <button onClick={() => setShowLocModal(true)} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><MapPin size={20} /></button>
+              <button onClick={() => setShowLinkModal(true)} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><LinkIcon size={20} /></button>
             </div>
           )}
 
@@ -304,7 +344,15 @@ const StoryCreator = ({ onClose }) => {
               </button>
             </div>
           ) : (
-            <div className="relative w-full h-full">
+            <div 
+              className="relative w-full h-full select-none"
+              ref={previewRef}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              onTouchMove={handleDragMove}
+              onTouchEnd={handleDragEnd}
+            >
               {/* Media Layer */}
               {textMode ? (
                 <div className={`w-full h-full flex items-center justify-center p-8 ${bgColor}`}>
@@ -325,20 +373,29 @@ const StoryCreator = ({ onClose }) => {
               )}
 
               {/* Overlays Layer */}
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {overlays.map((overlay, idx) => (
                   <div 
                     key={idx} 
-                    className="absolute pointer-events-auto transform -translate-x-1/2 -translate-y-1/2 cursor-move"
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move pointer-events-auto"
                     style={{ left: `${overlay.x}%`, top: `${overlay.y}%` }}
+                    onMouseDown={(e) => handleDragStart(idx, e)}
+                    onTouchStart={(e) => handleDragStart(idx, e)}
                   >
-                    {overlay.type === 'time' && <div className="bg-white text-black font-bold px-4 py-2 rounded-lg shadow-lg text-xl">{overlay.text}</div>}
-                    {overlay.type === 'location' && <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"><MapPin size={16} />{overlay.text}</div>}
-                    {overlay.type === 'link' && <div className="bg-white/90 backdrop-blur text-blue-600 font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2"><LinkIcon size={16} />{overlay.text}</div>}
-                    {overlay.type === 'sticker' && <div className="text-6xl drop-shadow-xl">{overlay.text}</div>}
+                    {overlay.type === 'time' && (
+                      <div 
+                        onClick={() => cycleTimeStyle(idx)}
+                        className={`font-bold px-4 py-2 rounded-lg shadow-lg text-xl select-none ${getTimeStyle(overlay.styleIdx)}`}
+                      >
+                        {overlay.text}
+                      </div>
+                    )}
+                    {overlay.type === 'location' && <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 select-none"><MapPin size={16} />{overlay.text}</div>}
+                    {overlay.type === 'link' && <div className="bg-white/90 backdrop-blur text-blue-600 font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 select-none"><LinkIcon size={16} />{overlay.text}</div>}
+                    {overlay.type === 'sticker' && <img src={overlay.url} alt="sticker" className="w-32 h-32 object-contain select-none" draggable={false} />}
                   </div>
                 ))}
-              </div>
+              </div></div>
 
               {/* Doodle Canvas Layer */}
               {isDoodling && (

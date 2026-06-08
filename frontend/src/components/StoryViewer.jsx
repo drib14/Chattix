@@ -11,7 +11,7 @@ const STORY_DURATION = 5000;
 const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const confirm = useConfirm();
+  const { confirm } = useConfirm();
   
   const [currentUserIndex, setCurrentUserIndex] = useState(initialUserIndex);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
@@ -227,16 +227,26 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
             {/* Render Overlays */}
             {activeStory.overlays && activeStory.overlays.map((overlay, idx) => {
               if (overlay.type === 'doodle') return null; // Rendered below
+              
+              const getTimeStyle = (styleIdx) => {
+                switch(styleIdx) {
+                  case 1: return 'bg-black text-white font-mono';
+                  case 2: return 'bg-transparent text-white drop-shadow-xl font-serif text-4xl';
+                  case 3: return 'bg-white/20 backdrop-blur text-white font-sans border border-white/50';
+                  default: return 'bg-white text-black font-sans';
+                }
+              };
+
               return (
                 <div 
                   key={idx} 
                   className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
                   style={{ left: `${overlay.x}%`, top: `${overlay.y}%`, zIndex: 10 }}
                 >
-                  {overlay.type === 'time' && <div className="bg-white text-black font-bold px-4 py-2 rounded-lg shadow-lg text-xl">{overlay.text}</div>}
+                  {overlay.type === 'time' && <div className={`font-bold px-4 py-2 rounded-lg shadow-lg text-xl ${getTimeStyle(overlay.styleIdx)}`}>{overlay.text}</div>}
                   {overlay.type === 'location' && <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"><MapPin size={16} />{overlay.text}</div>}
                   {overlay.type === 'link' && <a href={overlay.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="bg-white/90 backdrop-blur text-blue-600 font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 pointer-events-auto"><LinkIcon size={16} />{overlay.text}</a>}
-                  {overlay.type === 'sticker' && <div className="text-6xl drop-shadow-xl">{overlay.text}</div>}
+                  {overlay.type === 'sticker' && <img src={overlay.url} alt="sticker" className="w-32 h-32 object-contain" />}
                 </div>
               );
             })}

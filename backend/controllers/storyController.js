@@ -128,7 +128,7 @@ export const markStoryViewed = async (req, res) => {
     const story = await Story.findById(req.params.storyId);
     if (!story) return res.status(404).json({ message: 'Story not found' });
 
-    const hasViewed = story.viewedBy.some(v => v.user.toString() === req.user._id.toString());
+    const hasViewed = story.viewedBy.some(v => v.user?.toString() === req.user._id.toString());
     
     if (!hasViewed) {
       story.viewedBy.push({ user: req.user._id, viewedAt: new Date() });
