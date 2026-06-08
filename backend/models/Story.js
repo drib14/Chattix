@@ -8,12 +8,28 @@ const storySchema = new mongoose.Schema({
   },
   mediaUrl: {
     type: String,
-    required: true,
+    // not required if it's textMode
   },
   mediaType: {
     type: String,
-    enum: ['image', 'video'],
-    required: true,
+    enum: ['image', 'video', 'text'],
+    default: 'image',
+  },
+  textMode: {
+    type: Boolean,
+    default: false,
+  },
+  backgroundColor: {
+    type: String,
+    default: 'bg-gradient-to-tr from-blue-500 to-purple-600',
+  },
+  fontFamily: {
+    type: String,
+    default: 'font-sans',
+  },
+  fontColor: {
+    type: String,
+    default: 'text-white',
   },
   caption: {
     type: String,
@@ -26,9 +42,18 @@ const storySchema = new mongoose.Schema({
     default: 'friends',
   },
   viewedBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    viewedAt: { type: Date, default: Date.now },
   }],
+  reactions: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    emoji: { type: String, required: true },
+    reactedAt: { type: Date, default: Date.now },
+  }],
+  overlays: {
+    type: Array,
+    default: [],
+  },
   expiresAt: {
     type: Date,
     required: true,

@@ -65,6 +65,16 @@ const messageSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  readBy: [{
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    readAt: { type: Date, default: Date.now },
+  }],
+  linkPreview: {
+    url: String,
+    title: String,
+    description: String,
+    image: String,
+  },
   starredBy: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Group from '../models/Group.js';
 import cloudinary, { isCloudinaryConfigured } from '../config/cloudinary.js';
 import { createNotification } from './notificationController.js';
+import getMetaData from 'metadata-scraper';
 
 const includesId = (list, id) =>
   list.some((entry) => entry.toString() === id.toString());
@@ -70,6 +71,39 @@ export const sendMessage = async (req, res) => {
         const mentionedUsers = await User.find({ username: { $in: mentions } });
         if (mentionedUsers.length > 0) {
           messageData.mentions = mentionedUsers.map((u) => ({ user: u._id, username: u.username }));
+        }
+      }
+
+      // Check for URLs to scrape metadata for link previews
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const urls = text.match(urlRegex);
+      
+      // If no full URL is found but there's something like 'facebook.com', try to format it
+      let firstUrl = urls && urls.length > 0 ? urls[0] : null;
+      if (!firstUrl) {
+        const casualUrlRegex = /\b([a-z0-9-]+\.[a-z]{2,})\b/i;
+        const casualMatch = text.match(casualUrlRegex);
+        if (casualMatch && !casualMatch[0].endsWith('.')) {
+          // Check if it's a known domain logic could be here, but for now we just try
+          // Let's only try if it explicitly starts with http/https to avoid false positives,
+          // except if the user specifically types something that looks like a clean domain.
+          firstUrl = 'https://' + casualMatch[0];
+        }
+      }
+
+      if (firstUrl) {
+        try {
+          const metadata = await getMetaData(firstUrl);
+          if (metadata && (metadata.title || metadata.image || metadata.description)) {
+            messageData.linkPreview = {
+              url: firstUrl,
+              title: metadata.title || '',
+              description: metadata.description || '',
+              image: metadata.image || metadata.icon || ''
+            };
+          }
+        } catch (err) {
+          console.error('Link preview scrape error:', err.message);
         }
       }
     }

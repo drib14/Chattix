@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Plus, Globe, Users, Lock } from 'lucide-react';
-import { fetchStories, groupStories } from '../redux/slices/storySlice';
+import { Plus } from 'lucide-react';
+import { fetchStories, groupStories, addStory, removeStory, updateStoryViews, updateStoryReactions } from '../redux/slices/storySlice';
+import socketService from '../services/socket';
 import StoryViewer from './StoryViewer';
 import StoryCreator from './StoryCreator';
 import { t } from '../utils/translations';
@@ -25,6 +26,24 @@ const StoryTray = () => {
         dispatch(groupStories(user._id));
       }
     });
+
+    // Socket listeners for real-time story updates
+    const handleNewStory = (story) => dispatch(addStory(story));
+    const handleStoryDeleted = (data) => dispatch(removeStory(data));
+    const handleStoryViewed = (data) => dispatch(updateStoryViews(data));
+    const handleStoryReacted = (data) => dispatch(updateStoryReactions(data));
+
+    socketService.on('new_story', handleNewStory);
+    socketService.on('story_deleted', handleStoryDeleted);
+    socketService.on('story_viewed', handleStoryViewed);
+    socketService.on('story_reacted', handleStoryReacted);
+
+    return () => {
+      socketService.off('new_story', handleNewStory);
+      socketService.off('story_deleted', handleStoryDeleted);
+      socketService.off('story_viewed', handleStoryViewed);
+      socketService.off('story_reacted', handleStoryReacted);
+    };
   }, [dispatch, user]);
 
   const handleStoryClick = (index) => {

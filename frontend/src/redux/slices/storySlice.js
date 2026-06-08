@@ -15,9 +15,9 @@ export const fetchStories = createAsyncThunk(
 
 export const createStory = createAsyncThunk(
   'story/createStory',
-  async ({ mediaFile, caption, audience }, { rejectWithValue }) => {
+  async ({ mediaFile, caption, audience, textMode, backgroundColor, fontFamily, fontColor, overlays }, { rejectWithValue }) => {
     try {
-      const data = await storyService.createStory(mediaFile, caption, audience);
+      const data = await storyService.createStory(mediaFile, caption, audience, textMode, backgroundColor, fontFamily, fontColor, overlays);
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create story');
@@ -33,6 +33,30 @@ export const markStoryViewed = createAsyncThunk(
       return { storyId, ...data };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to mark story viewed');
+    }
+  }
+);
+
+export const deleteStory = createAsyncThunk(
+  'story/deleteStory',
+  async (storyId, { rejectWithValue }) => {
+    try {
+      await storyService.deleteStory(storyId);
+      return storyId;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to delete story');
+    }
+  }
+);
+
+export const reactToStory = createAsyncThunk(
+  'story/reactToStory',
+  async ({ storyId, emoji }, { rejectWithValue }) => {
+    try {
+      const data = await storyService.reactToStory(storyId, emoji);
+      return { storyId, reactions: data.reactions };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to react to story');
     }
   }
 );
@@ -88,6 +112,33 @@ const storySlice = createSlice({
       });
       
       state.groupedStories = groupedArray;
+    },
+    
+    // Socket Reducers
+    addStory: (state, action) => {
+      // Avoid duplicates
+      if (!state.stories.find(s => s._id === action.payload._id)) {
+        state.stories.unshift(action.payload);
+      }
+    },
+    removeStory: (state, action) => {
+      state.stories = state.stories.filter(s => s._id !== action.payload.storyId);
+    },
+    updateStoryViews: (state, action) => {
+      const { storyId, viewerId } = action.payload;
+      const story = state.stories.find(s => s._id === storyId);
+      if (story) {
+        if (!story.viewedBy.some(v => v.user === viewerId || v.user._id === viewerId)) {
+          story.viewedBy.push({ user: viewerId, viewedAt: new Date().toISOString() });
+        }
+      }
+    },
+    updateStoryReactions: (state, action) => {
+      const { storyId, reactorId, emoji } = action.payload;
+      const story = state.stories.find(s => s._id === storyId);
+      if (story) {
+        story.reactions.push({ user: reactorId, emoji, reactedAt: new Date().toISOString() });
+      }
     }
   },
   extraReducers: (builder) => {
@@ -109,14 +160,19 @@ const storySlice = createSlice({
         state.stories.unshift(action.payload);
       })
       .addCase(markStoryViewed.fulfilled, (state, action) => {
-        const { storyId } = action.payload;
-        // The current user ID isn't directly available in action payload unless we pass it.
-        // For simplicity, we just trigger a re-fetch of stories from the UI, or we can update local state.
-        // But we need the current user ID to add to viewedBy.
-        // We will handle local state update in the component or via another action.
+        // Local state handled by component or refetch
+      })
+      .addCase(deleteStory.fulfilled, (state, action) => {
+        state.stories = state.stories.filter(s => s._id !== action.payload);
+      })
+      .addCase(reactToStory.fulfilled, (state, action) => {
+        const story = state.stories.find(s => s._id === action.payload.storyId);
+        if (story) {
+          story.reactions = action.payload.reactions;
+        }
       });
   },
 });
 
-export const { groupStories } = storySlice.actions;
+export const { groupStories, addStory, removeStory, updateStoryViews, updateStoryReactions } = storySlice.actions;
 export default storySlice.reducer;

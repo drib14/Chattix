@@ -7,19 +7,24 @@ import CustomAudioPlayer from './CustomAudioPlayer';
 
 const REACTIONS = ['❤️', '👍', '😂', '🔥', '😮', '😢'];
 
-// Highlight @mentions in text
-const highlightMentions = (text, isOwn) => {
-  if (!text) return text;
-  const mentionRegex = /@(\w+)/g;
-  const parts = text.split(mentionRegex);
-  const textColorClass = isOwn ? 'text-white' : 'text-gray-900';
-
+// Highlight @mentions and format URLs
+const formatText = (text, isOwn) => {
+  if (!text) return null;
+  const tokenRegex = /(@\w+|https?:\/\/[^\s]+|\b[a-z0-9-]+\.[a-z]{2,}(?:\/[^\s]*)?\b)/gi;
+  const parts = text.split(tokenRegex);
   return parts.map((part, idx) => {
-    if (idx % 2 === 1) {
+    if (part.startsWith('@')) {
       return (
         <span key={idx} className="font-semibold text-chattix-primary cursor-pointer hover:underline">
-          @{part}
+          {part}
         </span>
+      );
+    } else if (part.match(/https?:\/\/[^\s]+|\b[a-z0-9-]+\.[a-z]{2,}\b/i)) {
+      const href = part.startsWith('http') ? part : `https://${part}`;
+      return (
+        <a key={idx} href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="underline text-blue-400 hover:text-blue-300">
+          {part}
+        </a>
       );
     }
     return part;
@@ -243,10 +248,22 @@ const ChatBubble = ({
             ) : (
               <>
                 {message.text && (
-                  <p className="text-sm break-words whitespace-pre-wrap">
-                    {highlightMentions(message.text, isOwn)}
-                    {message.edited && <span className="text-[10px] text-gray-400 ml-1">(edited)</span>}
-                  </p>
+                  <div className="text-sm break-words whitespace-pre-wrap">
+                    {formatText(message.text, isOwn)}
+                    {message.edited && <span className="text-[10px] opacity-70 ml-1">(edited)</span>}
+                  </div>
+                )}
+                {message.linkPreview && message.linkPreview.title && (
+                  <a href={message.linkPreview.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className={`block mt-2 rounded-xl overflow-hidden border transition-colors cursor-pointer no-underline ${isOwn ? 'border-white/20 bg-white/10 hover:bg-white/20 text-white' : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-900'}`}>
+                    {message.linkPreview.image && (
+                      <img src={message.linkPreview.image} alt="preview" className="w-full h-32 object-cover border-b border-inherit" />
+                    )}
+                    <div className="p-3">
+                      <p className="font-semibold text-sm line-clamp-1">{message.linkPreview.title}</p>
+                      {message.linkPreview.description && <p className="text-xs opacity-80 line-clamp-2 mt-1">{message.linkPreview.description}</p>}
+                      <p className="text-[10px] opacity-60 mt-2 uppercase">{new URL(message.linkPreview.url).hostname}</p>
+                    </div>
+                  </a>
                 )}
               </>
             )}

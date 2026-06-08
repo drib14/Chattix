@@ -3,7 +3,8 @@ import {
   createStory,
   getFeedStories,
   markStoryViewed,
-  deleteStory
+  deleteStory,
+  reactToStory
 } from '../controllers/storyController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/uploadMiddleware.js';
@@ -16,5 +17,6 @@ router.post('/', upload.single('media'), createStory);
 router.get('/', getFeedStories);
 router.put('/:storyId/view', markStoryViewed);
 router.delete('/:storyId', deleteStory);
+router.post('/:storyId/react', reactToStory);
 
 export default router;

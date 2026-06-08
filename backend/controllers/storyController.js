@@ -9,48 +9,75 @@ const includesId = (list, id) => list.some((entry) => entry.toString() === id.to
 // @access  Private
 export const createStory = async (req, res) => {
   try {
-    const { caption, audience } = req.body;
+    const { caption, audience, textMode, backgroundColor, fontFamily, fontColor, overlays } = req.body;
+    const isTextMode = textMode === 'true' || textMode === true;
+    const io = req.app.get('io');
     
-    if (!req.file) {
-      return res.status(400).json({ message: 'Media file is required for a story' });
+    let parsedOverlays = [];
+    if (overlays) {
+      try {
+        parsedOverlays = typeof overlays === 'string' ? JSON.parse(overlays) : overlays;
+      } catch(e) {
+        console.error('Failed to parse overlays:', e);
+      }
     }
+    
+    let mediaUrl = '';
+    let mediaType = 'text';
 
-    if (!isCloudinaryConfigured()) {
-      return res.status(503).json({ message: 'Cloudinary is not configured' });
+    if (!isTextMode) {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Media file is required for a media story' });
+      }
+
+      if (!isCloudinaryConfigured()) {
+        return res.status(503).json({ message: 'Cloudinary is not configured' });
+      }
+
+      const isVideo = req.file.mimetype.startsWith('video');
+      mediaType = isVideo ? 'video' : 'image';
+
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'chattix/stories',
+            resource_type: 'auto',
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+      
+      mediaUrl = result.secure_url;
     }
-
-    const isVideo = req.file.mimetype.startsWith('video');
-    const mediaType = isVideo ? 'video' : 'image';
-    const resourceType = 'auto';
-
-    const result = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'chattix/stories',
-          resource_type: resourceType,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      uploadStream.end(req.file.buffer);
-    });
 
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24); // Expires in 24 hours
 
     const story = await Story.create({
       user: req.user._id,
-      mediaUrl: result.secure_url,
+      mediaUrl,
       mediaType,
+      textMode: isTextMode,
+      backgroundColor: backgroundColor || undefined,
+      fontFamily: fontFamily || undefined,
+      fontColor: fontColor || undefined,
+      overlays: parsedOverlays,
       caption: caption || '',
       audience: audience || 'friends',
       expiresAt,
-      viewedBy: [req.user._id], // User viewed their own story implicitly
+      viewedBy: [{ user: req.user._id, viewedAt: new Date() }], // User viewed their own story implicitly
     });
 
     await story.populate('user', 'fullName username avatar');
+
+    // Emit real-time event to all clients
+    if (io) {
+      io.emit('new_story', story);
+    }
 
     res.status(201).json(story);
   } catch (error) {
@@ -97,12 +124,20 @@ export const getFeedStories = async (req, res) => {
 // @access  Private
 export const markStoryViewed = async (req, res) => {
   try {
+    const io = req.app.get('io');
     const story = await Story.findById(req.params.storyId);
     if (!story) return res.status(404).json({ message: 'Story not found' });
 
-    if (!includesId(story.viewedBy, req.user._id)) {
-      story.viewedBy.push(req.user._id);
+    const hasViewed = story.viewedBy.some(v => v.user.toString() === req.user._id.toString());
+    
+    if (!hasViewed) {
+      story.viewedBy.push({ user: req.user._id, viewedAt: new Date() });
       await story.save();
+      
+      // Emit to the story owner that their story was viewed
+      if (io && story.user.toString() !== req.user._id.toString()) {
+        io.emit('story_viewed', { storyId: story._id, viewerId: req.user._id, ownerId: story.user });
+      }
     }
 
     res.json({ success: true, storyId: story._id });
@@ -117,6 +152,7 @@ export const markStoryViewed = async (req, res) => {
 // @access  Private
 export const deleteStory = async (req, res) => {
   try {
+    const io = req.app.get('io');
     const story = await Story.findById(req.params.storyId);
     if (!story) return res.status(404).json({ message: 'Story not found' });
 
@@ -125,9 +161,39 @@ export const deleteStory = async (req, res) => {
     }
 
     await story.deleteOne();
+    
+    if (io) {
+      io.emit('story_deleted', { storyId: req.params.storyId });
+    }
+    
     res.json({ success: true, message: 'Story deleted' });
   } catch (error) {
     console.error('Delete story error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    React to a story
+// @route   POST /api/stories/:storyId/react
+// @access  Private
+export const reactToStory = async (req, res) => {
+  try {
+    const { emoji } = req.body;
+    const io = req.app.get('io');
+    const story = await Story.findById(req.params.storyId);
+    
+    if (!story) return res.status(404).json({ message: 'Story not found' });
+
+    story.reactions.push({ user: req.user._id, emoji, reactedAt: new Date() });
+    await story.save();
+
+    if (io && story.user.toString() !== req.user._id.toString()) {
+      io.emit('story_reacted', { storyId: story._id, reactorId: req.user._id, ownerId: story.user, emoji });
+    }
+
+    res.json({ success: true, reactions: story.reactions });
+  } catch (error) {
+    console.error('React to story error:', error);
     res.status(500).json({ message: error.message });
   }
 };
