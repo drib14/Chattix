@@ -123,7 +123,7 @@ body {
 }
 
 .offline-indicator {
-  @apply w-3 h-3 bg-gray-300 rounded-full border-2 border-white;
+  @apply w-3 h-3 bg-gray-400 rounded-full border-2 border-white;
 }
 
 @keyframes slideIn {

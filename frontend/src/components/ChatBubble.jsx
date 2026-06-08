@@ -99,6 +99,30 @@ const ChatBubble = ({
   }
 
   if (message.messageType === 'system') {
+    if (message.systemMessageType === 'story_mention') {
+      return (
+        <div className={`flex mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+          <div className="flex gap-2 max-w-[min(85%,280px)] sm:max-w-[80%] min-w-0 flex-row">
+            <div className="flex-shrink-0 self-end mb-1">
+              <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+            </div>
+            <div className="relative min-w-0">
+              <div className="bg-gradient-to-tr from-chattix-primary to-purple-600 text-white rounded-2xl px-4 py-3 shadow-md rounded-bl-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star size={16} className="text-yellow-300 fill-current" />
+                  <span className="font-bold text-sm">Story Mention</span>
+                </div>
+                <p className="text-sm">{message.sender?.fullName || 'Someone'} mentioned you in their story.</p>
+                <button className="mt-3 w-full py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-semibold transition-colors">
+                  View Story
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex justify-center my-3 w-full">
         <span className="text-[11px] font-medium text-gray-500 bg-gray-100/80 px-4 py-1.5 rounded-full text-center shadow-sm">

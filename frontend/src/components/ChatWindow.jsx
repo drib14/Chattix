@@ -16,6 +16,7 @@ import { userService } from '../services/userService';
 import { t } from '../utils/translations';
 import { messageService } from '../services/messageService';
 import { groupService } from '../services/groupService';
+import { friendService } from '../services/friendService';
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
 import {
@@ -60,6 +61,11 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const [mentionQuery, setMentionQuery] = useState(null);
   const [mentionResults, setMentionResults] = useState([]);
   const [wallpaperUrl, setWallpaperUrl] = useState('');
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
   const typingTimeoutRef = useRef(null);
@@ -80,6 +86,55 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   }, [gifSearch]);
 
   const activeChat = selectedChat;
+  const isBlockedByMe = user?.blockedUsers?.includes(activeChat?._id);
+
+  const handleBlockUser = async () => {
+    try {
+      if (isBlockedByMe) {
+        await userService.unblockUser(activeChat._id);
+        toast.success(`Unblocked ${activeChat.fullName || activeChat.groupName}`);
+      } else {
+        await userService.blockUser(activeChat._id);
+        toast.success(`Blocked ${activeChat.fullName || activeChat.groupName}`);
+      }
+      setShowBlockConfirm(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Action failed');
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    try {
+      await messageService.deleteConversation(activeChat._id);
+      toast.success('Conversation deleted');
+      dispatch(setSelectedChat(null));
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Deletion failed');
+    }
+  };
+
+  const handleAddFriend = async () => {
+    try {
+      // It might be a request we are accepting or a new request we are sending. 
+      // The easiest way is to just send a request; if they already sent one to us, the backend usually accepts it.
+      await friendService.sendFriendRequest(activeChat._id);
+      toast.success('Friend request sent/accepted');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add friend');
+    }
+  };
+
+  const handleReportUser = async (reportData) => {
+    try {
+      await userService.reportUser(activeChat._id, reportData);
+      toast.success('Report submitted successfully');
+      setShowReportModal(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Report failed');
+    }
+  };
+
   const displayedMessages = Array.isArray(messages) ? messages : [];
   const chatId = activeChat?._id?.toString();
   const isOnline = onlineUsers.some((u) => {
@@ -565,38 +620,6 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     ? searchResults
     : displayedMessages;
 
-  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
-  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
-  
-  const isBlockedByMe = user?.blockedUsers?.includes(activeChat?._id);
-
-  const handleBlockUser = async () => {
-    try {
-      if (isBlockedByMe) {
-        await userService.unblockUser(activeChat._id);
-        toast.success(`Unblocked ${displayName}`);
-        // We need to update local auth state, but a page reload or socket event would be better. Let's assume redrawing will catch it eventually or we just leave it to toast.
-      } else {
-        await userService.blockUser(activeChat._id);
-        toast.success(`Blocked ${displayName}`);
-      }
-      setShowBlockConfirm(false);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Action failed');
-    }
-  };
-
-  const handleReportUser = async (reportData) => {
-    try {
-      await userService.reportUser(activeChat._id, reportData);
-      toast.success('Report submitted successfully');
-      setShowReportModal(false);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Report failed');
-    }
-  };
-
   return (
     <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
       <div className="flex items-center justify-between gap-1 px-2 sm:px-3 py-2 bg-chattix-panel border-b border-gray-200 shrink-0 min-w-0">
@@ -646,6 +669,13 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
                     className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left font-medium"
                   >
                     {isBlockedByMe ? 'Unblock User' : 'Block User'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setHeaderMenuOpen(false); setShowDeleteConfirm(true); }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left font-medium"
+                  >
+                    Delete Conversation
                   </button>
                   <button
                     type="button"
@@ -800,13 +830,38 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
 
       {isBlockedByMe ? (
         <div className="px-2 sm:px-3 py-4 bg-chattix-panel border-t border-gray-200 text-center relative shrink-0 safe-bottom">
-          <p className="text-sm text-gray-500 mb-2">You blocked this user. Unblock them to send messages.</p>
-          <button
-            onClick={() => setShowBlockConfirm(true)}
-            className="text-sm font-semibold text-chattix-primary hover:underline"
-          >
-            Unblock User
-          </button>
+          <p className="text-sm text-gray-500 mb-3">You blocked this user. Unblock them to interact.</p>
+          <div className="flex gap-3 justify-center max-w-sm mx-auto">
+            <button onClick={() => setShowBlockConfirm(true)} className="flex-1 py-2 px-4 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+              Unblock
+            </button>
+            {messages?.length > 0 && (
+              <button onClick={() => setShowDeleteConfirm(true)} className="flex-1 py-2 px-4 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition-colors">
+                Delete Chat
+              </button>
+            )}
+          </div>
+        </div>
+      ) : activeChat?.isBlockingMe ? (
+        <div className="px-2 sm:px-3 py-4 bg-chattix-panel border-t border-gray-200 text-center relative shrink-0 safe-bottom">
+          <p className="text-sm text-gray-500 mb-3">You have been blocked by this user.</p>
+          <div className="flex justify-center">
+            <button onClick={() => setShowDeleteConfirm(true)} className="py-2 px-6 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition-colors">
+              Delete Conversation
+            </button>
+          </div>
+        </div>
+      ) : isRequestChat() ? (
+        <div className="px-2 sm:px-3 py-4 bg-chattix-panel border-t border-gray-200 text-center relative shrink-0 safe-bottom">
+          <p className="text-sm text-gray-500 mb-3">This is a message request. Reply to accept, or choose an action.</p>
+          <div className="flex gap-3 justify-center max-w-sm mx-auto">
+            <button onClick={handleAddFriend} className="flex-1 py-2 px-4 bg-chattix-primary text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors">
+              Add Friend
+            </button>
+            <button onClick={() => setShowDeleteConfirm(true)} className="flex-1 py-2 px-4 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition-colors">
+              Delete
+            </button>
+          </div>
         </div>
       ) : (
         <div className="px-2 sm:px-3 py-2 bg-chattix-panel border-t border-gray-200 relative shrink-0 safe-bottom">
@@ -912,6 +967,16 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
         message={isBlockedByMe ? `Are you sure you want to unblock ${displayName}?` : `Are you sure you want to block ${displayName}? They will no longer be able to message you.`}
         confirmText={isBlockedByMe ? 'Unblock' : 'Block'}
         isDanger={!isBlockedByMe}
+      />
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onCancel={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConversation}
+        title={`Delete conversation with ${activeChat?.fullName}?`}
+        message="This will delete the conversation for you. The other person will still be able to see it."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
       />
       <ReportModal
         isOpen={showReportModal}

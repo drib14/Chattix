@@ -43,29 +43,28 @@ export const sendMessage = async (req, res) => {
 
       messageData.group = groupId;
     } else if (receiverId) {
-      // Check if users are friends before allowing message
       const currentUser = await User.findById(req.user._id);
       const receiverUser = await User.findById(receiverId);
 
       if (!receiverUser) {
-        return res.status(404).json({ message: 'Receiver not found' });
+        return res.status(404).json({ message: 'User not found' });
       }
 
-      // Check if either user has blocked the other
-      if (currentUser.blockedUsers?.includes(receiverId) || receiverUser.blockedUsers?.includes(req.user._id)) {
+      // Allow sending to non-friends for Message Requests
+      // Just check blocking rules
+
+      if (
+        includesId(currentUser.blockedUsers || [], receiverId) ||
+        includesId(receiverUser.blockedUsers || [], req.user._id)
+      ) {
         return res.status(403).json({
-          message: 'You cannot reply to this conversation.'
+          message: 'You cannot message this user.',
         });
       }
 
-      if (!includesId(currentUser.friends, receiverId)) {
-        return res.status(403).json({
-          message: 'You can only send messages to your friends. Send a friend request first.'
-        });
-      }
       messageData.receiver = receiverId;
     } else {
-      return res.status(400).json({ message: 'Receiver or group required' });
+      return res.status(400).json({ message: 'Receiver or Group ID is required' });
     }
 
     if (replyTo) {
@@ -555,6 +554,7 @@ export const getRecentChats = async (req, res) => {
           $or: [{ sender: userId }, { receiver: userId }],
           group: { $exists: false },
           deleted: false,
+          deletedFor: { $ne: userId },
         },
       },
       {
@@ -594,7 +594,7 @@ export const getRecentChats = async (req, res) => {
     // Populate user details
     await User.populate(messages, {
       path: '_id',
-      select: 'fullName username avatar status lastSeen',
+      select: 'fullName username avatar status lastSeen blockedUsers',
     });
 
     await User.populate(messages, {
@@ -602,7 +602,28 @@ export const getRecentChats = async (req, res) => {
       select: 'fullName username avatar',
     });
 
-    res.json(Array.isArray(messages) ? messages : []);
+    const myIdStr = userId.toString();
+    const formattedMessages = messages.map(msg => {
+      const otherUser = msg._id;
+      let isBlockingMe = false;
+      if (otherUser && Array.isArray(otherUser.blockedUsers)) {
+        isBlockingMe = otherUser.blockedUsers.some(id => id.toString() === myIdStr);
+        // Strip blockedUsers array before sending to client
+        otherUser.blockedUsers = undefined;
+      }
+      if (otherUser && otherUser.toObject) {
+        const obj = otherUser.toObject();
+        delete obj.blockedUsers;
+        obj.isBlockingMe = isBlockingMe;
+        msg._id = obj;
+      } else if (otherUser) {
+        delete otherUser.blockedUsers;
+        otherUser.isBlockingMe = isBlockingMe;
+      }
+      return msg;
+    });
+
+    res.json(Array.isArray(formattedMessages) ? formattedMessages : []);
   } catch (error) {
     console.error('Get recent chats error:', error);
     res.status(500).json([]);
@@ -907,6 +928,32 @@ export const unvotePoll = async (req, res) => {
     res.json(message);
   } catch (error) {
     console.error('Unvote poll error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a conversation for the current user
+// @route   DELETE /api/messages/conversation/:userId
+// @access  Private
+export const deleteConversation = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id;
+
+    await Message.updateMany(
+      {
+        $or: [
+          { sender: currentUserId, receiver: userId },
+          { sender: userId, receiver: currentUserId },
+        ],
+      },
+      {
+        $addToSet: { deletedFor: currentUserId },
+      }
+    );
+
+    res.json({ message: 'Conversation deleted successfully' });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };

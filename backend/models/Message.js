@@ -116,6 +116,14 @@ const messageSchema = new mongoose.Schema({
     }, { _id: false }),
     default: undefined,
   },
+  systemMessageType: {
+    type: String,
+    enum: ['story_mention', 'info'],
+  },
+  storyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Story',
+  },
 }, {
   timestamps: true,
 });

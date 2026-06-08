@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { X, Image as ImageIcon, Video, Globe, Users, Lock, Loader2, Type, Clock, MapPin, Link as LinkIcon, Sticker, PenTool } from 'lucide-react';
+import { X, Image as ImageIcon, Video, Globe, Users, Lock, Loader2, Type, Clock, MapPin, Link as LinkIcon, Sticker, PenTool, AtSign } from 'lucide-react';
 import { createStory } from '../redux/slices/storySlice';
 import { useConfirm } from '../context/ConfirmContext';
-import { LinkModal, LocationModal, GiphyModal } from './StoryModals';
+import { LinkModal, LocationModal, GiphyModal, TagModal } from './StoryModals';
 import toast from 'react-hot-toast';
 
 const bgGradients = [
@@ -46,6 +46,7 @@ const StoryCreator = ({ onClose }) => {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showLocModal, setShowLocModal] = useState(false);
   const [showGiphyModal, setShowGiphyModal] = useState(false);
+  const [showTagModal, setShowTagModal] = useState(false);
 
   const handleClose = async () => {
     if (selectedFile || textMode) {
@@ -133,7 +134,7 @@ const StoryCreator = ({ onClose }) => {
     setOverlays(prev => {
       const next = [...prev];
       if (next[idx].type === 'time') {
-        next[idx].styleIdx = ((next[idx].styleIdx || 0) + 1) % 4; // 4 styles
+        next[idx].styleIdx = ((next[idx].styleIdx || 0) + 1) % 6; // 6 styles
       }
       return next;
     });
@@ -141,10 +142,12 @@ const StoryCreator = ({ onClose }) => {
 
   const getTimeStyle = (styleIdx) => {
     switch(styleIdx) {
-      case 1: return 'bg-black text-white font-mono';
-      case 2: return 'bg-transparent text-white drop-shadow-xl font-serif text-4xl';
-      case 3: return 'bg-white/20 backdrop-blur text-white font-sans border border-white/50';
-      default: return 'bg-white text-black font-sans';
+      case 1: return 'bg-transparent text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-sans text-5xl font-black tracking-tighter';
+      case 2: return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl px-5 py-3 font-bold text-4xl shadow-xl';
+      case 3: return 'bg-black/40 backdrop-blur-md text-white rounded-3xl px-6 py-2 border border-white/20 font-serif text-3xl italic shadow-2xl';
+      case 4: return 'bg-blue-600 text-white rounded shadow-md px-4 py-1 text-2xl font-mono uppercase tracking-widest';
+      case 5: return 'bg-white/90 text-chattix-primary rounded-xl px-5 py-2 text-4xl font-black shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]';
+      default: return 'bg-white text-black font-sans rounded-xl shadow-lg px-4 py-2 text-3xl font-bold';
     }
   };
 
@@ -314,6 +317,7 @@ const StoryCreator = ({ onClose }) => {
               <button onClick={addTimeOverlay} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><Clock size={20} /></button>
               <button onClick={() => setShowLocModal(true)} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><MapPin size={20} /></button>
               <button onClick={() => setShowLinkModal(true)} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><LinkIcon size={20} /></button>
+              <button onClick={() => setShowTagModal(true)} className="p-2 rounded-full bg-black/50 text-white backdrop-blur-md shadow-lg"><AtSign size={20} /></button>
             </div>
           )}
 
@@ -441,25 +445,38 @@ const StoryCreator = ({ onClose }) => {
             
             <div>
               <p className="text-xs lg:text-sm font-medium text-white/50 mb-2 uppercase tracking-wider">Audience</p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-row gap-2 lg:flex-col lg:gap-2">
                 <button 
                   onClick={() => setAudience('public')}
-                  className={`flex items-center gap-3 px-4 py-2 lg:py-3 rounded-xl transition-colors text-left ${audience === 'public' ? 'bg-blue-500 text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+                  className={`flex items-center justify-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl transition-colors ${audience === 'public' ? 'bg-blue-500 text-white flex-1 lg:flex-none' : 'bg-white/5 text-white/70 hover:bg-white/10 shrink-0'}`}
+                  title="Public"
                 >
                   <Globe size={18} className="shrink-0" /> 
-                  <div>
+                  <div className={audience === 'public' ? 'block text-left' : 'hidden lg:block lg:text-left'}>
                     <p className="font-semibold text-sm">Public</p>
-                    <p className="text-[10px] opacity-70">Anyone on Chattix</p>
+                    <p className="text-[10px] opacity-70 hidden lg:block">Anyone on Chattix</p>
                   </div>
                 </button>
                 <button 
                   onClick={() => setAudience('friends')}
-                  className={`flex items-center gap-3 px-4 py-2 lg:py-3 rounded-xl transition-colors text-left ${audience === 'friends' ? 'bg-blue-500 text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+                  className={`flex items-center justify-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl transition-colors ${audience === 'friends' ? 'bg-blue-500 text-white flex-1 lg:flex-none' : 'bg-white/5 text-white/70 hover:bg-white/10 shrink-0'}`}
+                  title="Friends"
                 >
                   <Users size={18} className="shrink-0" /> 
-                  <div>
+                  <div className={audience === 'friends' ? 'block text-left' : 'hidden lg:block lg:text-left'}>
                     <p className="font-semibold text-sm">Friends</p>
-                    <p className="text-[10px] opacity-70">Only your friends</p>
+                    <p className="text-[10px] opacity-70 hidden lg:block">Only your friends</p>
+                  </div>
+                </button>
+                <button 
+                  onClick={() => setAudience('only_me')}
+                  className={`flex items-center justify-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 rounded-xl transition-colors ${audience === 'only_me' ? 'bg-blue-500 text-white flex-1 lg:flex-none' : 'bg-white/5 text-white/70 hover:bg-white/10 shrink-0'}`}
+                  title="Only Me"
+                >
+                  <Lock size={18} className="shrink-0" /> 
+                  <div className={audience === 'only_me' ? 'block text-left' : 'hidden lg:block lg:text-left'}>
+                    <p className="font-semibold text-sm">Only Me</p>
+                    <p className="text-[10px] opacity-70 hidden lg:block">Just for you</p>
                   </div>
                 </button>
               </div>
@@ -497,6 +514,30 @@ const StoryCreator = ({ onClose }) => {
           </div>
         )}
       </div>
+
+      <LinkModal 
+        isOpen={showLinkModal} 
+        onClose={() => setShowLinkModal(false)} 
+        onAddLink={(linkData) => setOverlays([...overlays, { type: 'link', ...linkData, x: 50, y: 50 }])} 
+      />
+      
+      <LocationModal 
+        isOpen={showLocModal} 
+        onClose={() => setShowLocModal(false)} 
+        onAddLocation={(locData) => setOverlays([...overlays, { type: 'location', ...locData, x: 50, y: 50 }])} 
+      />
+      
+      <GiphyModal 
+        isOpen={showGiphyModal} 
+        onClose={() => setShowGiphyModal(false)} 
+        onAddSticker={(stickerData) => setOverlays([...overlays, { type: 'sticker', ...stickerData, x: 50, y: 50 }])} 
+      />
+
+      <TagModal 
+        isOpen={showTagModal} 
+        onClose={() => setShowTagModal(false)} 
+        onAddTag={(tagData) => setOverlays([...overlays, { type: 'tag', ...tagData, x: 50, y: 50 }])} 
+      />
     </div>
   );
 };

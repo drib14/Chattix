@@ -79,6 +79,36 @@ export const createStory = async (req, res) => {
       io.emit('new_story', story);
     }
 
+    // Handle Story Mentions
+    if (parsedOverlays && parsedOverlays.length > 0) {
+      const tags = parsedOverlays.filter(o => o.type === 'tag' && o.userId);
+      if (tags.length > 0) {
+        // We need to import Message
+        const { default: Message } = await import('../models/Message.js');
+        
+        for (const tag of tags) {
+          // Don't send notification to self
+          if (tag.userId.toString() !== req.user._id.toString()) {
+            const mentionMessage = await Message.create({
+              sender: req.user._id,
+              receiver: tag.userId,
+              text: 'Mentioned you in a story',
+              systemMessage: true,
+              systemMessageType: 'story_mention',
+              storyId: story._id
+            });
+            
+            await mentionMessage.populate('sender', 'fullName username avatar');
+            await mentionMessage.populate('receiver', 'fullName username avatar');
+            
+            if (io) {
+              io.to(tag.userId.toString()).emit('receive_message', mentionMessage);
+            }
+          }
+        }
+      }
+    }
+
     res.status(201).json(story);
   } catch (error) {
     console.error('Create story error:', error);

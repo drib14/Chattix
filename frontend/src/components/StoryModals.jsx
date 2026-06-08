@@ -258,3 +258,77 @@ export const GiphyModal = ({ isOpen, onClose, onAddSticker }) => {
     </div>
   );
 };
+
+// ----------------------
+// Tag Modal
+// ----------------------
+export const TagModal = ({ isOpen, onClose, onAddTag }) => {
+  const [query, setQuery] = useState('');
+  const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchFriends = async () => {
+      setLoading(true);
+      try {
+        const { userService } = await import('../services/userService');
+        // Fetch all users or just friends
+        const res = await userService.searchUsers(query);
+        setFriends(res.users || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const timer = setTimeout(() => {
+      fetchFriends();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [isOpen, query]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col items-center pt-20 px-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-gray-900 rounded-2xl w-full max-w-md shadow-2xl border border-white/10 flex flex-col max-h-[80vh]">
+        <div className="p-4 border-b border-white/10 flex items-center gap-3">
+          <Search size={20} className="text-white/50" />
+          <input 
+            type="text" 
+            placeholder="Search people to tag..." 
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="bg-transparent text-white flex-1 focus:outline-none"
+            autoFocus
+          />
+          <button onClick={onClose} className="text-white/70 hover:text-white p-1">
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-2">
+          {loading && <div className="flex justify-center p-4"><Loader2 className="animate-spin text-white/50" /></div>}
+          
+          {friends.map((user) => (
+            <button 
+              key={user._id} 
+              onClick={() => {
+                onAddTag({ text: `@${user.username}`, userId: user._id });
+                onClose();
+              }} 
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/5 rounded-xl"
+            >
+              <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">{user.fullName}</p>
+                <p className="text-white/50 text-xs truncate">@{user.username}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};

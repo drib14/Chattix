@@ -124,6 +124,11 @@ export const userService = {
     return response.data;
   },
 
+  getBlockedUsers: async () => {
+    const response = await api.get(`/users/blocked`);
+    return response.data;
+  },
+
   reportUser: async (userId, data) => {
     const response = await api.post(`/users/report/${userId}`, data);
     return response.data;

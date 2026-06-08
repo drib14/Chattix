@@ -52,11 +52,25 @@ export const messageService = {
   editMessage: async (messageId, text) =>
     (await api.put(`/messages/${messageId}/edit`, { text })).data,
 
-  deleteForMe: async (messageId) =>
-    (await api.delete(`/messages/${messageId}/me`)).data,
+  deleteForMe: async (messageId) => {
+    const response = await api.delete(`/messages/${messageId}/me`);
+    return response.data;
+  },
 
-  deleteForEveryone: async (messageId) =>
-    (await api.delete(`/messages/${messageId}/everyone`)).data,
+  deleteForEveryone: async (messageId) => {
+    const response = await api.delete(`/messages/${messageId}/everyone`);
+    return response.data;
+  },
+
+  deleteConversation: async (userId) => {
+    const response = await api.delete(`/messages/conversation/${userId}`);
+    return response.data;
+  },
+
+  clearChatHistory: async (userId) => {
+    const response = await api.delete(`/messages/clear/${userId}`);
+    return response.data;
+  },
 
   forwardMessage: async (messageId, receiverId) =>
     (await api.post(`/messages/${messageId}/forward`, { receiverId })).data,

@@ -251,15 +251,12 @@ export const blockUser = async (req, res) => {
 export const unblockUser = async (req, res) => {
   try {
     const { userId } = req.params;
-
     const user = await User.findById(req.user._id);
 
-    user.blockedUsers = user.blockedUsers.filter(
-      (id) => id.toString() !== userId
-    );
+    user.blockedUsers = user.blockedUsers.filter(id => id.toString() !== userId);
     await user.save();
 
-    res.json({ message: 'User unblocked successfully' });
+    res.json({ message: 'User unblocked successfully', blockedUsers: user.blockedUsers });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

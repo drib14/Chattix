@@ -102,7 +102,7 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
 
   const handleDelete = async () => {
     togglePause(true);
-    if (await confirm('Delete this story?', 'This story will be permanently deleted.')) {
+    if (await confirm({ title: 'Delete this story?', message: 'This story will be permanently deleted.', isDestructive: true, confirmText: 'Delete' })) {
       try {
         await dispatch(deleteStory(activeStory._id)).unwrap();
         toast.success('Story deleted');

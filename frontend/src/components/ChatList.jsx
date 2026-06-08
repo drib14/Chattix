@@ -14,15 +14,25 @@ const DEFAULT_AVATAR =
 const ChatList = () => {
   const { recentChats, onlineUsers, selectedChat, unreadCounts } = useSelector((state) => state.chat);
   const { language } = useSelector((state) => state.theme);
+  const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   const [archivedChats, setArchivedChats] = useState([]);
+  const [blockedUsers, setBlockedUsers] = useState([]);
   const [showArchived, setShowArchived] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [activeTab, setActiveTab] = useState('messages');
 
   useEffect(() => {
     userService.getArchivedChats().then(setArchivedChats).catch(() => {});
+    userService.getBlockedUsers().then(setBlockedUsers).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'blocked') {
+      userService.getBlockedUsers().then(setBlockedUsers).catch(() => {});
+    }
+  }, [activeTab]);
 
   const handleArchive = async (e, chat, isArchived) => {
     e.stopPropagation();
@@ -37,10 +47,10 @@ const ChatList = () => {
         setArchivedChats(newArchived);
         toast.success(t('archiveChat', language));
       }
-    } catch {
-      toast.error('Action failed');
+      setMenuOpenId(null);
+    } catch (error) {
+      toast.error('Failed to update archive status');
     }
-    setMenuOpenId(null);
   };
 
   const formatTime = (date) => {
@@ -73,9 +83,33 @@ const ChatList = () => {
     c => !archivedIds.has(c._id?._id?.toString())
   );
 
+  const friendsIds = new Set((user?.friends || []).map(f => f._id?.toString() || f.toString()));
+  const myId = user?._id?.toString();
+
+  const isRequestChat = (chat) => {
+    if (chat.isGroup) return false;
+    const otherUserId = chat._id?._id?.toString() || chat._id?.toString();
+    if (friendsIds.has(otherUserId)) return false;
+    
+    const lastSenderId = chat.lastMessage?.sender?._id?.toString() || chat.lastMessage?.sender?.toString();
+    if (lastSenderId && lastSenderId !== myId) {
+      return true;
+    }
+    return false;
+  };
+
+  const messagesChats = filteredChats.filter(c => !isRequestChat(c));
+  const requestsChats = filteredChats.filter(c => isRequestChat(c));
+
+  const blockedChats = blockedUsers.map(bu => ({
+    _id: bu,
+    lastMessage: null,
+    unreadCount: 0,
+  }));
+
   const displayChats = showArchived
     ? (Array.isArray(recentChats) ? recentChats : []).filter(c => archivedIds.has(c._id?._id?.toString()))
-    : filteredChats;
+    : (activeTab === 'requests' ? requestsChats : (activeTab === 'blocked' ? blockedChats : messagesChats));
 
   const handleSelectChat = (chat) => {
     if (chat._id) {
@@ -89,8 +123,39 @@ const ChatList = () => {
   return (
     <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
       <StoryTray />
+      <div className="flex px-4 py-2 gap-4 border-b border-gray-100 shrink-0">
+        <button
+          onClick={() => setActiveTab('messages')}
+          className={`font-medium text-sm pb-1 border-b-2 transition-colors ${
+            activeTab === 'messages' ? 'border-chattix-primary text-chattix-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Messages
+        </button>
+        <button
+          onClick={() => setActiveTab('requests')}
+          className={`font-medium text-sm pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+            activeTab === 'requests' ? 'border-chattix-primary text-chattix-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Requests
+          {requestsChats.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[10px] font-bold">
+              {requestsChats.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('blocked')}
+          className={`font-medium text-sm pb-1 border-b-2 transition-colors ${
+            activeTab === 'blocked' ? 'border-chattix-primary text-chattix-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Blocked
+        </button>
+      </div>
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        {archivedChats.length > 0 && (
+        {archivedChats.length > 0 && activeTab === 'messages' && (
           <button
             type="button"
             onClick={() => setShowArchived(!showArchived)}
@@ -166,7 +231,7 @@ const ChatList = () => {
                       {isOnline ? (
                         <div className="absolute bottom-0 right-0 online-indicator border-2 border-white" />
                       ) : (
-                        <div className="absolute -bottom-1 -right-1 bg-green-100 text-green-700 text-[9px] font-bold px-1 rounded-full border border-white">
+                        <div className="absolute -bottom-1 -right-1 bg-gray-200 text-gray-700 text-[9px] font-bold px-1 rounded-full border border-white">
                           {formatOfflineTimestamp(chatUser?.lastSeen)}
                         </div>
                       )}

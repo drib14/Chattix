@@ -19,6 +19,7 @@ import {
   createPoll,
   votePoll,
   unvotePoll,
+  deleteConversation,
 } from '../controllers/messageController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/uploadMiddleware.js';
@@ -37,6 +38,7 @@ router.delete('/:messageId/everyone', deleteForEveryone);
 router.post('/:messageId/forward', forwardMessage);
 router.put('/:messageId/star', toggleStarMessage);
 router.delete('/clear/:userId', clearChatHistory);
+router.delete('/conversation/:userId', deleteConversation);
 router.put('/:messageId/delivered', markAsDelivered);
 router.put('/:messageId/seen', markAsSeen);
 router.post('/:messageId/react', addReaction);
