@@ -8,10 +8,6 @@ const connectDB = async (retryCount = 5, delayMs = 5000) => {
     process.exit(1);
   }
 
-  // Sanitize URI for logging (hide password)
-  const sanitizedUri = uri.replace(/:([^@/]+)@/, ':****@');
-  console.log(`📡 MongoDB URI (sanitized): ${sanitizedUri}`);
-
   // Connection options for production reliability
   const options = {
     serverSelectionTimeoutMS: 10000,  // Fail fast if cluster unreachable

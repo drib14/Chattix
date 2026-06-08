@@ -623,7 +623,15 @@ export const getRecentChats = async (req, res) => {
       return msg;
     });
 
-    res.json(Array.isArray(formattedMessages) ? formattedMessages : []);
+    const currentUser = await User.findById(userId);
+    const myBlockedIds = (currentUser.blockedUsers || []).map(id => id.toString());
+
+    const finalMessages = formattedMessages.filter(msg => {
+      const otherUserId = msg._id?._id?.toString() || msg._id?.toString();
+      return !myBlockedIds.includes(otherUserId);
+    });
+
+    res.json(Array.isArray(finalMessages) ? finalMessages : []);
   } catch (error) {
     console.error('Get recent chats error:', error);
     res.status(500).json([]);

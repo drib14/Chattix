@@ -86,7 +86,27 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   }, [gifSearch]);
 
   const activeChat = selectedChat;
-  const isBlockedByMe = user?.blockedUsers?.includes(activeChat?._id);
+  const isBlockedByMe = user?.blockedUsers?.some(b => b === activeChat?._id || b._id === activeChat?._id);
+  const isGroup = activeChat?.isGroup || false;
+
+  const isRequestChat = () => {
+    if (!activeChat || isGroup) return false;
+    const isFriend = user?.friends?.some((f) => f._id === activeChat._id || f === activeChat._id);
+    if (isFriend) return false;
+    // Check if the last message in this conversation was NOT sent by the current user
+    const lastMsg = messages && messages.length > 0 ? messages[messages.length - 1] : null;
+    const amISender = lastMsg?.sender?._id === user?._id || lastMsg?.sender === user?._id;
+    return !amISender;
+  };
+
+  const handleAddFriend = async () => {
+    try {
+      await friendService.sendFriendRequest(activeChat._id);
+      toast.success('Friend request sent!');
+    } catch (error) {
+      toast.error('Failed to send friend request');
+    }
+  };
 
   const handleBlockUser = async () => {
     try {

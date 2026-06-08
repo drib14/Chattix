@@ -8,10 +8,7 @@ const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-// Debug logs
-console.log("Cloud Name:", cloudName || "Missing");
-console.log("API Key:", apiKey ? "Present" : "Missing");
-console.log("API Secret:", apiSecret ? "Present" : "Missing");
+// Debug logs removed to protect credentials
 
 const hasSomeConfig = cloudName || apiKey || apiSecret;
 const hasAllConfig = cloudName && apiKey && apiSecret;
