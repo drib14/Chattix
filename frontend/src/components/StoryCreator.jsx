@@ -395,7 +395,7 @@ const StoryCreator = ({ onClose }) => {
                     {overlay.type === 'sticker' && <img src={overlay.url} alt="sticker" className="w-32 h-32 object-contain select-none" draggable={false} />}
                   </div>
                 ))}
-              </div></div>
+              </div>
 
               {/* Doodle Canvas Layer */}
               {isDoodling && (

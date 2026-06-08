@@ -606,3 +606,30 @@ export const searchUsersForMentions = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Report user
+// @route   POST /api/users/report/:userId
+// @access  Private
+export const reportUser = async (req, res) => {
+  try {
+    const Report = (await import('../models/Report.js')).default;
+    const { userId } = req.params;
+    const { reason, description } = req.body;
+
+    const reportedUser = await User.findById(userId);
+    if (!reportedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const report = await Report.create({
+      reporterId: req.user._id,
+      reportedUserId: userId,
+      reason,
+      description,
+    });
+
+    res.status(201).json({ message: 'Report submitted successfully', report });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

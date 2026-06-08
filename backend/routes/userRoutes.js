@@ -19,6 +19,7 @@ import {
   updateUnreadCount,
   getUserStatus,
   searchUsersForMentions,
+  reportUser,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { uploadProfile } from '../middleware/uploadMiddleware.js';
@@ -37,6 +38,7 @@ router.get('/search', searchUsers);
 router.get('/blocked', getBlockedUsers);
 router.post('/block/:userId', blockUser);
 router.post('/unblock/:userId', unblockUser);
+router.post('/report/:userId', reportUser);
 router.put('/change-password', changePassword);
 
 // Archive chat routes

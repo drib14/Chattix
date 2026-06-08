@@ -20,6 +20,8 @@ const StoryTray = () => {
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
 
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
   useEffect(() => {
     dispatch(fetchStories()).then(() => {
       if (user) {
@@ -59,14 +61,27 @@ const StoryTray = () => {
     return 'border-gray-300';
   };
 
+  // Find if current user has stories
+  const currentUserStoryGroup = groupedStories.find(group => group.user._id === user?._id);
+  const currentUserStoryIndex = groupedStories.findIndex(group => group.user._id === user?._id);
+  const otherStories = groupedStories.filter(group => group.user._id !== user?._id);
+
+  const handleYourStoryClick = () => {
+    if (currentUserStoryGroup) {
+      setUserDropdownOpen(!userDropdownOpen);
+    } else {
+      setCreatorOpen(true);
+    }
+  };
+
   return (
     <>
-      <div className="w-full bg-white border-b border-gray-100 py-3 px-2 overflow-x-auto hide-scrollbar flex items-center gap-4 shrink-0">
+      <div className="w-full bg-white border-b border-gray-100 py-3 px-2 overflow-x-auto hide-scrollbar flex items-center gap-4 shrink-0 relative">
         
         {/* Add Story Button (Always first) */}
-        <div className="flex flex-col items-center gap-1 shrink-0 w-16" onClick={() => setCreatorOpen(true)}>
-          <div className="relative cursor-pointer">
-            <div className="w-14 h-14 rounded-full p-[2px] border-2 border-transparent">
+        <div className="flex flex-col items-center gap-1 shrink-0 w-16 relative">
+          <div className="relative cursor-pointer" onClick={handleYourStoryClick}>
+            <div className={`w-14 h-14 rounded-full p-[2px] ${currentUserStoryGroup ? (getBorderClass(currentUserStoryGroup.hasUnviewed, currentUserStoryGroup.highestPriorityAudience, true).includes('bg-gradient') ? getBorderClass(currentUserStoryGroup.hasUnviewed, currentUserStoryGroup.highestPriorityAudience, true) + ' bg-origin-border' : 'border-2 ' + getBorderClass(currentUserStoryGroup.hasUnviewed, currentUserStoryGroup.highestPriorityAudience, true)) : 'border-2 border-transparent'}`}>
               <img 
                 src={user?.avatar || `${DEFAULT_AVATAR}&name=${encodeURIComponent(user?.fullName || 'U')}`} 
                 alt="Your Story" 
@@ -78,10 +93,37 @@ const StoryTray = () => {
             </div>
           </div>
           <p className="text-xs text-gray-800 font-medium truncate w-full text-center">Your Story</p>
+
+          {/* User Dropdown */}
+          {userDropdownOpen && currentUserStoryGroup && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setUserDropdownOpen(false)} />
+              <div className="absolute top-16 left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 w-40 overflow-hidden">
+                <button 
+                  className="w-full px-4 py-3 text-sm text-left hover:bg-gray-50 text-gray-800 font-medium border-b border-gray-100"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    handleStoryClick(currentUserStoryIndex);
+                  }}
+                >
+                  View Story
+                </button>
+                <button 
+                  className="w-full px-4 py-3 text-sm text-left hover:bg-gray-50 text-chattix-primary font-medium"
+                  onClick={() => {
+                    setUserDropdownOpen(false);
+                    setCreatorOpen(true);
+                  }}
+                >
+                  Create Story
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Story Items */}
-        {groupedStories.map((group, index) => {
+        {otherStories.map((group, index) => {
           const isCurrentUser = group.user._id === user?._id;
           const isOnline = onlineUsers.some(u => {
             const uid = typeof u === 'object' && u !== null ? u.userId : u;
@@ -93,7 +135,7 @@ const StoryTray = () => {
             <div 
               key={group.user._id} 
               className="flex flex-col items-center gap-1 shrink-0 w-16 cursor-pointer"
-              onClick={() => handleStoryClick(index)}
+              onClick={() => handleStoryClick(groupedStories.findIndex(g => g.user._id === group.user._id))}
             >
               <div className="relative">
                 <div className={`w-14 h-14 rounded-full p-[2px] ${borderClass.includes('bg-gradient') ? borderClass + ' bg-origin-border' : 'border-2 ' + borderClass}`}>

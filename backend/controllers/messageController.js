@@ -45,6 +45,19 @@ export const sendMessage = async (req, res) => {
     } else if (receiverId) {
       // Check if users are friends before allowing message
       const currentUser = await User.findById(req.user._id);
+      const receiverUser = await User.findById(receiverId);
+
+      if (!receiverUser) {
+        return res.status(404).json({ message: 'Receiver not found' });
+      }
+
+      // Check if either user has blocked the other
+      if (currentUser.blockedUsers?.includes(receiverId) || receiverUser.blockedUsers?.includes(req.user._id)) {
+        return res.status(403).json({
+          message: 'You cannot reply to this conversation.'
+        });
+      }
+
       if (!includesId(currentUser.friends, receiverId)) {
         return res.status(403).json({
           message: 'You can only send messages to your friends. Send a friend request first.'

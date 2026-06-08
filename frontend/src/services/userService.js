@@ -112,4 +112,20 @@ export const userService = {
     const response = await api.get(`/users/mention-search?${params.toString()}`);
     return response.data;
   },
+
+  // Blocking
+  blockUser: async (userId) => {
+    const response = await api.post(`/users/block/${userId}`);
+    return response.data;
+  },
+
+  unblockUser: async (userId) => {
+    const response = await api.post(`/users/unblock/${userId}`);
+    return response.data;
+  },
+
+  reportUser: async (userId, data) => {
+    const response = await api.post(`/users/report/${userId}`, data);
+    return response.data;
+  },
 };

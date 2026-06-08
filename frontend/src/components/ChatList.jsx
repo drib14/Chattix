@@ -54,6 +54,20 @@ const ChatList = () => {
     return messageDate.toLocaleDateString();
   };
 
+  const formatOfflineTimestamp = (lastSeen) => {
+    if (!lastSeen) return '';
+    const now = new Date();
+    const lastSeenDate = new Date(lastSeen);
+    const diffMs = now - lastSeenDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    return `${diffDays}d`;
+  };
+
   const archivedIds = new Set(archivedChats.map(ac => ac.chatId?._id?.toString()));
   const filteredChats = (Array.isArray(recentChats) ? recentChats : []).filter(
     c => !archivedIds.has(c._id?._id?.toString())
@@ -69,6 +83,8 @@ const ChatList = () => {
       dispatch(clearUnread(chat._id._id || chat._id));
     }
   };
+
+  const { groupedStories } = useSelector((state) => state.story);
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
@@ -111,6 +127,16 @@ const ChatList = () => {
 
               const currentUnread = unreadCounts[chatId] !== undefined ? unreadCounts[chatId] : (chat.unreadCount || 0);
 
+              const userStoryGroup = groupedStories?.find(group => group.user._id === chatId);
+              let borderClass = 'border-2 border-transparent';
+              if (userStoryGroup) {
+                if (userStoryGroup.hasUnviewed) {
+                  borderClass = 'p-[2px] bg-gradient-to-tr from-blue-400 to-indigo-600 bg-origin-border';
+                } else {
+                  borderClass = 'p-[2px] border-2 border-gray-300';
+                }
+              }
+
               return (
                 <motion.div
                   key={chatId || index}
@@ -127,18 +153,22 @@ const ChatList = () => {
                     }`}
                   >
                     <div className="relative shrink-0">
-                      <img
-                        src={
-                          chatUser?.avatar ||
-                          `${DEFAULT_AVATAR}&name=${encodeURIComponent(chatUser?.fullName || 'U')}`
-                        }
-                        alt={chatUser?.fullName}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
+                      <div className={`w-12 h-12 rounded-full ${borderClass}`}>
+                        <img
+                          src={
+                            chatUser?.avatar ||
+                            `${DEFAULT_AVATAR}&name=${encodeURIComponent(chatUser?.fullName || 'U')}`
+                          }
+                          alt={chatUser?.fullName}
+                          className="w-full h-full rounded-full object-cover border-2 border-white bg-white"
+                        />
+                      </div>
                       {isOnline ? (
-                        <div className="absolute bottom-0 right-0 online-indicator" />
+                        <div className="absolute bottom-0 right-0 online-indicator border-2 border-white" />
                       ) : (
-                        <div className="absolute bottom-0 right-0 offline-indicator" />
+                        <div className="absolute -bottom-1 -right-1 bg-green-100 text-green-700 text-[9px] font-bold px-1 rounded-full border border-white">
+                          {formatOfflineTimestamp(chatUser?.lastSeen)}
+                        </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">

@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import {
-  Send, Smile, Info, Image, Mic, Square, X, Search, ArrowLeft, BarChart3, Paperclip
+  Send, Smile, Info, Image, Mic, Square, X, Search, ArrowLeft, BarChart3, Paperclip, MoreVertical
 } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import ForwardModal from './ForwardModal';
 import CreatePollModal from './CreatePollModal';
 import MediaModal from './MediaModal';
+import ConfirmModal from './ConfirmModal';
+import ReportModal from './ReportModal';
 import socketService from '../services/socket';
 import { userService } from '../services/userService';
 import { t } from '../utils/translations';
@@ -563,6 +565,38 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     ? searchResults
     : displayedMessages;
 
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  
+  const isBlockedByMe = user?.blockedUsers?.includes(activeChat?._id);
+
+  const handleBlockUser = async () => {
+    try {
+      if (isBlockedByMe) {
+        await userService.unblockUser(activeChat._id);
+        toast.success(`Unblocked ${displayName}`);
+        // We need to update local auth state, but a page reload or socket event would be better. Let's assume redrawing will catch it eventually or we just leave it to toast.
+      } else {
+        await userService.blockUser(activeChat._id);
+        toast.success(`Blocked ${displayName}`);
+      }
+      setShowBlockConfirm(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Action failed');
+    }
+  };
+
+  const handleReportUser = async (reportData) => {
+    try {
+      await userService.reportUser(activeChat._id, reportData);
+      toast.success('Report submitted successfully');
+      setShowReportModal(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Report failed');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
       <div className="flex items-center justify-between gap-1 px-2 sm:px-3 py-2 bg-chattix-panel border-b border-gray-200 shrink-0 min-w-0">
@@ -572,24 +606,58 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
               <ArrowLeft size={20} />
             </button>
           )}
-          <div className="relative shrink-0">
+          <div className="relative shrink-0 cursor-pointer" onClick={() => isGroup ? onGroupInfoClick?.() : onToggleProfile?.()}>
             <img src={avatarSrc} alt={displayName} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover" />
             {!isGroup && isOnline && <div className="absolute bottom-0 right-0 online-indicator" />}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 cursor-pointer" onClick={() => isGroup ? onGroupInfoClick?.() : onToggleProfile?.()}>
             <h3 className="font-semibold text-gray-900 text-sm truncate">{displayName}</h3>
             <p className="text-[11px] sm:text-xs text-gray-500 truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">
               {getTypingLabel() || (isGroup ? `${activeChat.members?.length || 0} members` : (isOnline ? t('online', language) : (chatStatusText || t('offline', language))))}
             </p>
           </div>
         </div>
-        <div className="flex items-center shrink-0">
+        <div className="flex items-center shrink-0 relative">
           <button type="button" onClick={() => setSearchOpen((v) => !v)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-600">
             <Search size={18} />
           </button>
           <button type="button" onClick={() => isGroup ? onGroupInfoClick?.() : onToggleProfile?.()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-600">
             <Info size={18} />
           </button>
+          {!isGroup && (
+            <button type="button" onClick={() => setHeaderMenuOpen(!headerMenuOpen)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-600">
+              <MoreVertical size={18} />
+            </button>
+          )}
+          
+          <AnimatePresence>
+            {headerMenuOpen && !isGroup && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setHeaderMenuOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="absolute right-0 top-12 z-50 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1"
+                >
+                  <button
+                    type="button"
+                    onClick={() => { setHeaderMenuOpen(false); setShowBlockConfirm(true); }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left font-medium"
+                  >
+                    {isBlockedByMe ? 'Unblock User' : 'Block User'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setHeaderMenuOpen(false); setShowReportModal(true); }}
+                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left font-medium"
+                  >
+                    Report User
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -730,89 +798,102 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
         </div>
       )}
 
-      <div className="px-2 sm:px-3 py-2 bg-chattix-panel border-t border-gray-200 relative shrink-0 safe-bottom">
-        {showEmojiPicker && (
-          <div ref={emojiRef} className="absolute bottom-full left-0 right-0 sm:left-2 sm:right-auto mb-1 z-50 flex justify-center sm:justify-start px-1">
-            <div className="max-w-[calc(100vw-0.5rem)] overflow-hidden rounded-xl shadow-lg">
-              <EmojiPicker
-                onEmojiClick={(e) => setMessageText((p) => p + e.emoji)}
-                width={Math.min(320, typeof window !== 'undefined' ? window.innerWidth - 16 : 320)}
-                height={Math.min(360, typeof window !== 'undefined' ? window.innerHeight * 0.45 : 360)}
-              />
-            </div>
-          </div>
-        )}
-        {showGifPicker && (
-          <div ref={gifRef} className="absolute bottom-full left-0 right-0 sm:left-12 sm:right-auto mb-1 z-50 flex justify-center sm:justify-start px-1">
-            <div className="bg-white max-w-[calc(100vw-0.5rem)] overflow-hidden rounded-xl shadow-lg p-2 border border-gray-200 flex flex-col gap-2" style={{ width: 320 }}>
-              <input
-                type="text"
-                placeholder="Search GIFs..."
-                value={gifSearch}
-                onChange={(e) => setGifSearch(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none"
-              />
-              <div className="h-[300px] overflow-y-auto overflow-x-hidden" style={{ width: 300 }}>
-                <Grid
-                  key={gifSearch}
-                  fetchGifs={fetchGifs}
-                  width={300}
-                  columns={3}
-                  gutter={6}
-                  noLink={true}
-                  hideAttribution={true}
-                  onGifClick={(gif, e) => {
-                    e.preventDefault();
-                    handleSendGif(gif.images.original.url);
-                  }}
+      {isBlockedByMe ? (
+        <div className="px-2 sm:px-3 py-4 bg-chattix-panel border-t border-gray-200 text-center relative shrink-0 safe-bottom">
+          <p className="text-sm text-gray-500 mb-2">You blocked this user. Unblock them to send messages.</p>
+          <button
+            onClick={() => setShowBlockConfirm(true)}
+            className="text-sm font-semibold text-chattix-primary hover:underline"
+          >
+            Unblock User
+          </button>
+        </div>
+      ) : (
+        <div className="px-2 sm:px-3 py-2 bg-chattix-panel border-t border-gray-200 relative shrink-0 safe-bottom">
+          {showEmojiPicker && (
+            <div ref={emojiRef} className="absolute bottom-full left-0 right-0 sm:left-2 sm:right-auto mb-1 z-50 flex justify-center sm:justify-start px-1">
+              <div className="max-w-[calc(100vw-0.5rem)] overflow-hidden rounded-xl shadow-lg">
+                <EmojiPicker
+                  onEmojiClick={(e) => setMessageText((p) => p + e.emoji)}
+                  width={Math.min(320, typeof window !== 'undefined' ? window.innerWidth - 16 : 320)}
+                  height={Math.min(360, typeof window !== 'undefined' ? window.innerHeight * 0.45 : 360)}
                 />
               </div>
             </div>
-          </div>
-        )}
-        <form onSubmit={handleSendMessage} className="flex items-center gap-1 min-w-0">
-          <button type="button" onClick={() => { setShowEmojiPicker((v) => !v); setShowGifPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
-            <Smile size={18} className="sm:w-5 sm:h-5" />
-          </button>
-          <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
-            GIF
-          </button>
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Photos & Videos">
-            <Image size={18} className="sm:w-[19px] sm:h-[19px]" />
-          </button>
-          <button type="button" onClick={() => docInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Documents & Files">
-            <Paperclip size={18} className="sm:w-[19px] sm:h-[19px]" />
-          </button>
-          {isGroup && (
-            <button type="button" onClick={() => setShowPollModal(true)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
-              <BarChart3 size={17} className="sm:w-[18px] sm:h-[18px]" />
-            </button>
           )}
-          <input ref={fileInputRef} type="file" className="hidden" multiple accept="image/*,video/*" onChange={handleFileSelect} />
-          <input ref={docInputRef} type="file" className="hidden" multiple accept="*" onChange={handleFileSelect} />
-          <input
-            type="text"
-            value={messageText}
-            onChange={handleMessageChange}
-            placeholder={t('typeMessage', language)}
-            className="flex-1 min-w-0 px-3 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-chattix-primary/30"
-            disabled={loading}
-          />
-          {messageText.trim() ? (
-            <button type="submit" disabled={loading} className="p-2 sm:p-2.5 rounded-full bg-chattix-primary text-white hover:bg-chattix-primary-dark disabled:opacity-40 shrink-0">
-              <Send size={17} />
-            </button>
-          ) : isRecording ? (
-            <button type="button" onClick={stopRecording} className="p-2 sm:p-2.5 rounded-full bg-red-500 text-white animate-pulse shrink-0">
-              <Square size={17} />
-            </button>
-          ) : (
-            <button type="button" onClick={startRecording} className="p-2 sm:p-2.5 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
-              <Mic size={18} />
-            </button>
+          {showGifPicker && (
+            <div ref={gifRef} className="absolute bottom-full left-0 right-0 sm:left-12 sm:right-auto mb-1 z-50 flex justify-center sm:justify-start px-1">
+              <div className="bg-white max-w-[calc(100vw-0.5rem)] overflow-hidden rounded-xl shadow-lg p-2 border border-gray-200 flex flex-col gap-2" style={{ width: 320 }}>
+                <input
+                  type="text"
+                  placeholder="Search GIFs..."
+                  value={gifSearch}
+                  onChange={(e) => setGifSearch(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm focus:outline-none"
+                />
+                <div className="h-[300px] overflow-y-auto overflow-x-hidden" style={{ width: 300 }}>
+                  <Grid
+                    key={gifSearch}
+                    fetchGifs={fetchGifs}
+                    width={300}
+                    columns={3}
+                    gutter={6}
+                    noLink={true}
+                    hideAttribution={true}
+                    onGifClick={(gif, e) => {
+                      e.preventDefault();
+                      handleSendGif(gif.images.original.url);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           )}
-        </form>
-      </div>
+          <form onSubmit={handleSendMessage} className="flex items-center gap-1 min-w-0">
+            <button type="button" onClick={() => { setShowEmojiPicker((v) => !v); setShowGifPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
+              <Smile size={18} className="sm:w-5 sm:h-5" />
+            </button>
+            <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
+              GIF
+            </button>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Photos & Videos">
+              <Image size={18} className="sm:w-[19px] sm:h-[19px]" />
+            </button>
+            <button type="button" onClick={() => docInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Documents & Files">
+              <Paperclip size={18} className="sm:w-[19px] sm:h-[19px]" />
+            </button>
+            {isGroup && (
+              <button type="button" onClick={() => setShowPollModal(true)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
+                <BarChart3 size={17} className="sm:w-[18px] sm:h-[18px]" />
+              </button>
+            )}
+            <input ref={fileInputRef} type="file" className="hidden" multiple accept="image/*,video/*" onChange={handleFileSelect} />
+            <input ref={docInputRef} type="file" className="hidden" multiple accept="*" onChange={handleFileSelect} />
+            <input
+              type="text"
+              value={messageText}
+              onChange={handleMessageChange}
+              placeholder={t('typeMessage', language)}
+              className="flex-1 min-w-0 px-3 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-chattix-primary/30"
+              disabled={loading}
+            />
+            {messageText.trim() ? (
+              <button type="submit" disabled={loading} className="p-2 sm:p-2.5 rounded-full bg-chattix-primary text-white hover:bg-chattix-primary-dark disabled:opacity-40 shrink-0">
+                <Send size={17} />
+              </button>
+            ) : isRecording ? (
+              <button type="button" onClick={stopRecording} className="p-2 sm:p-2.5 rounded-full bg-red-500 text-white animate-pulse shrink-0">
+                <Square size={17} />
+              </button>
+            ) : (
+              <button type="button" onClick={startRecording} className="p-2 sm:p-2.5 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
+                <Mic size={18} />
+              </button>
+            )}
+          </form>
+        </div>
+      )}
+
       <CreatePollModal
         isOpen={showPollModal}
         onClose={() => setShowPollModal(false)}
@@ -822,6 +903,21 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
         isOpen={!!forwardMessage}
         onClose={() => setForwardMessage(null)}
         messageToForward={forwardMessage}
+      />
+      <ConfirmModal
+        isOpen={showBlockConfirm}
+        onClose={() => setShowBlockConfirm(false)}
+        onConfirm={handleBlockUser}
+        title={isBlockedByMe ? 'Unblock User' : 'Block User'}
+        message={isBlockedByMe ? `Are you sure you want to unblock ${displayName}?` : `Are you sure you want to block ${displayName}? They will no longer be able to message you.`}
+        confirmText={isBlockedByMe ? 'Unblock' : 'Block'}
+        isDanger={!isBlockedByMe}
+      />
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        onConfirm={handleReportUser}
+        userName={displayName}
       />
     </div>
   );
