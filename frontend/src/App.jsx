@@ -51,7 +51,7 @@ function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route
-        path="/messages"
+        path="/messages/:chatId?"
         element={isAuthenticated ? <ModernChatPage /> : <Navigate to="/login" />}
       />
       <Route

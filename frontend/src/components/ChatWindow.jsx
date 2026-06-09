@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import {
@@ -67,9 +68,15 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [selectedChatToDelete, setSelectedChatToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [localBlocked, setLocalBlocked] = useState(null);
-  
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlMedia = searchParams.get('media');
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
   const typingTimeoutRef = useRef(null);
@@ -80,7 +87,6 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const docInputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
-  const dispatch = useDispatch();
 
   const fetchGifs = useCallback((offset) => {
     if (gifSearch) {
@@ -146,7 +152,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
       await messageService.deleteConversation(activeChat._id);
       toast.success('Conversation deleted');
       dispatch(removeRecentChat(activeChat._id));
-      dispatch(setSelectedChat(null));
+      navigate('/messages');
       setShowDeleteConfirm(false);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Deletion failed');
@@ -275,6 +281,17 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     },
     [dispatch, user?._id, isGroup]
   );
+
+  useEffect(() => {
+    if (urlMedia) {
+      // Find the media object in messages or just reconstruct a basic one if we can't find it
+      const mediaObject = messages.flatMap(m => m.attachments || []).find(a => a.url === urlMedia) || { url: urlMedia, type: urlMedia.match(/\.(mp4|webm)$/i) ? 'video' : 'image' };
+      setSelectedMedia(mediaObject);
+      setShowMediaModal(true);
+    } else {
+      setShowMediaModal(false);
+    }
+  }, [urlMedia, messages]);
 
   const loadMessages = useCallback(async () => {
     if (!activeChat?._id) return;
@@ -816,8 +833,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
                 searchQuery={searchQuery}
                 onViewMedia={(attachment) => {
                   if (navigator.vibrate) navigator.vibrate(50);
-                  setSelectedMedia(attachment);
-                  setShowMediaModal(true);
+                  setSearchParams(prev => { prev.set('media', attachment.url); return prev; });
                 }}
                 {...messageActions}
               />
@@ -836,7 +852,11 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
         <div ref={messagesEndRef} />
       </div>
 
-      <MediaModal isOpen={showMediaModal} onClose={() => setShowMediaModal(false)} attachment={selectedMedia} />
+      <MediaModal
+        attachment={selectedMedia}
+        isOpen={showMediaModal}
+        onClose={() => setSearchParams(prev => { prev.delete('media'); return prev; })}
+      />
 
       {replyTo && (
         <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 flex items-center justify-between">

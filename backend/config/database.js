@@ -4,7 +4,7 @@ const connectDB = async (retryCount = 5, delayMs = 5000) => {
   const uri = process.env.MONGO_URI;
 
   if (!uri) {
-    console.error('❌ CRITICAL DATABASE ERROR: MONGODB_URI is missing in environment variables.');
+    console.error('[DATABASE] CRITICAL ERROR: MONGODB_URI is missing in environment variables.');
     process.exit(1);
   }
 
@@ -19,37 +19,37 @@ const connectDB = async (retryCount = 5, delayMs = 5000) => {
 
   for (let attempt = 1; attempt <= retryCount; attempt++) {
     try {
-      console.log(`🔌 Attempting MongoDB connection (Attempt ${attempt}/${retryCount})...`);
+      console.log(`[DATABASE] Attempting MongoDB connection (Attempt ${attempt}/${retryCount})...`);
       const conn = await mongoose.connect(uri, options);
-      console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+      console.log(`[DATABASE] MongoDB Connected successfully.`);
 
       // Log connection events for debugging
       mongoose.connection.on('error', (err) => {
-        console.error('❌ MongoDB connection error:', err.message);
+        console.error('[DATABASE] MongoDB connection error:', err.message);
       });
 
       mongoose.connection.on('disconnected', () => {
-        console.warn('⚠️ MongoDB disconnected. Attempting reconnection...');
+        console.warn('[DATABASE] MongoDB disconnected. Attempting reconnection...');
       });
 
       mongoose.connection.on('reconnected', () => {
-        console.log('✅ MongoDB reconnected successfully.');
+        console.log('[DATABASE] MongoDB reconnected successfully.');
       });
 
       return conn;
     } catch (error) {
-      console.error(`❌ MongoDB connection attempt ${attempt} failed.`);
+      console.error(`[DATABASE] MongoDB connection attempt ${attempt} failed.`);
       console.error(`   Error name: ${error.name}`);
       console.error(`   Error message: ${error.message}`);
       if (error.code) console.error(`   Error code: ${error.code}`);
       if (error.reason) console.error(`   Reason: ${JSON.stringify(error.reason)}`);
 
       if (attempt === retryCount) {
-        console.error('❌ CRITICAL DATABASE ERROR: Max connection attempts reached. Server shutting down.');
+        console.error('[DATABASE] CRITICAL ERROR: Max connection attempts reached. Server shutting down.');
         process.exit(1);
       }
 
-      console.log(`⏱️ Waiting ${delayMs / 1000} seconds before retrying connection...`);
+      console.log(`[DATABASE] Waiting ${delayMs / 1000} seconds before retrying connection...`);
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Plus } from 'lucide-react';
 import { fetchStories, groupStories, addStory, removeStory, updateStoryViews, updateStoryReactions } from '../redux/slices/storySlice';
@@ -19,6 +20,9 @@ const StoryTray = () => {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlStoryId = searchParams.get('story');
 
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
@@ -53,17 +57,30 @@ const StoryTray = () => {
       const { storyId } = e.detail;
       const userIndex = groupedStories.findIndex(group => group.stories.some(s => s._id === storyId));
       if (userIndex !== -1) {
-        setSelectedUserIndex(userIndex);
-        setViewerOpen(true);
+        setSearchParams(prev => { prev.set('story', storyId); return prev; });
       }
     };
     window.addEventListener('open-story', handleOpenStory);
     return () => window.removeEventListener('open-story', handleOpenStory);
-  }, [groupedStories]);
+  }, [groupedStories, setSearchParams]);
+
+  useEffect(() => {
+    if (urlStoryId && groupedStories.length > 0) {
+      const userIndex = groupedStories.findIndex(group => group.stories.some(s => s._id === urlStoryId));
+      if (userIndex !== -1) {
+        setSelectedUserIndex(userIndex);
+        setViewerOpen(true);
+      }
+    } else {
+      setViewerOpen(false);
+    }
+  }, [urlStoryId, groupedStories]);
 
   const handleStoryClick = (index) => {
-    setSelectedUserIndex(index);
-    setViewerOpen(true);
+    const firstStoryId = groupedStories[index].stories[0]?._id;
+    if (firstStoryId) {
+      setSearchParams(prev => { prev.set('story', firstStoryId); return prev; });
+    }
   };
 
   const getBorderClass = (hasUnviewed, audience, isCurrentUser) => {
@@ -188,7 +205,7 @@ const StoryTray = () => {
         <StoryViewer 
           groupedStories={groupedStories} 
           initialUserIndex={selectedUserIndex} 
-          onClose={() => setViewerOpen(false)} 
+          onClose={() => setSearchParams(prev => { prev.delete('story'); return prev; })} 
         />
       )}
     </div>

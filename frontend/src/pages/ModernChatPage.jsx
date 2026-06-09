@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ModernSidebar from '../components/ModernSidebar';
 import MobileNav from '../components/MobileNav';
@@ -37,6 +38,7 @@ import {
   incrementUnread,
   updateRecentChat,
   setGroups,
+  setSelectedChat,
 } from '../redux/slices/chatSlice';
 import { 
   addStory, 
@@ -62,6 +64,12 @@ const ModernChatPage = () => {
   const { selectedChat, recentChats } = useSelector((state) => state.chat);
   const { pendingRequests } = useSelector((state) => state.friend);
   const { unreadCount: notifUnread } = useSelector((state) => state.notification);
+  const { friends } = useSelector((state) => state.friend);
+  const { groups } = useSelector((state) => state.chat);
+
+  const { chatId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('chats');
   const [showSidebar, setShowSidebar] = useState(false);
@@ -115,6 +123,32 @@ const ModernChatPage = () => {
       return () => { document.body.style.overflow = ''; };
     }
   }, [showSidebar, isCompact]);
+
+  // Sync URL chatId to Redux state
+  useEffect(() => {
+    if (!loading && chatId) {
+      const currentSelectedId = selectedChat ? (selectedChat._id?._id || selectedChat._id) : null;
+      if (currentSelectedId !== chatId) {
+        // Try to find the chat in recentChats, friends, or groups
+        const recentChat = Array.isArray(recentChats) ? recentChats.find(c => (c._id?._id || c._id) === chatId) : null;
+        const friend = Array.isArray(friends) ? friends.find(f => f._id === chatId) : null;
+        const group = Array.isArray(groups) ? groups.find(g => g._id === chatId) : null;
+        
+        if (recentChat) {
+          dispatch(setSelectedChat(recentChat._id));
+        } else if (friend) {
+          dispatch(setSelectedChat(friend));
+        } else if (group) {
+          dispatch(setSelectedChat({ ...group, isGroup: true }));
+        } else {
+          // Fallback: Just dispatch the ID, ChatWindow can handle fetching it if needed
+          dispatch(setSelectedChat({ _id: chatId })); 
+        }
+      }
+    } else if (!chatId && selectedChat) {
+      dispatch(setSelectedChat(null));
+    }
+  }, [chatId, loading, recentChats, friends, groups, selectedChat, dispatch]);
 
   const loadInitialData = async () => {
     try {
@@ -269,6 +303,8 @@ const ModernChatPage = () => {
           activeTab={activeTab}
           setActiveTab={handleTabChange}
           onMenuOpen={() => {}}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
       )}
 

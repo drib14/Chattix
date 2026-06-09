@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MessageCircle, UserMinus, Users } from 'lucide-react';
 import { friendService } from '../services/friendService';
 import { removeFriend } from '../redux/slices/friendSlice';
-import { setSelectedChat } from '../redux/slices/chatSlice';
+import { useNavigate } from 'react-router-dom';
 import { useConfirm } from '../context/ConfirmContext';
 import { formatLastSeen } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
@@ -15,9 +15,9 @@ const DEFAULT_AVATAR =
 const FriendsList = ({ searchQuery = '' }) => {
   const { friends } = useSelector((state) => state.friend);
   const { onlineUsers } = useSelector((state) => state.chat);
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(null);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const friendList = Array.isArray(friends) ? friends : [];
 
@@ -70,11 +70,29 @@ const FriendsList = ({ searchQuery = '' }) => {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-                <motion.div
-                  key={friend._id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: index * 0.03 }}
+        <AnimatePresence>
+          {filteredFriends.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <div className="w-16 h-16 bg-chattix-bg rounded-full flex items-center justify-center mb-4">
+                <Users size={28} className="text-gray-400" />
+              </div>
+              <p className="text-gray-600 font-medium">{searchQuery ? 'No friends found' : 'No friends yet'}</p>
+              <p className="text-sm text-gray-400 mt-1">{searchQuery ? 'Try a different search term' : 'Search for users to add them'}</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {filteredFriends.map((friend, index) => {
+                const isOnline = onlineUsers.some((u) => {
+                  const uid = typeof u === 'object' && u !== null ? u.userId : u;
+                  return uid?.toString() === friend._id?.toString();
+                });
+
+                return (
+                  <motion.div
+                    key={friend._id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.03 }}
                   className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 min-w-0"
                 >
                   <div className="relative shrink-0">
@@ -104,7 +122,7 @@ const FriendsList = ({ searchQuery = '' }) => {
                   <div className="flex gap-1 shrink-0">
                     <button
                       type="button"
-                      onClick={() => dispatch(setSelectedChat(friend))}
+                      onClick={() => navigate(`/messages/${friend._id}`)}
                       className="p-2 rounded-full bg-chattix-primary text-white hover:bg-chattix-primary-dark transition-colors"
                       title="Message"
                     >
@@ -125,6 +143,7 @@ const FriendsList = ({ searchQuery = '' }) => {
             })}
           </div>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );

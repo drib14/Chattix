@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, MoreVertical, Archive, ArchiveRestore } from 'lucide-react';
 import { setSelectedChat, clearUnread } from '../redux/slices/chatSlice';
@@ -16,6 +17,7 @@ const ChatList = ({ searchQuery = '' }) => {
   const { language } = useSelector((state) => state.theme);
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [archivedChats, setArchivedChats] = useState([]);
   const [blockedUsers, setBlockedUsers] = useState([]);
@@ -119,7 +121,12 @@ const ChatList = ({ searchQuery = '' }) => {
 
   const handleSelectChat = (chat) => {
     if (chat._id) {
-      dispatch(setSelectedChat(chat._id));
+      const targetId = chat._id._id || chat._id;
+      if (targetId && typeof targetId === 'string') {
+        navigate(`/messages/${targetId}`);
+      } else if (targetId && targetId._id) {
+        navigate(`/messages/${targetId._id}`);
+      }
       dispatch(clearUnread(chat._id._id || chat._id));
     }
   };

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { X, Image as ImageIcon, Video, Globe, Users, Lock, Loader2, Type, Clock, MapPin, Link as LinkIcon, Sticker, PenTool, AtSign, Trash2, Trash, UserPlus, Palette } from 'lucide-react';
+import { X, Image as ImageIcon, Video, Globe, Users, Lock, Loader2, Type, Clock, MapPin, Link as LinkIcon, Sticker, Pencil, AtSign, Trash2, Trash, UserPlus, Palette } from 'lucide-react';
 import { createStory } from '../redux/slices/storySlice';
 import { useConfirm } from '../context/ConfirmContext';
 import { LinkModal, LocationModal, GiphyModal, TagModal, TextModal } from './StoryModals';
@@ -374,7 +374,7 @@ const StoryCreator = ({ onClose }) => {
                 <button onClick={() => setShowStyleDrawer(true)} className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md shadow-lg transition-colors lg:hidden"><Palette size={20} /></button>
               )}
               <button onClick={() => setShowTextModal(true)} className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md shadow-lg transition-colors"><Type size={20} /></button>
-              <button onClick={toggleDoodle} className={`p-2 rounded-full shadow-lg transition-colors ${isDoodling ? 'bg-white text-black scale-110' : 'bg-black/50 hover:bg-black/70 text-white backdrop-blur-md'}`}><PenTool size={20} /></button>
+              <button onClick={toggleDoodle} className={`p-2 rounded-full shadow-lg transition-colors ${isDoodling ? 'bg-white text-black scale-110' : 'bg-black/50 hover:bg-black/70 text-white backdrop-blur-md'}`}><Pencil size={20} /></button>
               <button onClick={() => setShowGiphyModal(true)} className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md shadow-lg transition-colors"><Sticker size={20} /></button>
               <button onClick={addTimeOverlay} className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md shadow-lg transition-colors"><Clock size={20} /></button>
               <button onClick={() => setShowLocModal(true)} className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md shadow-lg transition-colors"><MapPin size={20} /></button>
@@ -634,12 +634,12 @@ const StoryCreator = ({ onClose }) => {
             <div className="overflow-y-auto p-4 space-y-6">
               <div>
                 <p className="text-white/50 text-xs font-semibold mb-3 uppercase tracking-wider">Background</p>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="flex overflow-x-auto gap-3 pb-4 snap-x no-scrollbar">
                   {bgGradients.map((bg, i) => (
                     <button 
                       key={i} 
                       onClick={() => setBgColor(bg)}
-                      className={`aspect-square rounded-xl ${bg} transition-all border-2 ${bgColor === bg ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105 opacity-80 hover:opacity-100'}`}
+                      className={`shrink-0 w-16 h-16 rounded-xl ${bg} transition-all border-2 snap-center ${bgColor === bg ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105 opacity-80 hover:opacity-100'}`}
                     />
                   ))}
                 </div>

@@ -7,7 +7,7 @@ console.log('Environment variables loaded');
 
 // Global Uncaught Exception Handler
 process.on('uncaughtException', (err) => {
-  console.error('❌ UNCAUGHT EXCEPTION! Shutting down server...');
+  console.error('[SERVER] UNCAUGHT EXCEPTION! Shutting down server...');
   console.error(err.name, err.message);
   console.error(err.stack);
   process.exit(1);
@@ -21,7 +21,7 @@ const criticalEnvVars = ['MONGO_URI', 'ACCESS_TOKEN_SECRET'];
 const missingCritical = criticalEnvVars.filter(varName => !process.env[varName]);
 
 if (missingCritical.length > 0) {
-  console.error('❌ CRITICAL ERROR: Missing critical environment variables:');
+  console.error('[SERVER] CRITICAL ERROR: Missing critical environment variables:');
   missingCritical.forEach(varName => console.error(`   - ${varName}`));
   console.error('Please configure these in your .env file or deployment environment.');
   process.exit(1);
@@ -44,18 +44,18 @@ const missingProduction = productionRequiredEnvVars.filter(varName => !process.e
 
 if (isProduction) {
   if (missingProduction.length > 0) {
-    console.error('❌ CRITICAL PRODUCTION ERROR: Missing required environment variables for production:');
+    console.error('[SERVER] CRITICAL PRODUCTION ERROR: Missing required environment variables for production:');
     missingProduction.forEach(varName => console.error(`   - ${varName}`));
     console.error('Application deployment failed due to missing environment configuration.');
     process.exit(1);
   }
-  console.log('✅ All production environment variables are successfully configured.');
+  console.log('[SERVER] All production environment variables are successfully configured.');
 } else {
   if (missingProduction.length > 0) {
-    console.warn('⚠️ WARNING: Missing recommended environment variables for development:');
+    console.warn('[SERVER] WARNING: Missing recommended environment variables for development:');
     missingProduction.forEach(varName => console.warn(`   - ${varName}`));
   } else {
-    console.log('✅ All environment variables are configured.');
+    console.log('[SERVER] All environment variables are configured.');
   }
 }
 
@@ -180,7 +180,7 @@ httpServer.listen(PORT, () => {
 
 // Global Unhandled Rejection Handler
 process.on('unhandledRejection', (err) => {
-  console.error('❌ UNHANDLED REJECTION! Shutting down server gracefully...');
+  console.error('[SERVER] UNHANDLED REJECTION! Shutting down server gracefully...');
   console.error(err instanceof Error ? `${err.name}: ${err.message}` : String(err));
   if (err instanceof Error && err.stack) {
     console.error(err.stack);
@@ -188,38 +188,38 @@ process.on('unhandledRejection', (err) => {
 
   // Close HTTP server and then exit
   httpServer.close(() => {
-    console.log('🚪 Server process exiting due to unhandled rejection.');
+    console.log('[SERVER] Server process exiting due to unhandled rejection.');
     process.exit(1);
   });
 
   // Force exit after 3 seconds if closing takes too long
   setTimeout(() => {
-    console.error('❌ Forced exit due to unhandled rejection timeout.');
+    console.error('[SERVER] Forced exit due to unhandled rejection timeout.');
     process.exit(1);
   }, 3000);
 });
 
 // Graceful Shutdown Handler
 const gracefulShutdown = (signal) => {
-  console.log(`🔌 ${signal} signal received. Starting graceful shutdown...`);
+  console.log(`[SERVER] ${signal} signal received. Starting graceful shutdown...`);
 
   httpServer.close(async () => {
-    console.log('🚪 HTTP server closed.');
+    console.log('[SERVER] HTTP server closed.');
 
     try {
       const mongoose = await import('mongoose');
       await mongoose.default.connection.close();
-      console.log('📦 Database connection closed successfully.');
+      console.log('[DATABASE] Database connection closed successfully.');
       process.exit(0);
     } catch (dbError) {
-      console.error('❌ Error closing database connection:', dbError);
+      console.error('[DATABASE] Error closing database connection:', dbError);
       process.exit(1);
     }
   });
 
   // Force shutdown after 10s if graceful shutdown hangs
   setTimeout(() => {
-    console.error('❌ Forced shutdown due to shutdown timeout.');
+    console.error('[SERVER] Forced shutdown due to shutdown timeout.');
     process.exit(1);
   }, 10000);
 };

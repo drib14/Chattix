@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus, Music, Download, FileText } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
@@ -53,6 +54,7 @@ const ChatBubble = ({
   messageRef,
 }) => {
   const { stories } = useSelector((state) => state.story || { stories: [] });
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -114,43 +116,41 @@ const ChatBubble = ({
             <div className="relative min-w-0">
               {isStoryActive ? (
                 <div 
-                  className="bg-black rounded-3xl overflow-hidden shadow-sm flex flex-col w-56 xs:w-64 cursor-pointer hover:shadow-md transition-all active:scale-[0.98] border border-gray-100" 
-                  onClick={() => window.dispatchEvent(new CustomEvent('open-story', { detail: { storyId: message.storyId } }))}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm flex flex-col w-48 xs:w-56 cursor-pointer border border-gray-200" 
+                  onClick={() => setSearchParams(prev => { prev.set('story', message.storyId); return prev; })}
                 >
-                  <div className={`h-[340px] relative flex flex-col ${storyObj.textMode ? storyObj.backgroundColor : 'bg-gray-900'}`}>
+                  {/* Story Preview Thumbnail Area */}
+                  <div className={`h-[240px] relative flex flex-col ${storyObj.textMode ? storyObj.backgroundColor : 'bg-gray-900'}`}>
                     {!storyObj.textMode && storyObj.mediaUrl && (
                       storyObj.mediaType === 'video' ? (
-                        <video src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                        <video src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover" />
                       ) : (
-                        <img src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="" />
+                        <img src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover" alt="" />
                       )
                     )}
                     
-                    {/* Header: User Info */}
-                    <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-10 flex items-center gap-3">
-                      <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} className="w-10 h-10 rounded-full border border-white/20 object-cover shadow-sm" alt="" />
-                      <div className="flex flex-col">
-                        <span className="text-white text-sm font-semibold drop-shadow-md">{message.sender?.fullName?.split(' ')[0] || 'Someone'}</span>
-                        <span className="text-white/80 text-xs drop-shadow-md">Mentioned you in their story</span>
-                      </div>
-                    </div>
+                    {/* Dark gradient at bottom to make text readable if any */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                  </div>
 
-                    {/* Footer: Action */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
-                      <button className="w-full py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 rounded-xl text-sm font-bold transition-colors shadow-lg">
-                        View Story
-                      </button>
-                    </div>
+                  {/* Bottom Text Area */}
+                  <div className="p-3 bg-white flex flex-col items-center text-center">
+                    <p className="text-sm font-semibold text-gray-800 mb-0.5 leading-tight">
+                      Mentioned you in their story
+                    </p>
+                    <button className="text-chattix-primary font-bold text-sm mt-1 hover:underline">
+                      View Story
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-100 border border-gray-200 rounded-3xl overflow-hidden shadow-sm flex flex-col w-56 xs:w-64 opacity-70">
-                  <div className="h-[340px] flex flex-col items-center justify-center p-6 text-center">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                      <Star size={32} className="text-gray-400" />
+                <div className="bg-gray-100 border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col w-48 xs:w-56">
+                  <div className="h-[200px] flex flex-col items-center justify-center p-4 text-center bg-gray-50">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+                      <Star size={24} className="text-gray-400" />
                     </div>
                     <p className="text-sm font-semibold text-gray-500 mb-1">Story Unavailable</p>
-                    <p className="text-xs text-gray-400">This story has expired or been deleted.</p>
+                    <p className="text-xs text-gray-400 leading-tight">This story has expired or been deleted.</p>
                   </div>
                 </div>
               )}

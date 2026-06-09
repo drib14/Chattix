@@ -4,9 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ChattixLogo from './ChattixLogo';
 import MobileHamburgerMenu from './MobileHamburgerMenu';
 
-const MobileHeader = ({ activeTab, setActiveTab, onMenuOpen }) => {
+const MobileHeader = ({ activeTab, setActiveTab, onMenuOpen, searchQuery, setSearchQuery }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const handleMenuOpen = () => {
     setShowMenu(true);

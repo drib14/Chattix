@@ -2,19 +2,26 @@ import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Users, Plus, Loader } from 'lucide-react';
 import { groupService } from '../services/groupService';
-import { addGroup, setSelectedChat } from '../redux/slices/chatSlice';
+import { addGroup } from '../redux/slices/chatSlice';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-const GroupsList = () => {
+const GroupsList = ({ searchQuery = '' }) => {
   const { groups } = useSelector((state) => state.chat);
   const friendList = useSelector((state) => state.friend.friends);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ groupName: '', description: '', memberIds: [] });
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const groupList = Array.isArray(groups) ? groups : [];
   const availableFriends = Array.isArray(friendList) ? friendList : [];
+
+  const filteredGroupList = groupList.filter(group => {
+    if (!searchQuery) return true;
+    return group.groupName?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -109,17 +116,17 @@ const GroupsList = () => {
       )}
 
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        {groupList.length === 0 ? (
+        {filteredGroupList.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8">
             <Users size={40} className="text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm">No groups yet</p>
+            <p className="text-gray-500 text-sm">{searchQuery ? 'No groups found' : 'No groups yet'}</p>
           </div>
         ) : (
-          groupList.map((group) => (
+          filteredGroupList.map((group) => (
             <button
               key={group._id}
               type="button"
-              onClick={() => dispatch(setSelectedChat({ ...group, isGroup: true }))}
+              onClick={() => navigate(`/messages/${group._id}`)}
               className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 text-left min-w-0"
             >
               <img
