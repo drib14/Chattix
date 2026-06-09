@@ -108,55 +108,109 @@ const ChatBubble = ({
       const isStoryActive = !!storyObj;
 
       return (
-        <div className={`flex mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-          <div className="flex gap-2 max-w-[min(85%,280px)] sm:max-w-[80%] min-w-0 flex-row">
-            <div className="flex-shrink-0 self-end mb-1">
-              <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
-            </div>
-            <div className="relative min-w-0">
-              {isStoryActive ? (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`flex flex-col mb-2 group relative min-w-0 w-full ${showMenu || showReactions ? 'z-50' : 'z-10'}`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <div className={`flex items-end gap-1 ${isOwn ? 'justify-start flex-row-reverse' : 'justify-start flex-row'}`}>
+            <div className={`flex gap-2 max-w-[min(85%,300px)] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className="flex-shrink-0 self-end mb-1">
+                <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+              </div>
+              
+              <div className="relative min-w-0 flex flex-col">
                 <div 
-                  className="bg-white rounded-2xl overflow-hidden shadow-sm flex flex-col w-48 xs:w-56 cursor-pointer border border-gray-200" 
-                  onClick={() => setSearchParams(prev => { prev.set('story', message.storyId); return prev; })}
+                  className={`rounded-2xl overflow-hidden shadow-sm flex flex-col w-56 cursor-pointer border ${isOwn ? 'bg-chattix-primary border-chattix-primary rounded-br-sm text-white' : 'bg-gray-100 border-gray-200 rounded-bl-sm text-black'}`}
+                  onClick={() => isStoryActive && setSearchParams(prev => { prev.set('story', message.storyId); return prev; })}
                 >
-                  {/* Story Preview Thumbnail Area */}
-                  <div className={`h-[240px] relative flex flex-col ${storyObj.textMode ? storyObj.backgroundColor : 'bg-gray-900'}`}>
-                    {!storyObj.textMode && storyObj.mediaUrl && (
-                      storyObj.mediaType === 'video' ? (
-                        <video src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover" />
-                      ) : (
-                        <img src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover" alt="" />
-                      )
-                    )}
-                    
-                    {/* Dark gradient at bottom to make text readable if any */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-                  </div>
-
-                  {/* Bottom Text Area */}
-                  <div className="p-3 bg-white flex flex-col items-center text-center">
-                    <p className="text-sm font-semibold text-gray-800 mb-0.5 leading-tight">
-                      Mentioned you in their story
-                    </p>
-                    <button className="text-chattix-primary font-bold text-sm mt-1 hover:underline">
-                      View Story
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-100 border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col w-48 xs:w-56">
-                  <div className="h-[200px] flex flex-col items-center justify-center p-4 text-center bg-gray-50">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mb-3">
-                      <Star size={24} className="text-gray-400" />
+                  {isStoryActive ? (
+                    <>
+                      <div className="h-48 relative bg-black/10 overflow-hidden flex items-center justify-center">
+                        {(!storyObj.textMode && storyObj.mediaUrl) && (
+                          <div 
+                            className="absolute inset-0 blur-lg scale-110 opacity-60" 
+                            style={{ backgroundImage: `url(${storyObj.mediaUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} 
+                          />
+                        )}
+                        {!storyObj.textMode && storyObj.mediaUrl ? (
+                          storyObj.mediaType === 'video' ? (
+                            <>
+                              <video src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-contain" />
+                              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
+                                <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white pl-1 border border-white/40">
+                                  ▶
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <img src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-contain" alt="" />
+                          )
+                        ) : (
+                          <div className={`w-full h-full flex items-center justify-center p-4 ${storyObj.backgroundColor}`}>
+                            <p className={`text-center text-sm font-bold truncate px-2 ${storyObj.fontColor} ${storyObj.fontFamily}`}>
+                              {storyObj.caption}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="px-3 py-2.5 flex flex-col">
+                        <p className="text-[13px] font-semibold leading-tight">
+                          Mentioned you in their story
+                        </p>
+                        <p className={`text-[11px] mt-0.5 uppercase tracking-wider font-bold ${isOwn ? 'text-white/80' : 'text-gray-500'}`}>
+                          View Story
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="h-32 flex flex-col items-center justify-center p-4 text-center bg-gray-100 border-b border-gray-200">
+                      <Star size={20} className="text-gray-400 mb-2" />
+                      <p className="text-[13px] font-semibold text-gray-500 leading-tight">Story Unavailable</p>
                     </div>
-                    <p className="text-sm font-semibold text-gray-500 mb-1">Story Unavailable</p>
-                    <p className="text-xs text-gray-400 leading-tight">This story has expired or been deleted.</p>
-                  </div>
+                  )}
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Hover Tool Strip */}
+            <div className={`flex items-center gap-1 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0 lg:opacity-0'} ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+              <button
+                type="button"
+                onClick={() => { setShowReactions((v) => !v); setShowMenu(false); }}
+                className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors bg-white shadow-sm"
+                title="React"
+              >
+                <Smile size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setShowMenu(true); }}
+                className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors bg-white shadow-sm"
+                title="More"
+              >
+                <MoreVertical size={14} />
+              </button>
             </div>
           </div>
-        </div>
+
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className={`overflow-hidden flex ${isOwn ? 'justify-end pr-8' : 'justify-start pl-8'}`}
+              >
+                <span className="text-[10px] text-gray-500 whitespace-nowrap block pt-1">
+                  {formatTime(message.createdAt)}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       );
     }
 
@@ -194,11 +248,12 @@ const ChatBubble = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.02, 0.2) }}
-      className={`flex mb-1 group relative ${isOwn ? 'justify-end' : 'justify-start'} min-w-0 ${showMenu || showReactions ? 'z-50' : 'z-10'}`}
+      className={`flex flex-col mb-1 group relative min-w-0 w-full ${showMenu || showReactions ? 'z-50' : 'z-10'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`flex gap-2 max-w-[min(85%,280px)] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+      <div className={`flex items-end gap-1 ${isOwn ? 'justify-start flex-row-reverse' : 'justify-start flex-row'}`}>
+        <div className={`flex gap-2 max-w-[min(85%,280px)] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
         {/* Profile Image */}
         <div className="flex-shrink-0 self-end mb-1">
           <img src={senderAvatar} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
@@ -333,18 +388,7 @@ const ChatBubble = ({
             )}
 
             <div className={`flex flex-col items-end gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-              <AnimatePresence>
-                {isHovered && (
-                  <motion.span
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    className="text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded shadow-sm absolute -top-5 whitespace-nowrap"
-                  >
-                    {formatTime(message.createdAt)}
-                  </motion.span>
-                )}
-              </AnimatePresence>
+              
 
               <div className="flex items-center gap-1">
                 {message.pinned && <Pin size={10} className="text-gray-400" />}
@@ -386,7 +430,8 @@ const ChatBubble = ({
           </div>
 
           {/* Hover Tool Strip */}
-          <div className={`hidden sm:flex items-center gap-1 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'} ${isOwn ? 'mr-1 flex-row-reverse' : 'ml-1 flex-row'}`}>
+        </div>
+        <div className={`flex items-center gap-1 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0 lg:opacity-0'} ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
             <div className="relative">
               <button
                 type="button"
@@ -574,9 +619,24 @@ const ChatBubble = ({
                 </motion.div>
               </>
             )}
-          </AnimatePresence>
+                    </AnimatePresence>
         </div>
       </div>
+      
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className={`overflow-hidden flex ${isOwn ? 'justify-end pr-10' : 'justify-start pl-10'}`}
+          >
+            <span className="text-[10px] text-gray-500 whitespace-nowrap block pt-1">
+              {formatTime(message.createdAt)}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

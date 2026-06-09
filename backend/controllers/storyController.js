@@ -1,5 +1,6 @@
 import Story from '../models/Story.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import cloudinary, { isCloudinaryConfigured } from '../config/cloudinary.js';
 
 const includesId = (list, id) => list.some((entry) => entry.toString() === id.toString());
@@ -79,6 +80,26 @@ export const createStory = async (req, res) => {
       io.emit('new_story', story);
     }
 
+    // Notify friends of story creation
+    const currentUser = await User.findById(req.user._id);
+    if (currentUser && currentUser.friends && currentUser.friends.length > 0) {
+      const notifications = currentUser.friends.map(friendId => ({
+        recipient: friendId,
+        sender: req.user._id,
+        type: 'story_creation',
+        title: 'New Story',
+        body: `${currentUser.fullName || currentUser.username} added to their story`,
+        data: { storyId: story._id }
+      }));
+      await Notification.insertMany(notifications);
+      if (io) {
+        currentUser.friends.forEach(friendId => {
+          io.to(friendId.toString()).emit('new_notification');
+        });
+      }
+    }
+
+
     // Handle Story Mentions
     if (parsedOverlays && parsedOverlays.length > 0) {
       const tags = parsedOverlays.filter(o => o.type === 'tag' && o.userId);
@@ -97,6 +118,17 @@ export const createStory = async (req, res) => {
               systemMessageType: 'story_mention',
               storyId: story._id
             });
+            
+            await Notification.create({
+              recipient: tag.userId,
+              sender: req.user._id,
+              type: 'story_tagged',
+              title: 'Story Mention',
+              body: `${currentUser ? (currentUser.fullName || currentUser.username) : 'Someone'} mentioned you in their story`,
+              data: { storyId: story._id }
+            });
+            if (io) io.to(tag.userId.toString()).emit('new_notification');
+
             
             await mentionMessage.populate('sender', 'fullName username avatar');
             await mentionMessage.populate('receiver', 'fullName username avatar');
@@ -220,6 +252,20 @@ export const reactToStory = async (req, res) => {
     if (io && story.user.toString() !== req.user._id.toString()) {
       io.emit('story_reacted', { storyId: story._id, reactorId: req.user._id, ownerId: story.user, emoji });
     }
+    
+    if (story.user.toString() !== req.user._id.toString()) {
+      const currentUser = await User.findById(req.user._id);
+      await Notification.create({
+        recipient: story.user,
+        sender: req.user._id,
+        type: 'story_interaction',
+        title: 'Story Reaction',
+        body: `${currentUser ? (currentUser.fullName || currentUser.username) : 'Someone'} reacted to your story`,
+        data: { storyId: story._id, emoji }
+      });
+      if (io) io.to(story.user.toString()).emit('new_notification');
+    }
+
 
     res.json({ success: true, reactions: story.reactions });
   } catch (error) {

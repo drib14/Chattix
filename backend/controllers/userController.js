@@ -420,13 +420,19 @@ export const setChatWallpaper = async (req, res) => {
     }
 
     for (const u of usersToUpdate) {
+      // Determine the correct chatId to save for this specific user
+      let saveChatId = chatId;
+      if (chatType === 'user' && u._id.toString() !== currentUser._id.toString()) {
+        saveChatId = currentUser._id.toString();
+      }
+
       // Remove existing wallpaper for this chat
       u.chatWallpapers = u.chatWallpapers.filter(
-        (cw) => cw.chatId.toString() !== chatId.toString()
+        (cw) => cw.chatId.toString() !== saveChatId.toString()
       );
       // Add new wallpaper
       u.chatWallpapers.push({
-        chatId,
+        chatId: saveChatId,
         chatType,
         wallpaper,
         customUrl: wallpaper === 'custom' ? customUrl : undefined,

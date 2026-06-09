@@ -58,6 +58,10 @@ const storySchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  isExpiredNotified: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true,
 });

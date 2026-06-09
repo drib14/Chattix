@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { X, Globe, Users, Lock, Trash2, Eye, Heart, MessageCircle, Share2, Send, ChevronUp, MapPin, Link as LinkIcon } from 'lucide-react';
 import { markStoryViewed, deleteStory, reactToStory } from '../redux/slices/storySlice';
 import { useConfirm } from '../context/ConfirmContext';
@@ -10,6 +11,7 @@ const STORY_DURATION = 5000;
 
 const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { confirm } = useConfirm();
   
@@ -139,7 +141,10 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
   if (!activeStory) return null;
 
   // Viewers Logic
-  const viewsCount = activeStory.viewedBy?.length || 0;
+  const viewsCount = activeStory.viewedBy?.filter(v => {
+    const viewerId = v.user?._id || v.user;
+    return viewerId !== activeStory.user?._id;
+  }).length || 0;
   // Let's pretend new viewers are those in the last 1 hour
   const isNewViewer = (dateStr) => (new Date() - new Date(dateStr)) < 60 * 60 * 1000;
   const isFriend = (viewerId) => user?.friends?.includes(viewerId);
@@ -247,6 +252,26 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
                   {overlay.type === 'location' && <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"><MapPin size={16} />{overlay.text}</div>}
                   {overlay.type === 'link' && <a href={overlay.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="bg-white/90 backdrop-blur text-blue-600 font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 pointer-events-auto"><LinkIcon size={16} />{overlay.text}</a>}
                   {overlay.type === 'sticker' && <img src={overlay.url} alt="sticker" className="w-32 h-32 object-contain" />}
+                  {overlay.type === 'tag' && (
+                    <div 
+                      className="bg-black/70 backdrop-blur text-white px-4 py-2 rounded-xl shadow-lg flex flex-col items-center cursor-pointer pointer-events-auto" 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (overlay.userId) {
+                          onClose();
+                          navigate(`/messages/${overlay.userId}`);
+                        }
+                      }}
+                    >
+                      <span className="font-bold">{overlay.fullName || overlay.text}</span>
+                      {overlay.username && <span className="text-xs text-white/70">@{overlay.username}</span>}
+                    </div>
+                  )}
+                  {overlay.type === 'text' && (
+                    <div className={`px-4 py-2 rounded-lg shadow-lg text-2xl font-bold whitespace-pre-wrap text-center ${overlay.fontColor || 'text-white'} ${overlay.fontFamily || 'font-sans'}`}>
+                      {overlay.text}
+                    </div>
+                  )}
                 </div>
               );
             })}

@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, MoreVertical, Archive, ArchiveRestore } from 'lucide-react';
-import { setSelectedChat, clearUnread } from '../redux/slices/chatSlice';
+import { MessageSquare, MoreVertical, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
+import { setSelectedChat, clearUnread, removeRecentChat } from '../redux/slices/chatSlice';
 import { userService } from '../services/userService';
+import { messageService } from '../services/messageService';
 import { t } from '../utils/translations';
 import toast from 'react-hot-toast';
 import StoryTray from './StoryTray';
+import ConfirmModal from './ConfirmModal';
 
 const DEFAULT_AVATAR =
   'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
@@ -21,9 +23,10 @@ const ChatList = ({ searchQuery = '' }) => {
 
   const [archivedChats, setArchivedChats] = useState([]);
   const [blockedUsers, setBlockedUsers] = useState([]);
-  const [showArchived, setShowArchived] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [activeTab, setActiveTab] = useState('messages');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState(null);
 
   useEffect(() => {
     userService.getArchivedChats().then(setArchivedChats).catch(() => {});
@@ -52,6 +55,31 @@ const ChatList = ({ searchQuery = '' }) => {
       setMenuOpenId(null);
     } catch (error) {
       toast.error('Failed to update archive status');
+    }
+  };
+
+  const handleDeleteClick = (e, chat) => {
+    e.stopPropagation();
+    setChatToDelete(chat);
+    setShowDeleteConfirm(true);
+    setMenuOpenId(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!chatToDelete) return;
+    const chatId = chatToDelete._id?._id || chatToDelete._id;
+    try {
+      await messageService.deleteConversation(chatId);
+      dispatch(removeRecentChat(chatId));
+      if (selectedChat?._id === chatId) {
+        navigate('/messages');
+      }
+      toast.success(t('conversationDeleted', language) || 'Conversation deleted');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete conversation');
+    } finally {
+      setShowDeleteConfirm(false);
+      setChatToDelete(null);
     }
   };
 
@@ -109,7 +137,7 @@ const ChatList = ({ searchQuery = '' }) => {
     unreadCount: 0,
   }));
 
-  const displayChats = showArchived
+  const displayChats = activeTab === 'archived'
     ? (Array.isArray(recentChats) ? recentChats : []).filter(c => archivedIds.has(c._id?._id?.toString()))
     : (activeTab === 'requests' ? requestsChats : (activeTab === 'blocked' ? blockedChats : messagesChats));
 
@@ -159,6 +187,19 @@ const ChatList = ({ searchQuery = '' }) => {
           )}
         </button>
         <button
+          onClick={() => setActiveTab('archived')}
+          className={`font-medium text-sm pb-1 border-b-2 transition-colors flex items-center gap-1.5 ${
+            activeTab === 'archived' ? 'border-chattix-primary text-chattix-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Archived
+          {archivedChats.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold">
+              {archivedChats.length}
+            </span>
+          )}
+        </button>
+        <button
           onClick={() => setActiveTab('blocked')}
           className={`font-medium text-sm pb-1 border-b-2 transition-colors ${
             activeTab === 'blocked' ? 'border-chattix-primary text-chattix-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -168,21 +209,6 @@ const ChatList = ({ searchQuery = '' }) => {
         </button>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        {archivedChats.length > 0 && activeTab === 'messages' && (
-          <button
-            type="button"
-            onClick={() => setShowArchived(!showArchived)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100 hover:bg-gray-100 transition-colors"
-          >
-            <div className="flex items-center gap-2 text-gray-600 font-medium text-sm">
-              <Archive size={16} />
-              {t('archivedChats', language)}
-            </div>
-            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
-              {archivedChats.length}
-            </span>
-          </button>
-        )}
         {filteredDisplayChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="w-16 h-16 bg-chattix-bg rounded-full flex items-center justify-center mb-4">
@@ -292,11 +318,19 @@ const ChatList = ({ searchQuery = '' }) => {
                         >
                           <button
                             type="button"
-                            onClick={(e) => handleArchive(e, chat, showArchived)}
+                            onClick={(e) => handleArchive(e, chat, activeTab === 'archived')}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           >
-                            {showArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
-                            {showArchived ? t('unarchiveChat', language) : t('archiveChat', language)}
+                            {activeTab === 'archived' ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                            {activeTab === 'archived' ? t('unarchiveChat', language) : t('archiveChat', language)}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteClick(e, chat)}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={16} />
+                            {t('delete', language) || 'Delete'}
                           </button>
                         </motion.div>
                       </>
@@ -308,6 +342,18 @@ const ChatList = ({ searchQuery = '' }) => {
           </div>
         )}
       </div>
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+          setChatToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title={t('deleteConversation', language) || 'Delete Conversation'}
+        message={t('deleteConversationConfirm', language) || 'Are you sure you want to delete this conversation? This action cannot be undone.'}
+        confirmText={t('delete', language) || 'Delete'}
+        isDanger={true}
+      />
     </div>
   );
 };
