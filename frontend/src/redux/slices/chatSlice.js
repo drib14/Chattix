@@ -58,6 +58,13 @@ const chatSlice = createSlice({
         state.recentChats = [updated, ...chats];
       }
     },
+    removeRecentChat: (state, action) => {
+      const targetId = action.payload?.toString();
+      if (!targetId) return;
+      if (Array.isArray(state.recentChats)) {
+        state.recentChats = state.recentChats.filter((c) => c._id?._id?.toString() !== targetId && c._id?.toString() !== targetId);
+      }
+    },
     setGroups: (state, action) => {
       state.groups = Array.isArray(action.payload) ? action.payload : [];
     },
@@ -102,6 +109,7 @@ export const {
   updateMessage,
   setRecentChats,
   updateRecentChat,
+  removeRecentChat,
   setGroups,
   addGroup,
   setOnlineUsers,

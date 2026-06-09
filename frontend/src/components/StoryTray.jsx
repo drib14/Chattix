@@ -48,6 +48,19 @@ const StoryTray = () => {
     };
   }, [dispatch, user]);
 
+  useEffect(() => {
+    const handleOpenStory = (e) => {
+      const { storyId } = e.detail;
+      const userIndex = groupedStories.findIndex(group => group.stories.some(s => s._id === storyId));
+      if (userIndex !== -1) {
+        setSelectedUserIndex(userIndex);
+        setViewerOpen(true);
+      }
+    };
+    window.addEventListener('open-story', handleOpenStory);
+    return () => window.removeEventListener('open-story', handleOpenStory);
+  }, [groupedStories]);
+
   const handleStoryClick = (index) => {
     setSelectedUserIndex(index);
     setViewerOpen(true);

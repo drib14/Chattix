@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 const DEFAULT_AVATAR =
   'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
 
-const FriendsList = () => {
+const FriendsList = ({ searchQuery = '' }) => {
   const { friends } = useSelector((state) => state.friend);
   const { onlineUsers } = useSelector((state) => state.chat);
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,14 +44,14 @@ const FriendsList = () => {
     }
   };
 
-  const filteredFriends = friendList.filter(
-    (friend) =>
-      friend.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      friend.username?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFriends = friendList.filter((friend) => {
+    if (!searchQuery) return true;
+    return friend.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           friend.username?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">
+    <div className="flex flex-col h-full bg-white overflow-hidden min-h-0">
       <div className="p-3 sm:p-4 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-gray-900">Friends</h2>
@@ -62,7 +62,7 @@ const FriendsList = () => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            readOnly
             placeholder="Search friends..."
             className="w-full pl-9 pr-3 py-2 bg-chattix-bg rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-chattix-primary/20"
           />
@@ -70,21 +70,6 @@ const FriendsList = () => {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-        {filteredFriends.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <Users size={40} className="text-gray-300 mb-4" />
-            <p className="text-gray-500">No friends yet</p>
-            <p className="text-xs text-gray-400 mt-1">Search users to connect</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {filteredFriends.map((friend, index) => {
-              const isOnline = onlineUsers.some((u) => {
-                const uid = typeof u === 'object' && u !== null ? u.userId : u;
-                return uid?.toString() === friend._id?.toString();
-              });
-
-              return (
                 <motion.div
                   key={friend._id}
                   initial={{ opacity: 0 }}

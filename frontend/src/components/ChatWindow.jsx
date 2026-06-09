@@ -27,6 +27,8 @@ import {
   clearUnread,
   setReplyTo,
   removeMessage,
+  removeRecentChat,
+  setSelectedChat,
 } from '../redux/slices/chatSlice';
 import toast from 'react-hot-toast';
 
@@ -38,6 +40,7 @@ const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY);
 const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => {
   const { selectedChat, messages, onlineUsers, replyTo } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.auth);
+  const { friends } = useSelector((state) => state.friend);
   const { language } = useSelector((state) => state.theme);
   const [messageText, setMessageText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -104,8 +107,12 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
 
   const isRequestChat = () => {
     if (!activeChat || isGroup) return false;
-    const isFriend = user?.friends?.some((f) => f._id === activeChat._id || f === activeChat._id);
+    const isFriend = friends?.some((f) => {
+      const friendId = f._id ? f._id.toString() : f.toString();
+      return friendId === activeChat._id.toString();
+    });
     if (isFriend) return false;
+    
     // Check if the last message in this conversation was NOT sent by the current user
     const lastMsg = messages && messages.length > 0 ? messages[messages.length - 1] : null;
     const amISender = lastMsg?.sender?._id === user?._id || lastMsg?.sender === user?._id;
@@ -130,14 +137,21 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     }
   };
 
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleDeleteConversation = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
     try {
       await messageService.deleteConversation(activeChat._id);
       toast.success('Conversation deleted');
+      dispatch(removeRecentChat(activeChat._id));
       dispatch(setSelectedChat(null));
       setShowDeleteConfirm(false);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Deletion failed');
+    } finally {
+      setIsDeleting(false);
     }
   };
 

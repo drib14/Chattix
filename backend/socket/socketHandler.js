@@ -30,8 +30,6 @@ export const initializeSocket = (io) => {
   });
 
   io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.username} (${socket.userId})`);
-
     // Add user to online users
     onlineUsers.set(socket.userId, {
       socketId: socket.id,
@@ -67,13 +65,11 @@ export const initializeSocket = (io) => {
     // Handle join room (for groups)
     socket.on('join_room', (roomId) => {
       socket.join(roomId);
-      console.log(`${socket.username} joined room: ${roomId}`);
     });
 
     // Handle leave room
     socket.on('leave_room', (roomId) => {
       socket.leave(roomId);
-      console.log(`${socket.username} left room: ${roomId}`);
     });
 
     // Handle typing indicator - Private chat
@@ -222,8 +218,6 @@ export const initializeSocket = (io) => {
 
     // Handle disconnect
     socket.on('disconnect', () => {
-      console.log(`User disconnected: ${socket.username}`);
-
       // Remove from online users
       onlineUsers.delete(socket.userId);
 

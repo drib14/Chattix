@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus, Music, Download, FileText } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
@@ -51,6 +52,7 @@ const ChatBubble = ({
   searchQuery,
   messageRef,
 }) => {
+  const { stories } = useSelector((state) => state.story || { stories: [] });
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -100,6 +102,9 @@ const ChatBubble = ({
 
   if (message.messageType === 'system') {
     if (message.systemMessageType === 'story_mention') {
+      const storyObj = message.storyId ? stories.find(s => s._id === message.storyId) : null;
+      const isStoryActive = !!storyObj;
+
       return (
         <div className={`flex mb-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
           <div className="flex gap-2 max-w-[min(85%,280px)] sm:max-w-[80%] min-w-0 flex-row">
@@ -107,16 +112,48 @@ const ChatBubble = ({
               <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
             </div>
             <div className="relative min-w-0">
-              <div className="bg-gradient-to-tr from-chattix-primary to-purple-600 text-white rounded-2xl px-4 py-3 shadow-md rounded-bl-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star size={16} className="text-yellow-300 fill-current" />
-                  <span className="font-bold text-sm">Story Mention</span>
+              {isStoryActive ? (
+                <div 
+                  className="bg-black rounded-3xl overflow-hidden shadow-sm flex flex-col w-56 xs:w-64 cursor-pointer hover:shadow-md transition-all active:scale-[0.98] border border-gray-100" 
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-story', { detail: { storyId: message.storyId } }))}
+                >
+                  <div className={`h-[340px] relative flex flex-col ${storyObj.textMode ? storyObj.backgroundColor : 'bg-gray-900'}`}>
+                    {!storyObj.textMode && storyObj.mediaUrl && (
+                      storyObj.mediaType === 'video' ? (
+                        <video src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+                      ) : (
+                        <img src={storyObj.mediaUrl} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="" />
+                      )
+                    )}
+                    
+                    {/* Header: User Info */}
+                    <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/60 to-transparent z-10 flex items-center gap-3">
+                      <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} className="w-10 h-10 rounded-full border border-white/20 object-cover shadow-sm" alt="" />
+                      <div className="flex flex-col">
+                        <span className="text-white text-sm font-semibold drop-shadow-md">{message.sender?.fullName?.split(' ')[0] || 'Someone'}</span>
+                        <span className="text-white/80 text-xs drop-shadow-md">Mentioned you in their story</span>
+                      </div>
+                    </div>
+
+                    {/* Footer: Action */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+                      <button className="w-full py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 rounded-xl text-sm font-bold transition-colors shadow-lg">
+                        View Story
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm">{message.sender?.fullName || 'Someone'} mentioned you in their story.</p>
-                <button className="mt-3 w-full py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-semibold transition-colors">
-                  View Story
-                </button>
-              </div>
+              ) : (
+                <div className="bg-gray-100 border border-gray-200 rounded-3xl overflow-hidden shadow-sm flex flex-col w-56 xs:w-64 opacity-70">
+                  <div className="h-[340px] flex flex-col items-center justify-center p-6 text-center">
+                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                      <Star size={32} className="text-gray-400" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-500 mb-1">Story Unavailable</p>
+                    <p className="text-xs text-gray-400">This story has expired or been deleted.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -157,7 +194,7 @@ const ChatBubble = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.02, 0.2) }}
-      className={`flex mb-1 group ${isOwn ? 'justify-end' : 'justify-start'} min-w-0`}
+      className={`flex mb-1 group relative ${isOwn ? 'justify-end' : 'justify-start'} min-w-0 ${showMenu || showReactions ? 'z-50' : 'z-10'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

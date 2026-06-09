@@ -11,7 +11,7 @@ import StoryTray from './StoryTray';
 const DEFAULT_AVATAR =
   'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
 
-const ChatList = () => {
+const ChatList = ({ searchQuery = '' }) => {
   const { recentChats, onlineUsers, selectedChat, unreadCounts } = useSelector((state) => state.chat);
   const { language } = useSelector((state) => state.theme);
   const { user } = useSelector((state) => state.auth);
@@ -111,6 +111,12 @@ const ChatList = () => {
     ? (Array.isArray(recentChats) ? recentChats : []).filter(c => archivedIds.has(c._id?._id?.toString()))
     : (activeTab === 'requests' ? requestsChats : (activeTab === 'blocked' ? blockedChats : messagesChats));
 
+  const filteredDisplayChats = displayChats.filter(chat => {
+    if (!searchQuery) return true;
+    const name = chat._id?.fullName || chat._id?.groupName || chat.groupName || '';
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   const handleSelectChat = (chat) => {
     if (chat._id) {
       dispatch(setSelectedChat(chat._id));
@@ -170,17 +176,17 @@ const ChatList = () => {
             </span>
           </button>
         )}
-        {displayChats.length === 0 ? (
+        {filteredDisplayChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <div className="w-16 h-16 bg-chattix-bg rounded-full flex items-center justify-center mb-4">
               <MessageSquare size={28} className="text-gray-400" />
             </div>
-            <p className="text-gray-600 font-medium">No conversations yet</p>
-            <p className="text-sm text-gray-400 mt-1">Start chatting with your friends</p>
+            <p className="text-gray-600 font-medium">{searchQuery ? 'No results found' : 'No conversations yet'}</p>
+            <p className="text-sm text-gray-400 mt-1">{searchQuery ? 'Try a different search term' : 'Start chatting with your friends'}</p>
           </div>
         ) : (
           <div>
-            {displayChats.map((chat, index) => {
+            {filteredDisplayChats.map((chat, index) => {
               const chatUser = chat._id;
               const chatId = chatUser?._id?.toString();
               const isOnline = onlineUsers.some((u) => {

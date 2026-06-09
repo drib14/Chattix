@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { X, Search, Loader2, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -263,30 +264,57 @@ export const GiphyModal = ({ isOpen, onClose, onAddSticker }) => {
 // Tag Modal
 // ----------------------
 export const TagModal = ({ isOpen, onClose, onAddTag }) => {
+  const { friends: userFriends } = useSelector((state) => state.friend);
   const [query, setQuery] = useState('');
-  const [friends, setFriends] = useState([]);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
-    const fetchFriends = async () => {
+    
+    // If no query, just show friends
+    if (!query.trim()) {
+      setResults(Array.isArray(userFriends) ? userFriends : []);
+      return;
+    }
+
+    const fetchResults = async () => {
       setLoading(true);
       try {
         const { userService } = await import('../services/userService');
-        // Fetch all users or just friends
         const res = await userService.searchUsers(query);
-        setFriends(res.users || []);
+        const searchResults = res.users || [];
+        
+        // Match friends locally to show them first
+        const matchedFriends = (Array.isArray(userFriends) ? userFriends : []).filter(f => 
+          f.fullName?.toLowerCase().includes(query.toLowerCase()) || 
+          f.username?.toLowerCase().includes(query.toLowerCase())
+        );
+
+        // Combine friends and search results, avoiding duplicates
+        const combined = [...matchedFriends];
+        const friendIds = new Set(matchedFriends.map(f => f._id.toString()));
+        
+        searchResults.forEach(u => {
+          if (!friendIds.has(u._id.toString())) {
+            combined.push(u);
+            friendIds.add(u._id.toString());
+          }
+        });
+
+        setResults(combined);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
+    
     const timer = setTimeout(() => {
-      fetchFriends();
+      fetchResults();
     }, 300);
     return () => clearTimeout(timer);
-  }, [isOpen, query]);
+  }, [isOpen, query, userFriends]);
 
   if (!isOpen) return null;
 
@@ -311,11 +339,11 @@ export const TagModal = ({ isOpen, onClose, onAddTag }) => {
         <div className="flex-1 overflow-y-auto p-2">
           {loading && <div className="flex justify-center p-4"><Loader2 className="animate-spin text-white/50" /></div>}
           
-          {friends.map((user) => (
+          {results.map((user) => (
             <button 
               key={user._id} 
               onClick={() => {
-                onAddTag({ text: `@${user.username}`, userId: user._id });
+                onAddTag({ text: `@${user.username}`, fullName: user.fullName, username: user.username, userId: user._id });
                 onClose();
               }} 
               className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/5 rounded-xl"
@@ -328,6 +356,104 @@ export const TagModal = ({ isOpen, onClose, onAddTag }) => {
             </button>
           ))}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ----------------------
+// Text Modal
+// ----------------------
+const fontFamilies = [
+  'font-sans', 'font-serif', 'font-mono', 
+  'font-sans font-black tracking-tighter',
+  'font-serif italic',
+  'font-mono uppercase tracking-widest'
+];
+
+const fontColors = [
+  'text-white', 'text-black', 'text-gray-400',
+  'text-red-500', 'text-orange-500', 'text-yellow-400',
+  'text-green-500', 'text-emerald-400', 'text-cyan-400',
+  'text-blue-500', 'text-indigo-500', 'text-purple-500',
+  'text-pink-500', 'text-rose-500'
+];
+
+export const TextModal = ({ isOpen, onClose, onAddText }) => {
+  const [text, setText] = useState('');
+  const [fontFamily, setFontFamily] = useState(fontFamilies[0]);
+  const [fontColor, setFontColor] = useState(fontColors[0]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!text.trim()) return toast.error('Text cannot be empty');
+    onAddText({ text: text.trim(), fontFamily, fontColor });
+    setText('');
+    setFontFamily(fontFamilies[0]);
+    setFontColor(fontColors[0]);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-gray-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-white/10">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-white font-bold text-lg">Add Text</h3>
+          <button onClick={onClose} className="text-white/70 hover:text-white p-1 rounded-full hover:bg-white/10">
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <textarea 
+              placeholder="Start typing..." 
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className={`w-full bg-black/50 ${fontColor} ${fontFamily} rounded-xl px-4 py-3 border border-white/10 focus:border-chattix-primary focus:outline-none resize-none h-32 text-center text-xl font-medium`}
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-4 max-h-48 overflow-y-auto pr-2">
+            <div>
+              <p className="text-white/50 text-xs font-semibold mb-2 uppercase">Color</p>
+              <div className="flex flex-wrap gap-2">
+                {fontColors.map(color => (
+                  <button 
+                    key={color} 
+                    type="button"
+                    onClick={() => setFontColor(color)}
+                    className={`w-8 h-8 rounded-full border-2 transition-transform ${fontColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
+                  >
+                    <div className={`w-full h-full rounded-full ${color.replace('text-', 'bg-')} bg-current`} style={{ color: color === 'text-white' ? 'white' : color === 'text-black' ? 'black' : '' }} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-white/50 text-xs font-semibold mb-2 uppercase">Font</p>
+              <div className="grid grid-cols-2 gap-2">
+                {fontFamilies.map(font => (
+                  <button 
+                    key={font}
+                    type="button"
+                    onClick={() => setFontFamily(font)}
+                    className={`px-3 py-2 rounded-lg border transition-all text-sm truncate ${fontFamily === font ? 'bg-white/20 border-white text-white' : 'bg-white/5 border-transparent text-white/70 hover:bg-white/10'}`}
+                  >
+                    <span className={font}>AaBbCc</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" className="w-full bg-chattix-primary text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition-colors mt-2">
+            Add
+          </button>
+        </form>
       </div>
     </div>
   );

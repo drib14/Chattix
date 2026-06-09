@@ -38,6 +38,12 @@ import {
   updateRecentChat,
   setGroups,
 } from '../redux/slices/chatSlice';
+import { 
+  addStory, 
+  removeStory, 
+  updateStoryViews, 
+  updateStoryReactions 
+} from '../redux/slices/storySlice';
 import {
   setNotifications,
   setUnreadCount,
@@ -198,6 +204,23 @@ const ModernChatPage = () => {
     socketService.on('notification', () => {
       notificationService.getUnreadCount().then((c) => dispatch(setUnreadCount(c)));
     });
+
+    // Story listeners
+    socketService.on('new_story', (story) => {
+      dispatch(addStory(story));
+    });
+    
+    socketService.on('story_deleted', ({ storyId }) => {
+      dispatch(removeStory({ storyId }));
+    });
+    
+    socketService.on('story_viewed', ({ storyId, viewerId }) => {
+      dispatch(updateStoryViews({ storyId, viewerId }));
+    });
+    
+    socketService.on('story_reacted', ({ storyId, reactorId, emoji }) => {
+      dispatch(updateStoryReactions({ storyId, reactorId, emoji }));
+    });
   };
 
   const handleTabChange = (tab) => {
@@ -208,13 +231,13 @@ const ModernChatPage = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'friends': return <FriendsList />;
+      case 'friends': return <FriendsList searchQuery={searchQuery} />;
       case 'requests': return <FriendRequests />;
       case 'search': return <UserSearch />;
-      case 'groups': return <GroupsList />;
+      case 'groups': return <GroupsList searchQuery={searchQuery} />;
       case 'notifications': return <NotificationPanel />;
       case 'settings': return <SettingsPanel />;
-      default: return <ChatList />;
+      default: return <ChatList searchQuery={searchQuery} />;
     }
   };
 
