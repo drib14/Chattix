@@ -18,6 +18,7 @@ const ChatList = ({ searchQuery = '' }) => {
   const { recentChats, onlineUsers, selectedChat, unreadCounts } = useSelector((state) => state.chat);
   const { language } = useSelector((state) => state.theme);
   const { user } = useSelector((state) => state.auth);
+  const { friends: userFriends } = useSelector((state) => state.friend);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -113,7 +114,9 @@ const ChatList = ({ searchQuery = '' }) => {
     c => !archivedIds.has(c._id?._id?.toString())
   );
 
-  const friendsIds = new Set((user?.friends || []).map(f => f._id?.toString() || f.toString()));
+  const friendsIds = new Set(
+    (Array.isArray(userFriends) ? userFriends : user?.friends || []).map(f => f._id?.toString() || f.toString())
+  );
   const myId = user?._id?.toString();
 
   const isRequestChat = (chat) => {
