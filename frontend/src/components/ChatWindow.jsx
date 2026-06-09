@@ -65,6 +65,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [localBlocked, setLocalBlocked] = useState(null);
   
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
@@ -86,8 +87,20 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   }, [gifSearch]);
 
   const activeChat = selectedChat;
-  const isBlockedByMe = user?.blockedUsers?.some(b => b === activeChat?._id || b._id === activeChat?._id);
   const isGroup = activeChat?.isGroup || false;
+  
+  useEffect(() => {
+    if (activeChat?._id && !isGroup) {
+      userService.getBlockedUsers().then(users => {
+        const blocked = users.some(b => (b._id || b).toString() === activeChat._id.toString());
+        setLocalBlocked(blocked);
+      }).catch(() => {});
+    } else {
+      setLocalBlocked(null);
+    }
+  }, [activeChat?._id, isGroup]);
+
+  const isBlockedByMe = localBlocked !== null ? localBlocked : !!activeChat?.isBlockedByMe;
 
   const isRequestChat = () => {
     if (!activeChat || isGroup) return false;
@@ -99,22 +112,16 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     return !amISender;
   };
 
-  const handleAddFriend = async () => {
-    try {
-      await friendService.sendFriendRequest(activeChat._id);
-      toast.success('Friend request sent!');
-    } catch (error) {
-      toast.error('Failed to send friend request');
-    }
-  };
 
   const handleBlockUser = async () => {
     try {
       if (isBlockedByMe) {
         await userService.unblockUser(activeChat._id);
+        setLocalBlocked(false);
         toast.success(`Unblocked ${activeChat.fullName || activeChat.groupName}`);
       } else {
         await userService.blockUser(activeChat._id);
+        setLocalBlocked(true);
         toast.success(`Blocked ${activeChat.fullName || activeChat.groupName}`);
       }
       setShowBlockConfirm(false);
@@ -161,7 +168,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
     const uid = typeof u === 'object' && u !== null ? u.userId : u;
     return uid?.toString() === chatId;
   });
-  const isGroup = activeChat?.isGroup;
+
   const isGroupAdmin = isGroup && (
     activeChat?.admin?._id?.toString() === user?._id?.toString() ||
     activeChat?.admins?.some((admin) => admin?._id?.toString() === user?._id?.toString())
@@ -855,11 +862,9 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
             <button onClick={() => setShowBlockConfirm(true)} className="flex-1 py-2 px-4 bg-white border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors">
               Unblock
             </button>
-            {messages?.length > 0 && (
-              <button onClick={() => setShowDeleteConfirm(true)} className="flex-1 py-2 px-4 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition-colors">
-                Delete Chat
-              </button>
-            )}
+            <button onClick={() => setShowDeleteConfirm(true)} className="flex-1 py-2 px-4 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition-colors">
+              Delete Conversation
+            </button>
           </div>
         </div>
       ) : activeChat?.isBlockingMe ? (
@@ -981,11 +986,12 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
       />
       <ConfirmModal
         isOpen={showBlockConfirm}
-        onClose={() => setShowBlockConfirm(false)}
+        onCancel={() => setShowBlockConfirm(false)}
         onConfirm={handleBlockUser}
         title={isBlockedByMe ? 'Unblock User' : 'Block User'}
         message={isBlockedByMe ? `Are you sure you want to unblock ${displayName}?` : `Are you sure you want to block ${displayName}? They will no longer be able to message you.`}
         confirmText={isBlockedByMe ? 'Unblock' : 'Block'}
+        cancelText="Cancel"
         isDanger={!isBlockedByMe}
       />
       <ConfirmModal

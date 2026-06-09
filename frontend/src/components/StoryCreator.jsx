@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { X, Image as ImageIcon, Video, Globe, Users, Lock, Loader2, Type, Clock, MapPin, Link as LinkIcon, Sticker, PenTool, AtSign } from 'lucide-react';
+import { X, Image as ImageIcon, Video, Globe, Users, Lock, Loader2, Type, Clock, MapPin, Link as LinkIcon, Sticker, PenTool, AtSign, Trash2, Trash } from 'lucide-react';
 import { createStory } from '../redux/slices/storySlice';
 import { useConfirm } from '../context/ConfirmContext';
 import { LinkModal, LocationModal, GiphyModal, TagModal } from './StoryModals';
@@ -41,6 +41,7 @@ const StoryCreator = ({ onClose }) => {
   const [isDoodling, setIsDoodling] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState(null);
+  const [isOverTrash, setIsOverTrash] = useState(false);
 
   // Modals state
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -205,6 +206,13 @@ const StoryCreator = ({ onClose }) => {
     const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100));
     
+    // Check if dragging near bottom center (Trash area)
+    if (y > 85 && x > 40 && x < 60) {
+      setIsOverTrash(true);
+    } else {
+      setIsOverTrash(false);
+    }
+
     setOverlays(prev => {
       const next = [...prev];
       next[draggedIdx] = { ...next[draggedIdx], x, y };
@@ -213,7 +221,11 @@ const StoryCreator = ({ onClose }) => {
   };
 
   const handleDragEnd = () => {
+    if (draggedIdx !== null && isOverTrash) {
+      setOverlays(prev => prev.filter((_, idx) => idx !== draggedIdx));
+    }
     setDraggedIdx(null);
+    setIsOverTrash(false);
   };
 
   return (
@@ -374,6 +386,17 @@ const StoryCreator = ({ onClose }) => {
                 ) : (
                   <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
                 )
+              )}
+
+              {/* Trash Bin */}
+              {draggedIdx !== null && (
+                <div 
+                  className={`absolute bottom-8 left-1/2 -translate-x-1/2 p-4 rounded-full transition-all duration-200 z-40 shadow-xl flex items-center justify-center ${
+                    isOverTrash ? 'bg-red-500 text-white scale-125' : 'bg-black/50 backdrop-blur text-white/70 scale-100'
+                  }`}
+                >
+                  {isOverTrash ? <Trash2 size={28} /> : <Trash size={24} />}
+                </div>
               )}
 
               {/* Overlays Layer */}

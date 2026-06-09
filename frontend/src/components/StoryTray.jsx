@@ -75,8 +75,8 @@ const StoryTray = () => {
   };
 
   return (
-    <>
-      <div className="w-full bg-white border-b border-gray-100 py-3 px-2 overflow-x-auto hide-scrollbar flex items-center gap-4 shrink-0 relative">
+    <div className="relative shrink-0 bg-white border-b border-gray-100">
+      <div className="w-full py-3 px-2 overflow-x-auto hide-scrollbar flex items-center gap-4">
         
         {/* Add Story Button (Always first) */}
         <div className="flex flex-col items-center gap-1 shrink-0 w-16 relative">
@@ -93,33 +93,6 @@ const StoryTray = () => {
             </div>
           </div>
           <p className="text-xs text-gray-800 font-medium truncate w-full text-center">Your Story</p>
-
-          {/* User Dropdown */}
-          {userDropdownOpen && currentUserStoryGroup && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setUserDropdownOpen(false)} />
-              <div className="absolute top-16 left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 w-40 overflow-hidden">
-                <button 
-                  className="w-full px-4 py-3 text-sm text-left hover:bg-gray-50 text-gray-800 font-medium border-b border-gray-100"
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    handleStoryClick(currentUserStoryIndex);
-                  }}
-                >
-                  View Story
-                </button>
-                <button 
-                  className="w-full px-4 py-3 text-sm text-left hover:bg-gray-50 text-chattix-primary font-medium"
-                  onClick={() => {
-                    setUserDropdownOpen(false);
-                    setCreatorOpen(true);
-                  }}
-                >
-                  Create Story
-                </button>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Story Items */}
@@ -167,6 +140,33 @@ const StoryTray = () => {
         )}
       </div>
 
+      {/* User Dropdown rendered outside overflow container */}
+      {userDropdownOpen && currentUserStoryGroup && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setUserDropdownOpen(false)} />
+          <div className="absolute top-[90px] left-4 z-50 bg-white rounded-xl shadow-xl border border-gray-100 w-40 overflow-hidden">
+            <button 
+              className="w-full px-4 py-3 text-sm text-left hover:bg-gray-50 text-gray-800 font-medium border-b border-gray-100"
+              onClick={() => {
+                setUserDropdownOpen(false);
+                handleStoryClick(currentUserStoryIndex);
+              }}
+            >
+              View Story
+            </button>
+            <button 
+              className="w-full px-4 py-3 text-sm text-left hover:bg-gray-50 text-chattix-primary font-medium"
+              onClick={() => {
+                setUserDropdownOpen(false);
+                setCreatorOpen(true);
+              }}
+            >
+              Create Story
+            </button>
+          </div>
+        </>
+      )}
+
       {creatorOpen && (
         <StoryCreator onClose={() => setCreatorOpen(false)} />
       )}
@@ -178,7 +178,7 @@ const StoryTray = () => {
           onClose={() => setViewerOpen(false)} 
         />
       )}
-    </>
+    </div>
   );
 };
 

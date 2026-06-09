@@ -102,7 +102,7 @@ const ChatList = () => {
   const requestsChats = filteredChats.filter(c => isRequestChat(c));
 
   const blockedChats = blockedUsers.map(bu => ({
-    _id: bu,
+    _id: { ...bu, isBlockedByMe: true },
     lastMessage: null,
     unreadCount: 0,
   }));
