@@ -172,6 +172,8 @@ export const getFeedStories = async (req, res) => {
       ]
     })
     .populate('user', 'fullName username avatar status lastSeen')
+    .populate('viewedBy.user', 'fullName username avatar')
+    .populate('reactions.user', 'fullName username avatar')
     .sort({ createdAt: -1 });
 
     res.json(stories);
@@ -266,6 +268,8 @@ export const reactToStory = async (req, res) => {
       if (io) io.to(story.user.toString()).emit('new_notification');
     }
 
+
+    await story.populate('reactions.user', 'fullName username avatar');
 
     res.json({ success: true, reactions: story.reactions });
   } catch (error) {

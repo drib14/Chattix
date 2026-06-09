@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, MoreVertical, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 import { setSelectedChat, clearUnread, removeRecentChat } from '../redux/slices/chatSlice';
@@ -21,6 +21,7 @@ const ChatList = ({ searchQuery = '' }) => {
   const { friends: userFriends } = useSelector((state) => state.friend);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [archivedChats, setArchivedChats] = useState([]);
   const [blockedUsers, setBlockedUsers] = useState([]);
@@ -260,7 +261,12 @@ const ChatList = ({ searchQuery = '' }) => {
                     }`}
                   >
                     <div className="relative shrink-0">
-                      <div className={`w-12 h-12 rounded-full ${borderClass}`}>
+                      <div className={`w-12 h-12 rounded-full ${borderClass} cursor-pointer`} onClick={(e) => {
+                        if (userStoryGroup) {
+                          e.stopPropagation();
+                          setSearchParams(prev => { prev.set('story', chatId); return prev; });
+                        }
+                      }}>
                         <img
                           src={
                             chatUser?.avatar ||

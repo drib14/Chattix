@@ -24,6 +24,14 @@ export const sendMessage = async (req, res) => {
       text,
     };
 
+    if (req.body.systemMessageType) {
+      messageData.messageType = 'system';
+      messageData.systemMessageType = req.body.systemMessageType;
+      if (req.body.storyId) {
+        messageData.storyId = req.body.storyId;
+      }
+    }
+
     if (groupId) {
       const group = await Group.findById(groupId).select('members admin admins announcementMode');
       if (!group) {

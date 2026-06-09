@@ -103,7 +103,8 @@ const ChatBubble = ({
   }
 
   if (message.messageType === 'system') {
-    if (message.systemMessageType === 'story_mention') {
+    if (message.systemMessageType === 'story_mention' || message.systemMessageType === 'story_reply') {
+      const isReply = message.systemMessageType === 'story_reply';
       const storyObj = message.storyId ? stories.find(s => s._id === message.storyId) : null;
       const isStoryActive = !!storyObj;
 
@@ -128,42 +129,43 @@ const ChatBubble = ({
                 >
                   {isStoryActive ? (
                     <>
-                      <div className="h-48 relative bg-black/10 overflow-hidden flex items-center justify-center">
-                        {(!storyObj.textMode && storyObj.mediaUrl) && (
-                          <div 
-                            className="absolute inset-0 blur-lg scale-110 opacity-60" 
-                            style={{ backgroundImage: `url(${storyObj.mediaUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} 
-                          />
-                        )}
-                        {!storyObj.textMode && storyObj.mediaUrl ? (
-                          storyObj.mediaType === 'video' ? (
+                      <div className="flex flex-row items-center p-2 bg-black/5 hover:bg-black/10 transition-colors">
+                        <div className="w-12 h-16 relative overflow-hidden rounded flex-shrink-0 flex items-center justify-center bg-black/10">
+                          {(!storyObj.textMode && storyObj.mediaUrl) && (
                             <>
-                              <video src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-contain" />
-                              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/20">
-                                <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white pl-1 border border-white/40">
-                                  ▶
-                                </div>
-                              </div>
+                              <div 
+                                className="absolute inset-0 blur-md scale-110 opacity-60" 
+                                style={{ backgroundImage: `url(${storyObj.mediaUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} 
+                              />
+                              {storyObj.mediaType === 'video' ? (
+                                <video src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-cover" />
+                              ) : (
+                                <img src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-cover" alt="" />
+                              )}
                             </>
-                          ) : (
-                            <img src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-contain" alt="" />
-                          )
-                        ) : (
-                          <div className={`w-full h-full flex items-center justify-center p-4 ${storyObj.backgroundColor}`}>
-                            <p className={`text-center text-sm font-bold truncate px-2 ${storyObj.fontColor} ${storyObj.fontFamily}`}>
-                              {storyObj.caption}
-                            </p>
-                          </div>
-                        )}
+                          )}
+                          {(storyObj.textMode || !storyObj.mediaUrl) && (
+                            <div className={`w-full h-full flex items-center justify-center p-1 ${storyObj.backgroundColor}`}>
+                              <p className={`text-center text-[6px] font-bold overflow-hidden leading-tight break-words ${storyObj.fontColor} ${storyObj.fontFamily}`}>
+                                {storyObj.caption}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-3 flex flex-col justify-center overflow-hidden flex-1">
+                          <p className="text-[13px] font-semibold leading-tight truncate pr-2">
+                            {isReply ? (isOwn ? 'You replied to their story' : 'Replied to your story') : 'Mentioned you in their story'}
+                          </p>
+                          <p className={`text-[11px] mt-0.5 font-medium ${isOwn ? 'text-white/80' : 'text-gray-500'}`}>
+                            Click to view
+                          </p>
+                        </div>
                       </div>
-                      <div className="px-3 py-2.5 flex flex-col">
-                        <p className="text-[13px] font-semibold leading-tight">
-                          Mentioned you in their story
-                        </p>
-                        <p className={`text-[11px] mt-0.5 uppercase tracking-wider font-bold ${isOwn ? 'text-white/80' : 'text-gray-500'}`}>
-                          View Story
-                        </p>
-                      </div>
+                      {isReply && message.text && (
+                        <div className={`px-3 py-2 border-t ${isOwn ? 'border-white/20' : 'border-gray-200'} bg-transparent`}>
+                          <p className="text-[14px] leading-relaxed break-words whitespace-pre-wrap">{message.text}</p>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="h-32 flex flex-col items-center justify-center p-4 text-center bg-gray-100 border-b border-gray-200">

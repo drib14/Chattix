@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { X, Globe, Users, Lock, Trash2, Eye, Heart, MessageCircle, Share2, Send, ChevronUp, MapPin, Link as LinkIcon } from 'lucide-react';
+import { X, Globe, Users, Lock, Trash2, Eye, Heart, MessageCircle, Share2, Send, ChevronUp, MapPin, Link as LinkIcon, Play, Pause, Smile } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 import { markStoryViewed, deleteStory, reactToStory } from '../redux/slices/storySlice';
 import { useConfirm } from '../context/ConfirmContext';
 import toast from 'react-hot-toast';
+import { messageService } from '../services/messageService';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=3B82F6&color=fff&bold=true';
 const STORY_DURATION = 5000;
@@ -22,6 +24,8 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
   const [showViewers, setShowViewers] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [showReactions, setShowReactions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   
   const activeUserGroup = groupedStories[currentUserIndex];
   const activeStory = activeUserGroup?.stories[currentStoryIndex];
@@ -128,10 +132,20 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
     }
   };
 
-  const handleReply = () => {
+  const handleReply = async () => {
     if (!replyText.trim()) return;
-    toast.success('Reply sent');
-    setReplyText('');
+    try {
+      await messageService.sendMessage({
+        receiverId: activeStory.user?._id || activeStory.user,
+        text: replyText,
+        systemMessageType: 'story_reply',
+        storyId: activeStory._id
+      });
+      toast.success('Reply sent');
+      setReplyText('');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send reply');
+    }
   };
 
   const handleReshare = () => {
@@ -140,14 +154,67 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
 
   if (!activeStory) return null;
 
-  // Viewers Logic
-  const viewsCount = activeStory.viewedBy?.filter(v => {
-    const viewerId = v.user?._id || v.user;
-    return viewerId !== activeStory.user?._id;
-  }).length || 0;
-  // Let's pretend new viewers are those in the last 1 hour
+  // Viewers & Reactions Logic
+  const uniqueViewersMap = new Map();
+  if (activeStory?.viewedBy) {
+    activeStory.viewedBy.forEach(v => {
+      const u = v.user;
+      if (!u) return;
+      const uid = u._id || u;
+      if (uid === activeStory.user?._id) return;
+      uniqueViewersMap.set(uid.toString(), { user: u, viewedAt: v.viewedAt, emoji: null });
+    });
+  }
+  if (activeStory?.reactions) {
+    activeStory.reactions.forEach(r => {
+      const u = r.user;
+      if (!u) return;
+      const uid = u._id || u;
+      if (uid === activeStory.user?._id) return;
+      if (uniqueViewersMap.has(uid.toString())) {
+        uniqueViewersMap.get(uid.toString()).emoji = r.emoji;
+      } else {
+        uniqueViewersMap.set(uid.toString(), { user: u, viewedAt: r.reactedAt, emoji: r.emoji });
+      }
+    });
+  }
+  const combinedViewers = Array.from(uniqueViewersMap.values()).sort((a, b) => new Date(b.viewedAt) - new Date(a.viewedAt));
+  const viewsCount = combinedViewers.length;
+
   const isNewViewer = (dateStr) => (new Date() - new Date(dateStr)) < 60 * 60 * 1000;
-  const isFriend = (viewerId) => user?.friends?.includes(viewerId);
+  
+  const renderViewerItem = (item) => {
+    const viewerId = item.user._id || item.user;
+    const userStoryGroup = groupedStories?.find(group => group.user._id === viewerId.toString());
+    const isStoryActive = !!userStoryGroup;
+    const borderClass = isStoryActive
+      ? (userStoryGroup.hasUnviewed ? 'p-[2px] bg-gradient-to-tr from-blue-400 to-indigo-600' : 'p-[2px] bg-gray-600')
+      : 'border-transparent';
+
+    return (
+      <div key={viewerId} className="flex items-center justify-between py-2 cursor-pointer hover:bg-white/5 px-2 rounded-xl transition-colors" onClick={(e) => { e.stopPropagation(); navigate(`/messages/${viewerId}`); onClose(); }}>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className={`rounded-full ${borderClass}`}>
+              <img src={item.user.avatar || `${DEFAULT_AVATAR}&name=${encodeURIComponent(item.user.fullName || 'User')}`} alt="avatar" className={`w-10 h-10 rounded-full object-cover ${isStoryActive ? 'border-[1.5px] border-gray-900' : ''}`} />
+            </div>
+            {item.emoji && (
+              <div className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full p-[2px] text-xs shadow-lg border border-gray-700">
+                {item.emoji}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-white font-semibold">{item.user.fullName || 'User'}</span>
+            <span className="text-white/50 text-xs">{new Date(item.viewedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        </div>
+        {isNewViewer(item.viewedAt) && (
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mr-2 shadow-[0_0_8px_rgba(59,130,246,0.8)]" title="New view" />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex lg:p-8">
@@ -196,9 +263,12 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
               </div>
             </div>
             
-            <div className="flex items-center gap-4 text-white lg:hidden">
-              <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-white/10 rounded-full">
-                <X size={24} />
+            <div className="flex items-center gap-2 text-white pointer-events-auto">
+              <button onClick={(e) => { e.stopPropagation(); togglePause(!isPaused); }} className="p-2 hover:bg-white/10 rounded-full transition-colors bg-black/20 backdrop-blur-md">
+                {isPaused ? <Play size={20} fill="currentColor" /> : <Pause size={20} fill="currentColor" />}
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-white/10 rounded-full transition-colors bg-black/20 backdrop-blur-md lg:hidden">
+                <X size={20} />
               </button>
             </div>
           </div>
@@ -308,19 +378,43 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
               </div>
             ) : (
               <div className="pointer-events-auto flex-1 mr-4">
-                <div className="flex items-center bg-black/40 backdrop-blur-md rounded-full px-4 py-2 border border-white/20">
-                  <input 
-                    type="text" 
-                    placeholder="Reply to story..." 
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onFocus={() => togglePause(true)}
-                    onBlur={() => togglePause(false)}
-                    className="bg-transparent text-white placeholder-white/70 flex-1 outline-none text-sm"
-                  />
-                  <button onClick={(e) => { e.stopPropagation(); handleReply(); }} className="text-white ml-2">
-                    <Send size={18} />
-                  </button>
+                <div className="flex flex-col mb-1.5 pl-2">
+                   {!isInputFocused && !replyText && (
+                     <div className="flex gap-2 mb-2">
+                        {['👍', '❤️', '😂'].map(emoji => (
+                          <button key={emoji} onClick={(e) => { e.stopPropagation(); handleReact(emoji); }} className="text-2xl hover:scale-125 transition-transform bg-black/40 w-10 h-10 flex items-center justify-center rounded-full shadow-lg border border-white/20 backdrop-blur-md">
+                            {emoji}
+                          </button>
+                        ))}
+                     </div>
+                   )}
+                </div>
+                <div className="relative">
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-full mb-2 left-0" onClick={e => e.stopPropagation()}>
+                      <EmojiPicker 
+                        onEmojiClick={(e) => setReplyText(prev => prev + e.emoji)}
+                        theme="dark"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center bg-black/40 backdrop-blur-md rounded-full px-4 py-2 border border-white/20 w-full max-w-[280px] sm:max-w-sm">
+                    <button onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(!showEmojiPicker); togglePause(!showEmojiPicker); }} className="text-white/70 hover:text-white mr-2 transition-colors shrink-0">
+                      <Smile size={20} />
+                    </button>
+                    <input 
+                      type="text" 
+                      placeholder="Reply to story..." 
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onFocus={() => { setIsInputFocused(true); togglePause(true); setShowEmojiPicker(false); }}
+                      onBlur={() => { setIsInputFocused(false); togglePause(false); }}
+                      className="bg-transparent text-white placeholder-white/70 flex-1 outline-none text-sm min-w-0"
+                    />
+                    <button onClick={(e) => { e.stopPropagation(); handleReply(); }} className="text-white ml-2 shrink-0">
+                      <Send size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -374,27 +468,12 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  {/* Mocking viewers list, in reality this would map over activeStory.viewedBy */}
-                  {activeStory.viewedBy && activeStory.viewedBy.length > 0 ? (
-                    <div className="text-white/50 text-sm">Viewer details will appear here. Currently {viewsCount} view(s).</div>
+                <div className="space-y-1">
+                  {combinedViewers.length > 0 ? (
+                    combinedViewers.map(renderViewerItem)
                   ) : (
-                    <p className="text-white/50 text-sm text-center py-4">No views yet</p>
+                    <p className="text-white/50 text-sm py-4">No views yet</p>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* Reactions Section */}
-            {activeStory.reactions && activeStory.reactions.length > 0 && (
-              <div>
-                <h4 className="text-white font-semibold text-lg mb-4">Reactions</h4>
-                <div className="flex flex-wrap gap-2">
-                  {activeStory.reactions.map((r, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-white/5 rounded-full px-3 py-1">
-                      <span>{r.emoji}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
@@ -429,9 +508,9 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
-                {activeStory.viewedBy && activeStory.viewedBy.length > 0 ? (
-                  <div className="text-white/50 text-sm">Viewer details will appear here. Currently {viewsCount} view(s).</div>
+              <div className="flex-1 overflow-y-auto p-2 hide-scrollbar">
+                {combinedViewers.length > 0 ? (
+                  combinedViewers.map(renderViewerItem)
                 ) : (
                   <p className="text-white/50 text-sm text-center py-8">No views yet</p>
                 )}

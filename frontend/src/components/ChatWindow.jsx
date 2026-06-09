@@ -40,6 +40,7 @@ const gf = new GiphyFetch(import.meta.env.VITE_GIPHY_API_KEY);
 
 const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => {
   const { selectedChat, messages, onlineUsers, replyTo } = useSelector((state) => state.chat);
+  const { groupedStories } = useSelector((state) => state.story || { groupedStories: [] });
   const { user } = useSelector((state) => state.auth);
   const { friends } = useSelector((state) => state.friend);
   const { language } = useSelector((state) => state.theme);
@@ -687,10 +688,36 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
               <ArrowLeft size={20} />
             </button>
           )}
-          <div className="relative shrink-0 cursor-pointer" onClick={() => isGroup ? onGroupInfoClick?.() : onToggleProfile?.()}>
-            <img src={avatarSrc} alt={displayName} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover" />
-            {!isGroup && isOnline && <div className="absolute bottom-0 right-0 online-indicator" />}
-          </div>
+          {(() => {
+            let borderClass = 'border-transparent';
+            let hasActiveStory = false;
+            let storyUserId = null;
+            if (!isGroup && activeChat?._id) {
+              const uGroup = groupedStories?.find(g => g.user._id === activeChat._id.toString());
+              if (uGroup) {
+                hasActiveStory = true;
+                storyUserId = activeChat._id.toString();
+                borderClass = uGroup.hasUnviewed ? 'p-[2px] bg-gradient-to-tr from-blue-400 to-indigo-600' : 'p-[2px] bg-gray-300';
+              }
+            }
+            
+            const handleAvatarClick = () => {
+              if (hasActiveStory) {
+                setSearchParams(prev => { prev.set('story', storyUserId); return prev; });
+              } else {
+                isGroup ? onGroupInfoClick?.() : onToggleProfile?.();
+              }
+            };
+
+            return (
+              <div className="relative shrink-0 cursor-pointer" onClick={handleAvatarClick}>
+                <div className={`rounded-full ${borderClass}`}>
+                  <img src={avatarSrc} alt={displayName} className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover ${hasActiveStory ? 'border-2 border-white' : ''}`} />
+                </div>
+                {!isGroup && isOnline && <div className="absolute bottom-0 right-0 online-indicator z-10" />}
+              </div>
+            );
+          })()}
           <div className="min-w-0 flex-1 cursor-pointer" onClick={() => isGroup ? onGroupInfoClick?.() : onToggleProfile?.()}>
             <h3 className="font-semibold text-gray-900 text-sm truncate">{displayName}</h3>
             <p className="text-[11px] sm:text-xs text-gray-500 truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">

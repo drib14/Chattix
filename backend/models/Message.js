@@ -118,7 +118,7 @@ const messageSchema = new mongoose.Schema({
   },
   systemMessageType: {
     type: String,
-    enum: ['story_mention', 'info'],
+    enum: ['story_mention', 'story_reply', 'info'],
   },
   storyId: {
     type: mongoose.Schema.Types.ObjectId,
