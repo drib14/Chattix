@@ -4,8 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import EmojiPicker from 'emoji-picker-react';
 import {
-  Send, Smile, Info, Image, Mic, Square, X, Search, ArrowLeft, BarChart3, Paperclip, MoreVertical
+  Send, Smile, Info, Image, Mic, Square, X, Search, ArrowLeft, BarChart3, Paperclip, MoreVertical, ChevronRight
 } from 'lucide-react';
+import { CHAT_THEMES } from '../redux/slices/themeSlice';
 import ChatBubble from './ChatBubble';
 import ForwardModal from './ForwardModal';
 import CreatePollModal from './CreatePollModal';
@@ -43,7 +44,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const { groupedStories } = useSelector((state) => state.story || { groupedStories: [] });
   const { user } = useSelector((state) => state.auth);
   const { friends } = useSelector((state) => state.friend);
-  const { language } = useSelector((state) => state.theme);
+  const { language, chatTheme } = useSelector((state) => state.theme);
   const [messageText, setMessageText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
@@ -70,6 +71,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [mobileOptionsCollapsed, setMobileOptionsCollapsed] = useState(false);
   const [selectedChatToDelete, setSelectedChatToDelete] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [localBlocked, setLocalBlocked] = useState(null);
@@ -820,7 +823,7 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
       )}
 
       <div
-        className="flex-1 overflow-y-auto p-3 chat-bg min-h-0"
+        className={`flex-1 overflow-y-auto p-3 min-h-0 ${wallpaperUrl ? '' : `chat-bg${chatTheme && chatTheme !== 'default' ? `-${chatTheme}` : ''}`}`}
         style={wallpaperUrl ? {
           backgroundImage: `url(${wallpaperUrl})`,
           backgroundSize: 'cover',
@@ -1003,44 +1006,100 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
             </div>
           )}
           <form onSubmit={handleSendMessage} className="flex items-center gap-1 min-w-0">
-            <button type="button" onClick={() => { setShowEmojiPicker((v) => !v); setShowGifPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
-              <Smile size={18} className="sm:w-5 sm:h-5" />
-            </button>
-            <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
-              GIF
-            </button>
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Photos & Videos">
-              <Image size={18} className="sm:w-[19px] sm:h-[19px]" />
-            </button>
-            <button type="button" onClick={() => docInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Documents & Files">
-              <Paperclip size={18} className="sm:w-[19px] sm:h-[19px]" />
-            </button>
-            {isGroup && (
-              <button type="button" onClick={() => setShowPollModal(true)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
-                <BarChart3 size={17} className="sm:w-[18px] sm:h-[18px]" />
+            {/* Mobile: show chevron to expand/collapse options */}
+            {mobileOptionsCollapsed && (
+              <button
+                type="button"
+                onClick={() => setMobileOptionsCollapsed(false)}
+                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 sm:hidden transition-transform"
+                title="Show options"
+              >
+                <ChevronRight size={20} className="transition-transform" />
               </button>
             )}
+
+            {/* Option buttons — hidden on mobile when collapsed */}
+            <div className={`flex items-center gap-0.5 shrink-0 transition-all duration-200 overflow-hidden ${
+              mobileOptionsCollapsed ? 'w-0 opacity-0 sm:w-auto sm:opacity-100' : 'w-auto opacity-100'
+            }`}>
+              <button type="button" onClick={() => { setShowEmojiPicker((v) => !v); setShowGifPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
+                <Smile size={18} className="sm:w-5 sm:h-5" />
+              </button>
+              <button type="button" onClick={() => { setShowGifPicker((v) => !v); setShowEmojiPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 font-bold text-xs" style={{ minWidth: '36px' }}>
+                GIF
+              </button>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Photos & Videos">
+                <Image size={18} className="sm:w-[19px] sm:h-[19px]" />
+              </button>
+              <button type="button" onClick={() => docInputRef.current?.click()} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Send Documents & Files">
+                <Paperclip size={18} className="sm:w-[19px] sm:h-[19px]" />
+              </button>
+              {/* Mic moved here alongside other icons */}
+              {!isRecording && (
+                <button type="button" onClick={startRecording} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0" title="Voice note">
+                  <Mic size={18} className="sm:w-[19px] sm:h-[19px]" />
+                </button>
+              )}
+              {isRecording && (
+                <button type="button" onClick={stopRecording} className="p-1.5 sm:p-2 rounded-full bg-red-500 text-white animate-pulse shrink-0" title="Stop recording">
+                  <Square size={15} />
+                </button>
+              )}
+              {isGroup && (
+                <button type="button" onClick={() => setShowPollModal(true)} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
+                  <BarChart3 size={17} className="sm:w-[18px] sm:h-[18px]" />
+                </button>
+              )}
+            </div>
+
             <input ref={fileInputRef} type="file" className="hidden" multiple accept="image/*,video/*" onChange={handleFileSelect} />
             <input ref={docInputRef} type="file" className="hidden" multiple accept="*" onChange={handleFileSelect} />
             <input
               type="text"
               value={messageText}
               onChange={handleMessageChange}
+              onFocus={() => {
+                setInputFocused(true);
+                // On small screens, collapse options when typing
+                if (window.innerWidth < 640) setMobileOptionsCollapsed(true);
+              }}
+              onBlur={() => setInputFocused(false)}
               placeholder={t('typeMessage', language)}
               className="flex-1 min-w-0 px-3 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-chattix-primary/30"
+              style={{
+                borderColor: CHAT_THEMES[chatTheme]?.accent ? `${CHAT_THEMES[chatTheme].accent}40` : undefined,
+              }}
               disabled={loading}
             />
             {messageText.trim() ? (
-              <button type="submit" disabled={loading} className="p-2 sm:p-2.5 rounded-full bg-chattix-primary text-white hover:bg-chattix-primary-dark disabled:opacity-40 shrink-0">
+              <button
+                type="submit"
+                disabled={loading}
+                className="p-2 sm:p-2.5 rounded-full text-white disabled:opacity-40 shrink-0 transition-colors"
+                style={{ backgroundColor: CHAT_THEMES[chatTheme]?.accent || '#4A90E2' }}
+              >
                 <Send size={17} />
               </button>
-            ) : isRecording ? (
-              <button type="button" onClick={stopRecording} className="p-2 sm:p-2.5 rounded-full bg-red-500 text-white animate-pulse shrink-0">
-                <Square size={17} />
-              </button>
             ) : (
-              <button type="button" onClick={startRecording} className="p-2 sm:p-2.5 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
-                <Mic size={18} />
+              <button
+                type="button"
+                onClick={async () => {
+                  // Quick reaction: send the theme's default reaction emoji
+                  if (!activeChat?._id) return;
+                  const quickEmoji = CHAT_THEMES[chatTheme]?.quickReaction || '👍';
+                  setLoading(true);
+                  try {
+                    await sendPayload(quickEmoji);
+                  } catch (error) {
+                    toast.error(error.response?.data?.message || error.message || 'Failed to send');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="p-2 sm:p-2.5 rounded-full hover:bg-gray-100 shrink-0 quick-react-btn text-xl leading-none transition-transform active:scale-125"
+                title="Quick reaction"
+              >
+                {CHAT_THEMES[chatTheme]?.quickReaction || '👍'}
               </button>
             )}
           </form>

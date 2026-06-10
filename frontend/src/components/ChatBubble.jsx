@@ -6,6 +6,7 @@ import { Check, CheckCheck, CheckCircle2, Copy, Star, Reply, Trash2, Forward, Pi
 import EmojiPicker from 'emoji-picker-react';
 import PollMessage from './PollMessage';
 import CustomAudioPlayer from './CustomAudioPlayer';
+import { CHAT_THEMES } from '../redux/slices/themeSlice';
 
 const REACTIONS = ['❤️', '👍', '😂', '🔥', '😮', '😢'];
 
@@ -56,6 +57,8 @@ const ChatBubble = ({
   isLastSeen,
 }) => {
   const { stories } = useSelector((state) => state.story || { stories: [] });
+  const { chatTheme } = useSelector((state) => state.theme);
+  const theme = CHAT_THEMES[chatTheme] || CHAT_THEMES.default;
   const [searchParams, setSearchParams] = useSearchParams();
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
@@ -118,17 +121,27 @@ const ChatBubble = ({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
+          {/* Story label above the card */}
+          <div className={`flex ${isOwn ? 'justify-end pr-9' : 'justify-start pl-9'} mb-1`}>
+            <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+              {isReply
+                ? (isOwn ? 'You replied to their story' : `${message.sender?.fullName?.split(' ')[0] || 'They'} replied to your story`)
+                : (isOwn ? 'You mentioned them in your story' : `${message.sender?.fullName?.split(' ')[0] || 'Someone'} tagged you in a story`)
+              }
+            </span>
+          </div>
+
           <div className={`flex items-end gap-1 ${isOwn ? 'justify-start flex-row-reverse' : 'justify-start flex-row'}`}>
-            <div className={`flex gap-2 max-w-[min(85%,300px)] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div className={`flex gap-2 max-w-[min(85%,280px)] sm:max-w-[80%] min-w-0 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className="flex-shrink-0 self-end mb-1">
                 <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
               </div>
               
               <div className={`relative min-w-0 flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-                {/* Story Thumbnail Card */}
+                {/* Messenger-style Story Thumbnail Card */}
                 <div 
-                  className={`rounded-2xl overflow-hidden shadow-sm flex flex-col mb-1 cursor-pointer border ${isOwn ? 'border-chattix-primary/20' : 'border-gray-200'} bg-black relative`}
-                  style={{ width: '130px', height: '220px' }}
+                  className="rounded-2xl overflow-hidden shadow-md flex flex-col mb-1 cursor-pointer relative group/story"
+                  style={{ width: '140px', height: '200px', border: `2px solid ${theme.accent}30` }}
                   onClick={() => isStoryActive && setSearchParams(prev => { prev.set('story', message.storyId); return prev; })}
                 >
                   {isStoryActive ? (
@@ -141,30 +154,53 @@ const ChatBubble = ({
                         )
                       )}
                       {(storyObj.textMode || !storyObj.mediaUrl) && (
-                        <div className={`w-full h-full flex items-center justify-center p-2 ${storyObj.backgroundColor}`}>
-                          <p className={`text-[9px] font-bold text-center overflow-hidden leading-tight break-words ${storyObj.fontColor} ${storyObj.fontFamily}`}>
+                        <div className={`w-full h-full flex items-center justify-center p-3 ${storyObj.backgroundColor}`}>
+                          <p className={`text-[10px] font-bold text-center overflow-hidden leading-tight break-words ${storyObj.fontColor} ${storyObj.fontFamily}`}>
                             {storyObj.caption}
                           </p>
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 flex flex-col justify-between p-2.5 pointer-events-none">
-                        <span className="text-white text-[11px] font-medium leading-tight shadow-sm">
-                          {isReply ? (isOwn ? 'You replied' : 'Replied to your story') : 'Mentioned you'}
-                        </span>
-                        <span className="text-white/80 text-[10px] font-medium">Click to view</span>
+                      {/* Gradient overlay — Messenger style */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
+                      {/* Story ring indicator at top-left */}
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
+                        <div className="w-6 h-6 rounded-full border-2 overflow-hidden" style={{ borderColor: theme.accent }}>
+                          <img 
+                            src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'U')}&background=3B82F6&color=fff&bold=true`}
+                            alt="" className="w-full h-full object-cover" 
+                          />
+                        </div>
                       </div>
+                      {/* Bottom label */}
+                      <div className="absolute bottom-0 left-0 right-0 p-2.5 pointer-events-none">
+                        <p className="text-white text-[11px] font-semibold drop-shadow-lg">
+                          {isReply ? 'Story reply' : 'Story mention'}
+                        </p>
+                        <p className="text-white/70 text-[9px] mt-0.5">Tap to view</p>
+                      </div>
+                      {/* Hover glow */}
+                      <div className="absolute inset-0 opacity-0 group-hover/story:opacity-100 transition-opacity" style={{ boxShadow: `inset 0 0 20px ${theme.accent}30` }} />
                     </div>
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-3 text-center">
-                      <Star size={24} className="text-gray-400 mb-2" />
-                      <p className="text-[11px] font-semibold text-gray-500 leading-tight">Story Unavailable</p>
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 p-3 text-center">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                        <Star size={18} className="text-gray-300" />
+                      </div>
+                      <p className="text-[11px] font-semibold text-gray-400 leading-tight">Story no longer<br/>available</p>
                     </div>
                   )}
                 </div>
                 
-                {/* The actual reply text bubble */}
+                {/* The reply text bubble — themed */}
                 {message.text && (
-                  <div className={`px-3.5 py-2 rounded-2xl max-w-[250px] sm:max-w-[300px] shadow-sm break-words ${isOwn ? 'bg-chattix-primary text-white rounded-tr-md' : 'bg-white border border-gray-100 text-gray-900 rounded-tl-md'}`}>
+                  <div 
+                    className={`px-3.5 py-2 rounded-2xl max-w-[250px] sm:max-w-[300px] shadow-sm break-words ${isOwn ? 'rounded-tr-md' : 'rounded-tl-md'}`}
+                    style={{
+                      backgroundColor: isOwn ? theme.bubbleOwn : theme.bubbleOther,
+                      color: isOwn ? theme.bubbleOwnText : theme.bubbleOtherText,
+                      border: isOwn ? 'none' : '1px solid #f1f1f1',
+                    }}
+                  >
                     <p className="text-[14.5px] leading-[1.4] whitespace-pre-wrap">{message.text}</p>
                   </div>
                 )}
@@ -276,8 +312,13 @@ const ChatBubble = ({
             onTouchCancel={handleTouchEnd}
             className={`relative message-bubble ${isPureMedia || isDoc || isAudio
               ? 'bg-transparent p-0 shadow-none border-none'
-              : `px-3 py-2 rounded-xl shadow-sm ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white text-gray-900 rounded-bl-sm'}`
+              : `px-3 py-2 rounded-xl shadow-sm ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`
               }`}
+            style={!(isPureMedia || isDoc || isAudio) ? {
+              backgroundColor: isOwn ? theme.bubbleOwn : theme.bubbleOther,
+              color: isOwn ? theme.bubbleOwnText : theme.bubbleOtherText,
+              border: isOwn ? 'none' : '1px solid #f0f0f0',
+            } : undefined}
             onContextMenu={(e) => {
               e.preventDefault();
               setShowMenu(true);
@@ -306,7 +347,14 @@ const ChatBubble = ({
               </div>
             )}
             {isAudio && (
-              <div className={`flex flex-col gap-2 p-3 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm'}`}>
+              <div 
+                className={`flex flex-col gap-2 p-3 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+                style={{
+                  backgroundColor: isOwn ? theme.bubbleOwn : theme.bubbleOther,
+                  color: isOwn ? theme.bubbleOwnText : theme.bubbleOtherText,
+                  border: isOwn ? 'none' : '1px solid #f0f0f0',
+                }}
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${isOwn ? 'bg-white/20 text-white' : 'bg-gray-100 text-chattix-primary'}`}>
                     <Music size={18} />
@@ -326,7 +374,14 @@ const ChatBubble = ({
               </div>
             )}
             {isDoc && (
-              <div className={`flex items-center justify-between gap-3 p-3 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm transition-colors ${isOwn ? 'bg-chattix-primary text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm hover:bg-gray-50'}`}>
+              <div 
+                className={`flex items-center justify-between gap-3 p-3 rounded-2xl w-64 xs:w-72 max-w-full shadow-sm transition-colors ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
+                style={{
+                  backgroundColor: isOwn ? theme.bubbleOwn : theme.bubbleOther,
+                  color: isOwn ? theme.bubbleOwnText : theme.bubbleOtherText,
+                  border: isOwn ? 'none' : '1px solid #f0f0f0',
+                }}
+              >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs uppercase shadow-sm ${isOwn ? 'bg-white/20 text-white' : 'bg-gray-100 text-chattix-primary'}`}>
                     {attachment.type === 'pdf' ? 'PDF' : (attachment.filename?.split('.').pop()?.substring(0, 4) || 'DOC')}

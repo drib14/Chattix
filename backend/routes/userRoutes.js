@@ -23,42 +23,43 @@ import {
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { uploadProfile } from '../middleware/uploadMiddleware.js';
+import { generalLimiter, uploadLimiter } from '../middleware/rateLimitMiddleware.js';
 
 const router = express.Router();
 
 router.use(protect);
 
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
-router.post('/upload-avatar', uploadProfile.single('avatar'), uploadAvatar);
-router.post('/avatar', uploadProfile.single('avatar'), uploadAvatar);
-router.post('/upload-cover', uploadProfile.single('coverImage'), uploadCover);
-router.delete('/delete', deleteAccount);
-router.get('/search', searchUsers);
-router.get('/blocked', getBlockedUsers);
-router.post('/block/:userId', blockUser);
-router.post('/unblock/:userId', unblockUser);
-router.post('/report/:userId', reportUser);
-router.put('/change-password', changePassword);
+router.get('/profile', generalLimiter, getProfile);
+router.put('/profile', generalLimiter, updateProfile);
+router.post('/upload-avatar', uploadLimiter, uploadProfile.single('avatar'), uploadAvatar);
+router.post('/avatar', uploadLimiter, uploadProfile.single('avatar'), uploadAvatar);
+router.post('/upload-cover', uploadLimiter, uploadProfile.single('coverImage'), uploadCover);
+router.delete('/delete', generalLimiter, deleteAccount);
+router.get('/search', generalLimiter, searchUsers);
+router.get('/blocked', generalLimiter, getBlockedUsers);
+router.post('/block/:userId', generalLimiter, blockUser);
+router.post('/unblock/:userId', generalLimiter, unblockUser);
+router.post('/report/:userId', generalLimiter, reportUser);
+router.put('/change-password', generalLimiter, changePassword);
 
 // Archive chat routes
-router.post('/archive-chat', archiveChat);
-router.delete('/archive-chat/:chatId', unarchiveChat);
-router.get('/archived-chats', getArchivedChats);
+router.post('/archive-chat', generalLimiter, archiveChat);
+router.delete('/archive-chat/:chatId', generalLimiter, unarchiveChat);
+router.get('/archived-chats', generalLimiter, getArchivedChats);
 
 // Wallpaper routes
-router.post('/set-wallpaper', setChatWallpaper);
-router.get('/wallpaper/:chatId', getChatWallpaper);
+router.post('/set-wallpaper', generalLimiter, setChatWallpaper);
+router.get('/wallpaper/:chatId', generalLimiter, getChatWallpaper);
 
 // Unread count route
-router.post('/unread-count', updateUnreadCount);
+router.post('/unread-count', generalLimiter, updateUnreadCount);
 
 // User status route
-router.get('/status/:userId', getUserStatus);
+router.get('/status/:userId', generalLimiter, getUserStatus);
 
 // Mention search route
-router.get('/mention-search', searchUsersForMentions);
+router.get('/mention-search', generalLimiter, searchUsersForMentions);
 
-router.get('/:username', getUserByUsername);
+router.get('/:username', generalLimiter, getUserByUsername);
 
 export default router;

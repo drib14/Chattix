@@ -149,7 +149,7 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-const PORT = parseInt(process.env.PORT, '0.0.0.0', 10) || 10000;
+const PORT = parseInt(process.env.PORT, 10) || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 httpServer.on('error', (error) => {

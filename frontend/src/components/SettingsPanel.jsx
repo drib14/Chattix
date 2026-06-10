@@ -14,7 +14,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { logout } from '../redux/slices/authSlice';
-import { setLanguage } from '../redux/slices/themeSlice';
+import { setLanguage, setChatTheme, CHAT_THEMES } from '../redux/slices/themeSlice';
 import { t } from '../utils/translations';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
@@ -23,7 +23,7 @@ import toast from 'react-hot-toast';
 
 const SettingsPanel = () => {
   const { user } = useSelector((state) => state.auth);
-  const { language } = useSelector((state) => state.theme);
+  const { language, chatTheme } = useSelector((state) => state.theme);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -117,6 +117,54 @@ const SettingsPanel = () => {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-3 sm:space-y-4">
+        {/* Chat Theme Selector */}
+        <div className="modern-card !p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <span className="text-lg">🎨</span>
+            Chat Theme
+          </h3>
+          <p className="text-xs text-gray-500 mb-3">Changes wallpaper, bubble colors, and quick reaction</p>
+          <div className="grid grid-cols-3 gap-3">
+            {Object.entries(CHAT_THEMES).map(([key, t]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => dispatch(setChatTheme(key))}
+                className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all duration-200 ${
+                  chatTheme === key
+                    ? 'border-gray-900 bg-gray-50 shadow-md scale-[1.02]'
+                    : 'border-transparent hover:border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <div
+                  className="w-9 h-9 rounded-full shadow-sm"
+                  style={{ background: t.gradient }}
+                />
+                <span className="text-[10px] font-medium text-gray-700 leading-tight text-center">
+                  {t.emoji} {t.name}
+                </span>
+              </button>
+            ))}
+          </div>
+          {/* Theme preview */}
+          <div className="mt-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Preview</p>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-end">
+                <div className="px-3 py-1.5 rounded-xl rounded-br-sm text-xs max-w-[70%]" style={{ backgroundColor: CHAT_THEMES[chatTheme]?.bubbleOwn, color: CHAT_THEMES[chatTheme]?.bubbleOwnText }}>
+                  Hey! How are you? 👋
+                </div>
+              </div>
+              <div className="flex justify-start">
+                <div className="px-3 py-1.5 rounded-xl rounded-bl-sm text-xs max-w-[70%]" style={{ backgroundColor: CHAT_THEMES[chatTheme]?.bubbleOther, color: CHAT_THEMES[chatTheme]?.bubbleOtherText, border: '1px solid #f0f0f0' }}>
+                  I'm great! {CHAT_THEMES[chatTheme]?.quickReaction}
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2">Quick reaction: <span className="text-base">{CHAT_THEMES[chatTheme]?.quickReaction}</span></p>
+          </div>
+        </div>
+
         <div className="modern-card !p-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <User size={16} className="text-chattix-primary" />
