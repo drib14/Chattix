@@ -225,6 +225,11 @@ const ModernChatPage = () => {
       const currentChatId = selectedChatRef.current?._id?.toString();
       const myId = userRef.current?._id?.toString();
 
+      // Emit message_delivered to let sender know it arrived
+      if (senderId && senderId !== myId) {
+        socketService.emit('message_delivered', { messageId: message._id, senderId });
+      }
+
       if (senderId && senderId !== myId && senderId !== currentChatId) {
         dispatch(incrementUnread(senderId));
         toast(`New message from ${message.sender?.fullName || 'someone'}`, { icon: '💬' });

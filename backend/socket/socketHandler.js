@@ -150,9 +150,8 @@ export const initializeSocket = (io) => {
     socket.on('message_delivered', ({ messageId, senderId }) => {
       const senderData = onlineUsers.get(senderId);
       if (senderData) {
-        io.to(senderData.socketId).emit('message_status', {
+        io.to(senderData.socketId).emit('message_delivered', {
           messageId,
-          status: 'delivered',
         });
       }
     });
@@ -161,9 +160,8 @@ export const initializeSocket = (io) => {
     socket.on('message_seen', ({ messageId, senderId }) => {
       const senderData = onlineUsers.get(senderId);
       if (senderData) {
-        io.to(senderData.socketId).emit('message_status', {
+        io.to(senderData.socketId).emit('message_seen', {
           messageId,
-          status: 'seen',
         });
       }
     });

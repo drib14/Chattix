@@ -162,7 +162,7 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
       if (!u) return;
       const uid = u._id || u;
       if (uid === activeStory.user?._id) return;
-      uniqueViewersMap.set(uid.toString(), { user: u, viewedAt: v.viewedAt, emoji: null });
+      uniqueViewersMap.set(uid.toString(), { user: u, viewedAt: v.viewedAt, emoji: null, replyText: v.replyText });
     });
   }
   if (activeStory?.reactions) {
@@ -204,9 +204,17 @@ const StoryViewer = ({ groupedStories, initialUserIndex, onClose }) => {
               </div>
             )}
           </div>
-          <div className="flex flex-col">
-            <span className="text-white font-semibold">{item.user.fullName || 'User'}</span>
-            <span className="text-white/50 text-xs">{new Date(item.viewedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <div className="flex flex-col min-w-0 flex-1 ml-1 pr-2">
+            <span className="text-white font-semibold truncate">{item.user.fullName || 'User'}</span>
+            {item.replyText ? (
+              <span className="text-white/70 text-xs truncate">
+                {item.replyText.length > 15 ? `${item.replyText.substring(0, 15)}...` : item.replyText}
+              </span>
+            ) : (
+              <span className="text-white/50 text-xs">
+                {new Date(item.viewedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
         </div>
         {isNewViewer(item.viewedAt) && (

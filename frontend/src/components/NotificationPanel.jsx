@@ -54,7 +54,15 @@ const NotificationPanel = () => {
     }
   };
 
-  const list = Array.isArray(notifications) ? notifications : [];
+  const allowedTypes = ['story_interaction', 'friend_request', 'friend_accepted', 'story_creation', 'story_tagged'];
+
+  const filteredList = (Array.isArray(notifications) ? notifications : []).filter(n => {
+    if (allowedTypes.includes(n.type)) return true;
+    if (n.type === 'message' && n.data?.systemMessageType === 'story_reply') return true;
+    return false;
+  });
+
+  const list = filteredList;
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-white overflow-hidden">

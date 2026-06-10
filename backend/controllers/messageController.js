@@ -255,9 +255,14 @@ export const sendMessage = async (req, res) => {
         recipient: receiverId,
         sender: req.user._id,
         type: 'message',
-        title: 'New message',
-        body: text || 'Sent an attachment',
-        data: { messageId: message._id, senderId: req.user._id },
+        title: req.body.systemMessageType === 'story_reply' ? 'Story Reply' : 'New message',
+        body: req.body.systemMessageType === 'story_reply' ? `Replied to your story: ${text}` : (text || 'Sent an attachment'),
+        data: { 
+          messageId: message._id, 
+          senderId: req.user._id,
+          systemMessageType: req.body.systemMessageType,
+          storyId: req.body.storyId
+        },
       });
       io.to(receiverId).emit('notification', { type: 'message' });
     }

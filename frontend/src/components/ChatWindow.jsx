@@ -843,19 +843,30 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           </div>
         ) : (
           <AnimatePresence>
-            {visibleMessages.map((message, index) => (
-              <ChatBubble
-                key={message._id || index}
-                message={message}
-                isOwn={
-                  message.sender?._id?.toString() === user?._id?.toString() ||
-                  message.sender?.toString?.() === user?._id?.toString()
-                }
-                isGroup={isGroup}
-                index={index}
-                messageRef={(el) => {
-                  if (el) messageRefs.current[message._id] = el;
-                }}
+            {(() => {
+              const ownMessages = visibleMessages.filter(m => 
+                m.sender?._id?.toString() === user?._id?.toString() || 
+                m.sender?.toString?.() === user?._id?.toString()
+              );
+              const lastOwnMsgId = ownMessages[ownMessages.length - 1]?._id;
+              const seenMessages = ownMessages.filter(m => m.seen || (m.seenBy && m.seenBy.length > 0));
+              const lastSeenMsgId = seenMessages[seenMessages.length - 1]?._id;
+
+              return visibleMessages.map((message, index) => (
+                <ChatBubble
+                  key={message._id || index}
+                  message={message}
+                  isOwn={
+                    message.sender?._id?.toString() === user?._id?.toString() ||
+                    message.sender?.toString?.() === user?._id?.toString()
+                  }
+                  isGroup={isGroup}
+                  index={index}
+                  isLastOwnMessage={message._id === lastOwnMsgId}
+                  isLastSeen={message._id === lastSeenMsgId}
+                  messageRef={(el) => {
+                    if (el) messageRefs.current[message._id] = el;
+                  }}
                 onScrollToReply={(messageId) => scrollToMessage(messageId)}
                 searchQuery={searchQuery}
                 onViewMedia={(attachment) => {
@@ -864,7 +875,8 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
                 }}
                 {...messageActions}
               />
-            ))}
+            ));
+          })()}
           </AnimatePresence>
         )}
         {isTyping && (

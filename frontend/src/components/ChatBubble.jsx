@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, CheckCheck, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus, Music, Download, FileText } from 'lucide-react';
+import { Check, CheckCheck, CheckCircle2, Copy, Star, Reply, Trash2, Forward, Pin, BarChart3, Smile, MoreVertical, Plus, Music, Download, FileText } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import PollMessage from './PollMessage';
 import CustomAudioPlayer from './CustomAudioPlayer';
@@ -52,6 +52,8 @@ const ChatBubble = ({
   onViewMedia,
   searchQuery,
   messageRef,
+  isLastOwnMessage,
+  isLastSeen,
 }) => {
   const { stories } = useSelector((state) => state.story || { stories: [] });
   const [searchParams, setSearchParams] = useSearchParams();
@@ -122,58 +124,50 @@ const ChatBubble = ({
                 <img src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'User')}&background=3B82F6&color=fff&bold=true`} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
               </div>
               
-              <div className="relative min-w-0 flex flex-col">
+              <div className={`relative min-w-0 flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+                {/* Story Thumbnail Card */}
                 <div 
-                  className={`rounded-2xl overflow-hidden shadow-sm flex flex-col w-56 cursor-pointer border ${isOwn ? 'bg-chattix-primary border-chattix-primary rounded-br-sm text-white' : 'bg-gray-100 border-gray-200 rounded-bl-sm text-black'}`}
+                  className={`rounded-2xl overflow-hidden shadow-sm flex flex-col mb-1 cursor-pointer border ${isOwn ? 'border-chattix-primary/20' : 'border-gray-200'} bg-black relative`}
+                  style={{ width: '130px', height: '220px' }}
                   onClick={() => isStoryActive && setSearchParams(prev => { prev.set('story', message.storyId); return prev; })}
                 >
                   {isStoryActive ? (
-                    <>
-                      <div className="flex flex-row items-center p-2 bg-black/5 hover:bg-black/10 transition-colors">
-                        <div className="w-12 h-16 relative overflow-hidden rounded flex-shrink-0 flex items-center justify-center bg-black/10">
-                          {(!storyObj.textMode && storyObj.mediaUrl) && (
-                            <>
-                              <div 
-                                className="absolute inset-0 blur-md scale-110 opacity-60" 
-                                style={{ backgroundImage: `url(${storyObj.mediaUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} 
-                              />
-                              {storyObj.mediaType === 'video' ? (
-                                <video src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-cover" />
-                              ) : (
-                                <img src={storyObj.mediaUrl} className="relative z-10 w-full h-full object-cover" alt="" />
-                              )}
-                            </>
-                          )}
-                          {(storyObj.textMode || !storyObj.mediaUrl) && (
-                            <div className={`w-full h-full flex items-center justify-center p-1 ${storyObj.backgroundColor}`}>
-                              <p className={`text-center text-[6px] font-bold overflow-hidden leading-tight break-words ${storyObj.fontColor} ${storyObj.fontFamily}`}>
-                                {storyObj.caption}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="ml-3 flex flex-col justify-center overflow-hidden flex-1">
-                          <p className="text-[13px] font-semibold leading-tight truncate pr-2">
-                            {isReply ? (isOwn ? 'You replied to their story' : 'Replied to your story') : 'Mentioned you in their story'}
+                    <div className="w-full h-full relative">
+                      {(!storyObj.textMode && storyObj.mediaUrl) && (
+                        storyObj.mediaType === 'video' ? (
+                          <video src={storyObj.mediaUrl} className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={storyObj.mediaUrl} className="w-full h-full object-cover" alt="Story" />
+                        )
+                      )}
+                      {(storyObj.textMode || !storyObj.mediaUrl) && (
+                        <div className={`w-full h-full flex items-center justify-center p-2 ${storyObj.backgroundColor}`}>
+                          <p className={`text-[9px] font-bold text-center overflow-hidden leading-tight break-words ${storyObj.fontColor} ${storyObj.fontFamily}`}>
+                            {storyObj.caption}
                           </p>
-                          <p className={`text-[11px] mt-0.5 font-medium ${isOwn ? 'text-white/80' : 'text-gray-500'}`}>
-                            Click to view
-                          </p>
-                        </div>
-                      </div>
-                      {isReply && message.text && (
-                        <div className={`px-3 py-2 border-t ${isOwn ? 'border-white/20' : 'border-gray-200'} bg-transparent`}>
-                          <p className="text-[14px] leading-relaxed break-words whitespace-pre-wrap">{message.text}</p>
                         </div>
                       )}
-                    </>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 flex flex-col justify-between p-2.5 pointer-events-none">
+                        <span className="text-white text-[11px] font-medium leading-tight shadow-sm">
+                          {isReply ? (isOwn ? 'You replied' : 'Replied to your story') : 'Mentioned you'}
+                        </span>
+                        <span className="text-white/80 text-[10px] font-medium">Click to view</span>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="h-32 flex flex-col items-center justify-center p-4 text-center bg-gray-100 border-b border-gray-200">
-                      <Star size={20} className="text-gray-400 mb-2" />
-                      <p className="text-[13px] font-semibold text-gray-500 leading-tight">Story Unavailable</p>
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-3 text-center">
+                      <Star size={24} className="text-gray-400 mb-2" />
+                      <p className="text-[11px] font-semibold text-gray-500 leading-tight">Story Unavailable</p>
                     </div>
                   )}
                 </div>
+                
+                {/* The actual reply text bubble */}
+                {message.text && (
+                  <div className={`px-3.5 py-2 rounded-2xl max-w-[250px] sm:max-w-[300px] shadow-sm break-words ${isOwn ? 'bg-chattix-primary text-white rounded-tr-md' : 'bg-white border border-gray-100 text-gray-900 rounded-tl-md'}`}>
+                    <p className="text-[14.5px] leading-[1.4] whitespace-pre-wrap">{message.text}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -390,33 +384,8 @@ const ChatBubble = ({
             )}
 
             <div className={`flex flex-col items-end gap-1 mt-0.5 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-              
-
               <div className="flex items-center gap-1">
                 {message.pinned && <Pin size={10} className="text-gray-400" />}
-                {isOwn && !isGroup && (
-                  message.seen ? (
-                    <div className="flex items-center gap-1">
-                      {getSeenStatus()?.isIgnored && (
-                        <span className="text-[10px] text-gray-500 italic">ignored</span>
-                      )}
-                      <img src={receiverAvatar} alt="seen by" className="w-3.5 h-3.5 rounded-full object-cover border border-gray-200" title="Seen" />
-                    </div>
-                  ) : message.delivered ? (
-                    <CheckCheck size={14} className="text-blue-500" title="Delivered" />
-                  ) : (
-                    <Check size={14} className="text-blue-300 opacity-70" title="Sent" />
-                  )
-                )}
-                {isOwn && isGroup && (
-                  message.seen ? (
-                    <CheckCheck size={14} className="text-blue-500" />
-                  ) : message.delivered ? (
-                    <CheckCheck size={14} className="text-gray-400" />
-                  ) : (
-                    <Check size={14} className="text-gray-400" />
-                  )
-                )}
               </div>
             </div>
 
@@ -624,6 +593,40 @@ const ChatBubble = ({
                     </AnimatePresence>
         </div>
       </div>
+
+      {isOwn && (isLastSeen || isLastOwnMessage) && (
+        <div className="flex justify-end pr-9 mt-0.5 mb-1.5">
+          {!isGroup && (
+            isLastSeen ? (
+              <div className="flex items-center gap-1">
+                {getSeenStatus()?.isIgnored && (
+                  <span className="text-[10px] text-gray-500 italic font-medium">ignored</span>
+                )}
+                <img src={receiverAvatar} alt="seen by" className="w-3.5 h-3.5 rounded-full object-cover border border-gray-200 shadow-sm" title="Seen" />
+              </div>
+            ) : isLastOwnMessage ? (
+              message.delivered ? (
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 size={14} className="text-blue-500 fill-blue-500 stroke-white" title="Delivered" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 size={14} className="text-gray-400" title="Sent" />
+                </div>
+              )
+            ) : null
+          )}
+          {isGroup && isLastOwnMessage && (
+            message.seen ? (
+              <CheckCheck size={14} className="text-blue-500" />
+            ) : message.delivered ? (
+              <CheckCheck size={14} className="text-gray-400" />
+            ) : (
+              <Check size={14} className="text-gray-400" />
+            )
+          )}
+        </div>
+      )}
       
       <AnimatePresence>
         {isHovered && (

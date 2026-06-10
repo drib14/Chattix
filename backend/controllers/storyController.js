@@ -174,7 +174,31 @@ export const getFeedStories = async (req, res) => {
     .populate('user', 'fullName username avatar status lastSeen')
     .populate('viewedBy.user', 'fullName username avatar')
     .populate('reactions.user', 'fullName username avatar')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
+
+    const { default: Message } = await import('../models/Message.js');
+    const storyIds = stories.map(s => s._id);
+    const replies = await Message.find({
+      storyId: { $in: storyIds },
+      systemMessageType: 'story_reply'
+    }).lean();
+
+    stories.forEach(story => {
+      // Only attach replies if the current user is the owner of the story
+      if (story.user?._id?.toString() === req.user._id.toString() || story.user?.toString() === req.user._id.toString()) {
+        story.viewedBy.forEach(view => {
+          if (!view.user) return;
+          const viewerId = view.user._id ? view.user._id.toString() : view.user.toString();
+          // Find the most recent reply by this user to this story
+          const viewerReplies = replies.filter(r => r.storyId?.toString() === story._id.toString() && r.sender?.toString() === viewerId);
+          if (viewerReplies.length > 0) {
+            // Get the last reply
+            view.replyText = viewerReplies[viewerReplies.length - 1].text;
+          }
+        });
+      }
+    });
 
     res.json(stories);
   } catch (error) {
