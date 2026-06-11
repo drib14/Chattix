@@ -6,15 +6,15 @@ import {
   getMessageAnalytics,
 } from '../controllers/adminController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { generalLimiter } from '../middleware/rateLimitMiddleware.js';
+import { readLimiter } from '../middleware/rateLimitMiddleware.js';
 
 const router = express.Router();
 
 router.use(protect);
 
-router.get('/stats', generalLimiter, getDashboardStats);
-router.get('/users', generalLimiter, getAllUsers);
-router.get('/users/:userId/activity', generalLimiter, getUserActivity);
-router.get('/analytics/messages', generalLimiter, getMessageAnalytics);
+router.get('/stats', readLimiter, getDashboardStats);
+router.get('/users', readLimiter, getAllUsers);
+router.get('/users/:userId/activity', readLimiter, getUserActivity);
+router.get('/analytics/messages', readLimiter, getMessageAnalytics);
 
 export default router;

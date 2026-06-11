@@ -23,16 +23,16 @@ import {
 } from '../controllers/messageController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/uploadMiddleware.js';
-import { messageLimiter, generalLimiter, uploadLimiter } from '../middleware/rateLimitMiddleware.js';
+import { messageLimiter, readLimiter, generalLimiter, uploadLimiter } from '../middleware/rateLimitMiddleware.js';
 
 const router = express.Router();
 
 router.use(protect);
 
 router.post('/send', uploadLimiter, upload.array('attachments', 5), sendMessage);
-router.get('/recent', generalLimiter, getRecentChats);
-router.get('/search', generalLimiter, searchMessages);
-router.get('/group/:groupId', generalLimiter, getGroupMessages);
+router.get('/recent', readLimiter, getRecentChats);
+router.get('/search', readLimiter, searchMessages);
+router.get('/group/:groupId', readLimiter, getGroupMessages);
 router.put('/:messageId/edit', messageLimiter, editMessage);
 router.delete('/:messageId/me', messageLimiter, deleteForMe);
 router.delete('/:messageId/everyone', messageLimiter, deleteForEveryone);
@@ -45,7 +45,7 @@ router.put('/:messageId/seen', messageLimiter, markAsSeen);
 router.post('/:messageId/react', messageLimiter, addReaction);
 router.put('/:messageId/pin', messageLimiter, togglePinMessage);
 router.delete('/:messageId', messageLimiter, deleteMessage);
-router.get('/:userId', generalLimiter, getMessages);
+router.get('/:userId', readLimiter, getMessages);
 
 // Poll routes
 router.post('/poll', messageLimiter, createPoll);

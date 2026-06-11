@@ -271,6 +271,21 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2322D3EE' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 0h4v40H0zm20 0h4v40h-4z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
+.chat-bg-sakura {
+  background: linear-gradient(180deg, #FFF1F2 0%, #FFE4E6 40%, #FECDD3 100%);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23DB2777' fill-opacity='0.06' fill-rule='evenodd'%3E%3Cpath d='M30 15c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm15 15c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm-30 0c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.chat-bg-tropics {
+  background: linear-gradient(180deg, #F0FDFA 0%, #CCFBF1 40%, #99F6E4 100%);
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230D9488' fill-opacity='0.06'%3E%3Cpath d='M40 0L20 20l20 20 20-20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.chat-bg-arctic {
+  background: linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 40%, #BAE6FD 100%);
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%230369A1' fill-opacity='0.06' fill-rule='evenodd'%3E%3Cpath d='M0 20L20 0l20 20-20 20z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
 /* ===================================
    END THEME WALLPAPERS
    =================================== */

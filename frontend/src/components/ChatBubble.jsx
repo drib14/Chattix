@@ -123,7 +123,8 @@ const ChatBubble = ({
         >
           {/* Story label above the card */}
           <div className={`flex ${isOwn ? 'justify-end pr-9' : 'justify-start pl-9'} mb-1`}>
-            <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+            <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider flex items-center gap-1">
+              <span>{isReply ? '↩️' : '🏷️'}</span>
               {isReply
                 ? (isOwn ? 'You replied to their story' : `${message.sender?.fullName?.split(' ')[0] || 'They'} replied to your story`)
                 : (isOwn ? 'You mentioned them in your story' : `${message.sender?.fullName?.split(' ')[0] || 'Someone'} tagged you in a story`)
@@ -138,57 +139,76 @@ const ChatBubble = ({
               </div>
               
               <div className={`relative min-w-0 flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-                {/* Messenger-style Story Thumbnail Card */}
+                {/* Messenger-style Story Thumbnail Card with theme gradient ring */}
                 <div 
                   className="rounded-2xl overflow-hidden shadow-md flex flex-col mb-1 cursor-pointer relative group/story"
-                  style={{ width: '140px', height: '200px', border: `2px solid ${theme.accent}30` }}
+                  style={{ 
+                    width: '140px', 
+                    height: '200px',
+                    padding: '2px',
+                    background: isStoryActive ? theme.gradient : '#E5E7EB',
+                  }}
                   onClick={() => isStoryActive && setSearchParams(prev => { prev.set('story', message.storyId); return prev; })}
                 >
-                  {isStoryActive ? (
-                    <div className="w-full h-full relative">
-                      {(!storyObj.textMode && storyObj.mediaUrl) && (
-                        storyObj.mediaType === 'video' ? (
-                          <video src={storyObj.mediaUrl} className="w-full h-full object-cover" />
-                        ) : (
-                          <img src={storyObj.mediaUrl} className="w-full h-full object-cover" alt="Story" />
-                        )
-                      )}
-                      {(storyObj.textMode || !storyObj.mediaUrl) && (
-                        <div className={`w-full h-full flex items-center justify-center p-3 ${storyObj.backgroundColor}`}>
-                          <p className={`text-[10px] font-bold text-center overflow-hidden leading-tight break-words ${storyObj.fontColor} ${storyObj.fontFamily}`}>
-                            {storyObj.caption}
+                  <div className="w-full h-full rounded-[14px] overflow-hidden bg-white">
+                    {isStoryActive ? (
+                      <div className="w-full h-full relative">
+                        {(!storyObj.textMode && storyObj.mediaUrl) && (
+                          storyObj.mediaType === 'video' ? (
+                            <video src={storyObj.mediaUrl} className="w-full h-full object-cover" />
+                          ) : (
+                            <img src={storyObj.mediaUrl} className="w-full h-full object-cover" alt="Story" />
+                          )
+                        )}
+                        {(storyObj.textMode || !storyObj.mediaUrl) && (
+                          <div className={`w-full h-full flex items-center justify-center p-3 ${storyObj.backgroundColor}`}>
+                            <p className={`text-[10px] font-bold text-center overflow-hidden leading-tight break-words ${storyObj.fontColor} ${storyObj.fontFamily}`}>
+                              {storyObj.caption}
+                            </p>
+                          </div>
+                        )}
+                        {/* Gradient overlay — Messenger style */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
+                        {/* Story ring indicator at top-left */}
+                        <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
+                          <div className="w-6 h-6 rounded-full border-2 overflow-hidden" style={{ borderColor: theme.accent }}>
+                            <img 
+                              src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'U')}&background=3B82F6&color=fff&bold=true`}
+                              alt="" className="w-full h-full object-cover" 
+                            />
+                          </div>
+                        </div>
+                        {/* Type badge at top-right */}
+                        <div className="absolute top-2 right-2 pointer-events-none">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold backdrop-blur-sm" style={{ backgroundColor: `${theme.accent}CC`, color: '#FFFFFF' }}>
+                            {isReply ? '↩️' : '🏷️'}
+                          </span>
+                        </div>
+                        {/* Bottom label */}
+                        <div className="absolute bottom-0 left-0 right-0 p-2.5 pointer-events-none">
+                          <p className="text-white text-[11px] font-semibold drop-shadow-lg">
+                            {isReply ? 'Story reply' : 'Story mention'}
                           </p>
+                          <p className="text-white/70 text-[9px] mt-0.5">Tap to view</p>
                         </div>
-                      )}
-                      {/* Gradient overlay — Messenger style */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none" />
-                      {/* Story ring indicator at top-left */}
-                      <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
-                        <div className="w-6 h-6 rounded-full border-2 overflow-hidden" style={{ borderColor: theme.accent }}>
-                          <img 
-                            src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.fullName || 'U')}&background=3B82F6&color=fff&bold=true`}
-                            alt="" className="w-full h-full object-cover" 
-                          />
+                        {/* Hover shimmer effect */}
+                        <div 
+                          className="absolute inset-0 opacity-0 group-hover/story:opacity-100 transition-opacity duration-300"
+                          style={{ 
+                            background: `linear-gradient(135deg, transparent 0%, ${theme.accent}15 50%, transparent 100%)`,
+                            boxShadow: `inset 0 0 30px ${theme.accent}25`,
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center" style={{ backgroundColor: `${theme.accent}08` }}>
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: `${theme.accent}15` }}>
+                          <Star size={18} style={{ color: `${theme.accent}60` }} />
                         </div>
+                        <p className="text-[11px] font-semibold leading-tight" style={{ color: `${theme.accent}80` }}>Story no longer<br/>available</p>
                       </div>
-                      {/* Bottom label */}
-                      <div className="absolute bottom-0 left-0 right-0 p-2.5 pointer-events-none">
-                        <p className="text-white text-[11px] font-semibold drop-shadow-lg">
-                          {isReply ? 'Story reply' : 'Story mention'}
-                        </p>
-                        <p className="text-white/70 text-[9px] mt-0.5">Tap to view</p>
-                      </div>
-                      {/* Hover glow */}
-                      <div className="absolute inset-0 opacity-0 group-hover/story:opacity-100 transition-opacity" style={{ boxShadow: `inset 0 0 20px ${theme.accent}30` }} />
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 p-3 text-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-2">
-                        <Star size={18} className="text-gray-300" />
-                      </div>
-                      <p className="text-[11px] font-semibold text-gray-400 leading-tight">Story no longer<br/>available</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 
                 {/* The reply text bubble — themed */}
@@ -198,7 +218,7 @@ const ChatBubble = ({
                     style={{
                       backgroundColor: isOwn ? theme.bubbleOwn : theme.bubbleOther,
                       color: isOwn ? theme.bubbleOwnText : theme.bubbleOtherText,
-                      border: isOwn ? 'none' : '1px solid #f1f1f1',
+                      border: isOwn ? 'none' : `1px solid ${theme.accent}20`,
                     }}
                   >
                     <p className="text-[14.5px] leading-[1.4] whitespace-pre-wrap">{message.text}</p>

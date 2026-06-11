@@ -1007,21 +1007,30 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
           )}
           <form onSubmit={handleSendMessage} className="flex items-center gap-1 min-w-0">
             {/* Mobile: show chevron to expand/collapse options */}
-            {mobileOptionsCollapsed && (
-              <button
-                type="button"
-                onClick={() => setMobileOptionsCollapsed(false)}
-                className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 sm:hidden transition-transform"
-                title="Show options"
-              >
-                <ChevronRight size={20} className="transition-transform" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOptionsCollapsed((v) => !v);
+                if (navigator.vibrate) navigator.vibrate(10);
+              }}
+              className="p-1.5 rounded-full hover:bg-gray-200 text-gray-500 shrink-0 sm:hidden"
+              title={mobileOptionsCollapsed ? 'Show options' : 'Hide options'}
+            >
+              <ChevronRight
+                size={20}
+                className="transition-transform duration-200"
+                style={{ transform: mobileOptionsCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}
+              />
+            </button>
 
             {/* Option buttons — hidden on mobile when collapsed */}
-            <div className={`flex items-center gap-0.5 shrink-0 transition-all duration-200 overflow-hidden ${
-              mobileOptionsCollapsed ? 'w-0 opacity-0 sm:w-auto sm:opacity-100' : 'w-auto opacity-100'
-            }`}>
+            <div
+              className={`flex items-center gap-0.5 shrink-0 overflow-hidden transition-all duration-300 ease-in-out ${
+                mobileOptionsCollapsed
+                  ? 'max-w-0 opacity-0 sm:max-w-none sm:opacity-100'
+                  : 'max-w-[300px] opacity-100'
+              }`}
+            >
               <button type="button" onClick={() => { setShowEmojiPicker((v) => !v); setShowGifPicker(false); }} className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 text-gray-500 shrink-0">
                 <Smile size={18} className="sm:w-5 sm:h-5" />
               </button>
@@ -1063,7 +1072,13 @@ const ChatWindow = ({ onToggleProfile, onBack, showBack, onGroupInfoClick }) => 
                 // On small screens, collapse options when typing
                 if (window.innerWidth < 640) setMobileOptionsCollapsed(true);
               }}
-              onBlur={() => setInputFocused(false)}
+              onBlur={() => {
+                setInputFocused(false);
+                // On small screens, auto-expand options when done typing (after a short delay to allow button clicks)
+                if (window.innerWidth < 640 && !messageText.trim()) {
+                  setTimeout(() => setMobileOptionsCollapsed(false), 200);
+                }
+              }}
               placeholder={t('typeMessage', language)}
               className="flex-1 min-w-0 px-3 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-chattix-primary/30"
               style={{

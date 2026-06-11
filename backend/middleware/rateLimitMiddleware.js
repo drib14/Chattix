@@ -3,8 +3,27 @@ import rateLimit from 'express-rate-limit';
 // Auth routes: strict limits to prevent brute-force attacks
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  max: 15,
   message: { message: 'Too many authentication attempts. Please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Read-only (GET) routes: generous limits — these are non-destructive
+// and frequently polled/loaded in parallel on page load
+export const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
+  message: { message: 'Too many requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Notification polling: even more generous since these fire automatically
+export const notificationLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30,
+  message: { message: 'Too many notification requests. Please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -21,7 +40,7 @@ export const messageLimiter = rateLimit({
 // File/image uploads: stricter limits
 export const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  max: 30,
   message: { message: 'Too many uploads. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -30,16 +49,16 @@ export const uploadLimiter = rateLimit({
 // Story creation: moderate limits
 export const storyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30,
+  max: 40,
   message: { message: 'Too many story actions. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// General API routes: generous limits
+// General API routes (write operations): increased ceiling
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 200,
   message: { message: 'Too many requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -48,7 +67,7 @@ export const generalLimiter = rateLimit({
 // Friend requests: prevent spam
 export const friendRequestLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
+  max: 30,
   message: { message: 'Too many friend requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
