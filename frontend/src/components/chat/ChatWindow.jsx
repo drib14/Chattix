@@ -1,12 +1,66 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Send, Image, Mic, Paperclip, Square } from 'lucide-react';
+import { Send, Image, Mic, Paperclip, Square, Palette } from 'lucide-react';
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { addMessage, setMessages, updateChatLastMessage } from '../../redux/slices/chatSlice';
 import ChatBubble from './ChatBubble';
 import SkeletalLoader from '../ui/SkeletalLoader';
 import MediaGalleryModal from '../modals/MediaGalleryModal';
+import ClayDoodleModal from '../modals/ClayDoodleModal';
+
+const playNotificationSound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    
+    // First chime note
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, now); 
+    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.15); 
+    gain1.gain.setValueAtTime(0.15, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.3);
+
+    // Second chime note (slightly delayed)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880, now + 0.08); 
+    osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.25); 
+    gain2.gain.setValueAtTime(0.1, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.4);
+  } catch (e) {
+    console.error('Failed to play notification sound:', e);
+  }
+};
+
+const formatLastSeen = (lastSeenDate) => {
+  if (!lastSeenDate) return '';
+  const now = new Date();
+  const diffMs = now - new Date(lastSeenDate);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHrs / 24);
+
+  if (diffMins < 1) return '1m';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHrs < 24) return `${diffHrs}hr`;
+  return `${diffDays}d`;
+};
 
 const ChatWindow = () => {
   const { selectedChat, messages, onlineUsers } = useSelector((state) => state.chat);
@@ -27,6 +81,7 @@ const ChatWindow = () => {
   // Gallery Modal Lightbox
   const [activeMediaUrl, setActiveMediaUrl] = useState(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isDoodleOpen, setIsDoodleOpen] = useState(false);
 
   const dispatch = useDispatch();
   const messagesEndRef = useRef(null);
@@ -69,6 +124,12 @@ const ChatWindow = () => {
       if (newMessage.chat._id === selectedChat._id || newMessage.chat === selectedChat._id) {
         dispatch(addMessage(newMessage));
         dispatch(updateChatLastMessage({ chatId: selectedChat._id, message: newMessage }));
+        
+        // Play bubble pop/glass chime sound for incoming messages
+        const senderId = newMessage.sender?._id || newMessage.sender;
+        if (senderId !== user?._id) {
+          playNotificationSound();
+        }
       }
     };
 
@@ -231,6 +292,7 @@ const ChatWindow = () => {
       name: partner?.fullName || 'Chattix User',
       avatar: partner?.avatar,
       isOnline,
+      lastSeen: partner?.lastSeen,
     };
   };
 
@@ -264,11 +326,16 @@ const ChatWindow = () => {
           <div>
             <h4 className="chat-window-name">{partnerDetails?.name}</h4>
             <span className="chat-window-status">
-              {selectedChat.isGroup && <span className="clay-online" style={{ border: 'none', boxShadow: 'none', display: 'inline-block', position: 'static' }} />}
               {selectedChat.isGroup
                 ? `${selectedChat.participants?.length || 0} participants`
                 : partnerDetails?.isOnline
-                ? 'Online'
+                ? (
+                    <span className="flex-center" style={{ gap: '6px', color: 'var(--clay-success, #10b981)', display: 'inline-flex' }}>
+                      <span className="clay-online-dot" /> Online
+                    </span>
+                  )
+                : partnerDetails?.lastSeen
+                ? `Last seen ${formatLastSeen(partnerDetails.lastSeen)} ago`
                 : 'Offline'}
             </span>
           </div>
@@ -347,6 +414,9 @@ const ChatWindow = () => {
               <button type="button" onClick={startRecording} className="chat-window-opt-btn" title="Record voice message">
                 <Mic size={18} />
               </button>
+              <button type="button" onClick={() => setIsDoodleOpen(true)} className="chat-window-opt-btn" title="Draw Clay Doodle">
+                <Palette size={18} />
+              </button>
             </div>
 
             <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => handleFileUpload(e.target.files[0])} />
@@ -374,6 +444,13 @@ const ChatWindow = () => {
         activeMediaUrl={activeMediaUrl}
         setActiveMediaUrl={setActiveMediaUrl}
         messages={messages}
+      />
+
+      {/* Clay Doodle Draw Modal */}
+      <ClayDoodleModal
+        isOpen={isDoodleOpen}
+        onClose={() => setIsDoodleOpen(false)}
+        onSend={handleFileUpload}
       />
     </div>
   );

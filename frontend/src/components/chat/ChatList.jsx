@@ -4,6 +4,20 @@ import { setChats, setSelectedChat } from '../../redux/slices/chatSlice';
 import api from '../../services/api';
 import SkeletalLoader from '../ui/SkeletalLoader';
 
+const formatLastSeen = (lastSeenDate) => {
+  if (!lastSeenDate) return '';
+  const now = new Date();
+  const diffMs = now - new Date(lastSeenDate);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHrs / 24);
+
+  if (diffMins < 1) return '1m';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHrs < 24) return `${diffHrs}hr`;
+  return `${diffDays}d`;
+};
+
 const ChatList = ({ searchQuery }) => {
   const dispatch = useDispatch();
   const { chats, selectedChat, onlineUsers } = useSelector((state) => state.chat);
@@ -41,6 +55,7 @@ const ChatList = ({ searchQuery }) => {
       name: partner?.fullName || 'Chattix User',
       avatar: partner?.avatar || `https://ui-avatars.com/api/?background=6366F1&color=fff&name=${encodeURIComponent(partner?.fullName || 'U')}`,
       isOnline: isPartnerOnline,
+      lastSeen: partner?.lastSeen,
     };
   };
 
@@ -77,7 +92,15 @@ const ChatList = ({ searchQuery }) => {
                 {/* Avatar status bubble */}
                 <div className="chat-list-item-avatar-wrapper">
                   <img src={details.avatar} alt="avatar" className="chat-list-item-avatar" />
-                  {details.isOnline && <div className="chat-list-item-status clay-online" />}
+                  {details.isOnline ? (
+                    <div className="chat-list-item-status clay-online" />
+                  ) : (
+                    details.lastSeen && (
+                      <div className="chat-list-item-offline-badge">
+                        {formatLastSeen(details.lastSeen)}
+                      </div>
+                    )
+                  )}
                 </div>
 
                 <div className="chat-list-item-info">

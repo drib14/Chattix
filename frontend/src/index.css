@@ -492,7 +492,7 @@ body::before {
 .chat-page-container {
   width: 100vw;
   height: 100vh;
-  padding: 24px;
+  padding: 0;
   overflow: hidden;
   position: relative;
 }
@@ -501,9 +501,9 @@ body::before {
   display: flex;
   width: 100%;
   height: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
-  gap: 24px;
+  max-width: 100%;
+  margin: 0;
+  gap: 0;
   position: relative;
   z-index: 10;
 }
@@ -517,11 +517,20 @@ body::before {
 .chat-list-column {
   width: 340px;
   height: 100%;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+  border-right: 1.5px solid rgba(226, 232, 240, 0.6);
+}
+
+.chat-list-column.clay-card {
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.01);
 }
 
 .chat-search-header-container {
@@ -542,9 +551,15 @@ body::before {
 .chat-window-column {
   flex: 1;
   height: 100%;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
   overflow: hidden;
   display: flex;
+}
+
+.chat-window-column.clay-card {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
 }
 
 /* Sidebar Component Styles */
@@ -553,10 +568,18 @@ body::before {
   width: 280px;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.65);
   padding: 24px 16px;
-  border-radius: 28px;
   flex-shrink: 0;
+  border-right: 1.5px solid rgba(226, 232, 240, 0.6);
+}
+
+.sidebar-container.clay-card {
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  box-shadow: inset -2px 0 4px rgba(0, 0, 0, 0.01);
 }
 
 .sidebar-header {
@@ -1670,4 +1693,385 @@ body::before {
   font-weight: 700;
   color: var(--text-primary);
   margin-top: 1px;
+}
+
+/* Custom Auth Form Styles */
+.auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.auth-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.auth-form-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-left: 4px;
+}
+
+.auth-error-msg {
+  background: var(--clay-danger-light);
+  color: var(--clay-danger);
+  border: 1px solid rgba(244, 63, 94, 0.15);
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.auth-verify-code-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.auth-verify-code-input {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+/* Clay Doodle Draw Modal Component Styles */
+.doodle-modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(148, 163, 184, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.doodle-modal-card {
+  width: 100%;
+  max-width: 640px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.doodle-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid rgba(226, 232, 240, 0.6);
+  padding-bottom: 12px;
+}
+
+.doodle-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.doodle-canvas-container {
+  width: 100%;
+  height: 380px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+  position: relative;
+  box-shadow: 
+    inset 3px 3px 6px rgba(0, 0, 0, 0.05),
+    inset -3px -3px 6px rgba(255, 255, 255, 0.95);
+  border: 1.5px solid rgba(226, 232, 240, 0.8);
+}
+
+.doodle-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: crosshair;
+}
+
+.doodle-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(248, 250, 252, 0.55);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(226, 232, 240, 0.6);
+}
+
+.doodle-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.doodle-colors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doodle-color-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.05),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.doodle-color-btn:hover {
+  transform: scale(1.15);
+}
+
+.doodle-color-btn-active {
+  transform: scale(1.22);
+  border-color: var(--clay-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+.doodle-brush-settings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doodle-size-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.doodle-size-slider {
+  width: 100px;
+  height: 6px;
+  -webkit-appearance: none;
+  background: #cbd5e1;
+  border-radius: 9999px;
+  outline: none;
+}
+
+.doodle-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--clay-primary);
+  cursor: pointer;
+  box-shadow: var(--clay-shadow-button);
+}
+
+.doodle-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.doodle-btn {
+  padding: 10px 18px;
+  border-radius: 14px;
+  font-size: 13.5px;
+}
+
+/* Social Login Divider & Button */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1.5px solid rgba(226, 232, 240, 0.7);
+}
+
+.auth-divider:not(:empty)::before {
+  margin-right: 14px;
+}
+
+.auth-divider:not(:empty)::after {
+  margin-left: 14px;
+}
+
+.google-auth-btn {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.google-auth-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--clay-shadow-button-hover);
+}
+
+.google-auth-btn:active {
+  transform: translateY(0);
+}
+
+/* Clerk Custom UI Overrides */
+.cl-cardBox {
+  border: none !important;
+  box-shadow: var(--clay-shadow) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-radius: 24px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
+  width: 100% !important;
+  max-width: 440px !important;
+}
+
+.cl-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.cl-rootBox {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.cl-headerTitle {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  color: var(--text-primary) !important;
+}
+
+.cl-headerSubtitle {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+}
+
+.cl-formButtonPrimary {
+  background: linear-gradient(135deg, var(--clay-primary) 0%, #4f46e5 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 14px !important;
+  box-shadow: var(--clay-shadow-button) !important;
+  transition: all 0.2s ease !important;
+  font-family: 'Outfit', sans-serif !important;
+  text-transform: none !important;
+  height: 44px !important;
+}
+
+.cl-formButtonPrimary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--clay-shadow-button-hover) !important;
+}
+
+.cl-formButtonPrimary:active {
+  transform: translateY(0) !important;
+}
+
+.cl-formFieldInput {
+  background: rgba(241, 245, 249, 0.6) !important;
+  border: 1.5px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 14px !important;
+  padding: 10px 14px !important;
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.04) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Outfit', sans-serif !important;
+  transition: all 0.2s ease !important;
+}
+
+.cl-formFieldInput:focus {
+  background: #ffffff !important;
+  border-color: var(--clay-primary) !important;
+  box-shadow: 
+    inset 1px 1px 2px rgba(0, 0, 0, 0.02),
+    0 0 0 3px rgba(99, 102, 241, 0.2) !important;
+}
+
+.cl-socialButtonsBlockButton {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  transition: all 0.2s ease !important;
+  height: 44px !important;
+  margin-top: 8px !important;
+}
+
+.cl-socialButtonsBlockButton:hover {
+  background: rgba(248, 250, 252, 0.8) !important;
+  border-color: rgba(203, 213, 225, 0.8) !important;
+  transform: translateY(-1px) !important;
+}
+
+.cl-socialButtonsBlockButton:active {
+  transform: translateY(0) !important;
+}
+
+.cl-footerActionLink {
+  color: var(--clay-primary) !important;
+  font-weight: 700 !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+
+.cl-footerActionLink:hover {
+  text-decoration: underline !important;
+}
+
+/* Status Indicator Dot & Offline Pill Badge */
+.clay-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--clay-success, #10b981);
+  display: inline-block;
+  box-shadow: 0 0 8px var(--clay-success, #10b981);
+}
+
+.chat-list-item-offline-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1.5px 4.5px;
+  border-radius: 6px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.4);
 }

@@ -22,94 +22,40 @@ const Logo = ({ className = "brand-logo-svg" }) => (
 
 const LoginRegister = ({ mode }) => {
   return (
-    <div className="auth-container flex-center chat-bg-pattern">
+    <div className="auth-container flex-center chat-bg-pattern" style={{ flexDirection: 'column', gap: '20px', minHeight: '100vh', padding: '40px 20px', boxSizing: 'border-box' }}>
       {/* Soft floating blur shapes */}
       <div className="bg-blob bg-blob-1" />
       <div className="bg-blob bg-blob-2" />
       <div className="bg-blob bg-blob-3" />
 
-      <div className="auth-card clay-card animate-pop-in">
-        {/* Custom Clay Brand Logo */}
-        <div className="auth-header">
-          <div className="clay-logo-container">
-            <Logo />
-          </div>
-          <h2 className="auth-title">Chattix</h2>
-          <p className="auth-subtitle">
-            {mode === 'login' ? 'Sign in to access your chats' : 'Create an account to start messaging'}
-          </p>
+      {/* Brand Logo Header */}
+      <div className="flex-center" style={{ flexDirection: 'column', gap: '10px', zIndex: 10 }}>
+        <div className="clay-logo-container" style={{ width: '60px', height: '60px' }}>
+          <Logo />
         </div>
+        <h2 className="auth-title" style={{ fontSize: '28px', color: '#1e293b', margin: 0, fontWeight: 800 }}>Chattix</h2>
+      </div>
 
-        {/* Clerk Auths widgets configured to merge with Clay index.css rules */}
-        <div className="auth-widget-wrapper">
-          {mode === 'login' ? (
-            <SignIn
-              routing="path"
-              path="/login"
-              signUpUrl="/register"
-              appearance={{
-                elements: {
-                  rootBox: 'w-full',
-                  card: 'shadow-none border-0 bg-transparent p-0 w-full',
-                  header: 'hidden',
-                  footer: 'hidden',
-                  formButtonPrimary: 'clay-btn clay-btn-primary w-full py-3 text-sm font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all',
-                  formFieldInput: 'clay-input border-slate-200 focus:border-indigo-500 bg-slate-50/50',
-                  formFieldLabel: 'text-xs font-semibold text-slate-600 uppercase tracking-wider',
-                  identityPreviewText: 'text-slate-700 font-medium',
-                  identityPreviewEditButton: 'text-indigo-600 hover:text-indigo-800 font-semibold',
-                  dividerLine: 'bg-slate-200',
-                  dividerText: 'text-slate-400 text-xs font-medium uppercase',
-                  socialButtonsBlockButton: 'clay-btn clay-btn-secondary border border-slate-200 hover:bg-slate-50 w-full flex items-center justify-center py-2.5 rounded-xl text-slate-600 font-medium text-sm',
-                  socialButtonsBlockButtonText: 'text-slate-600 font-semibold text-sm',
-                  formFieldAction: 'text-indigo-600 hover:text-indigo-800 text-xs font-semibold',
-                  alert: 'bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3',
-                }
-              }}
-            />
-          ) : (
-            <SignUp
-              routing="path"
-              path="/register"
-              signInUrl="/login"
-              appearance={{
-                elements: {
-                  rootBox: 'w-full',
-                  card: 'shadow-none border-0 bg-transparent p-0 w-full',
-                  header: 'hidden',
-                  footer: 'hidden',
-                  formButtonPrimary: 'clay-btn clay-btn-primary w-full py-3 text-sm font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition-all',
-                  formFieldInput: 'clay-input border-slate-200 focus:border-indigo-500 bg-slate-50/50',
-                  formFieldLabel: 'text-xs font-semibold text-slate-600 uppercase tracking-wider',
-                  dividerLine: 'bg-slate-200',
-                  dividerText: 'text-slate-400 text-xs font-medium uppercase',
-                  socialButtonsBlockButton: 'clay-btn clay-btn-secondary border border-slate-200 hover:bg-slate-50 w-full flex items-center justify-center py-2.5 rounded-xl text-slate-600 font-medium text-sm',
-                  socialButtonsBlockButtonText: 'text-slate-600 font-semibold text-sm',
-                  alert: 'bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3',
-                }
-              }}
-            />
-          )}
-        </div>
-
-        {/* Custom styled redirect text */}
-        <div className="auth-footer-link">
-          {mode === 'login' ? (
-            <>
-              Don't have an account?{' '}
-              <a href="/register" className="auth-link">Sign up</a>
-            </>
-          ) : (
-            <>
-              Already have an account?{' '}
-              <a href="/login" className="auth-link">Sign in</a>
-            </>
-          )}
-        </div>
+      {/* Clerk prebuilt auth widgets */}
+      <div className="animate-pop-in" style={{ zIndex: 10, width: '100%', display: 'flex', justifyContent: 'center' }}>
+        {mode === 'login' ? (
+          <SignIn
+            path="/login"
+            routing="path"
+            signUpUrl="/register"
+            fallbackRedirectUrl="/messages"
+          />
+        ) : (
+          <SignUp
+            path="/register"
+            routing="path"
+            signInUrl="/login"
+            fallbackRedirectUrl="/messages"
+          />
+        )}
       </div>
     </div>
   );
 };
 
 export default LoginRegister;
-
