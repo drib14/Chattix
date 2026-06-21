@@ -4,6 +4,26 @@ import { MessageSquare, Search, Users, User, LogOut } from 'lucide-react';
 import { logout } from '../../redux/slices/authSlice';
 import { setSelectedChat } from '../../redux/slices/chatSlice';
 
+const Logo = ({ className = "brand-logo-svg" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={className}>
+    <defs>
+      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#a5b4fc" />
+        <stop offset="100%" stopColor="#6366f1" />
+      </linearGradient>
+      <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fbcfe8" />
+        <stop offset="100%" stopColor="#f43f5e" />
+      </linearGradient>
+    </defs>
+    <rect x="15" y="15" width="70" height="70" rx="26" fill="url(#bgGrad)" />
+    <path d="M 35 85 L 45 70 L 25 70 Z" fill="#6366f1" />
+    <path d="M 30 30 Q 50 15 70 30" stroke="white" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.35" />
+    <circle cx="70" cy="70" r="18" fill="url(#accentGrad)" />
+    <path d="M 62 62 Q 70 54 78 62" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.45" />
+  </svg>
+);
+
 const ModernSidebar = ({ activeTab, setActiveTab }) => {
   const { user } = useSelector((state) => state.auth);
   const { signOut } = useClerk();
@@ -28,19 +48,17 @@ const ModernSidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div style={styles.container} className="clay-card">
+    <div className="sidebar-container clay-card">
       {/* Brand Header */}
-      <div style={styles.header}>
-        <div style={styles.logoBox}>
-          <svg style={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+      <div className="sidebar-header">
+        <div className="clay-logo-container">
+          <Logo />
         </div>
-        <span style={styles.logoName}>Chattix</span>
+        <span className="sidebar-logo-name">Chattix</span>
       </div>
 
       {/* Navigation Buttons */}
-      <div style={styles.nav}>
+      <div className="sidebar-nav">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -48,169 +66,38 @@ const ModernSidebar = ({ activeTab, setActiveTab }) => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              style={{
-                ...styles.navBtn,
-                ...(isActive ? styles.navBtnActive : {}),
-              }}
+              className={`sidebar-nav-btn ${isActive ? 'sidebar-nav-btn-active' : ''}`}
               title={item.label}
             >
-              <Icon size={20} style={isActive ? { color: 'var(--clay-primary)' } : {}} />
-              <span style={{
-                ...styles.btnLabel,
-                ...(isActive ? styles.btnLabelActive : {}),
-              }}>{item.label}</span>
+              <Icon size={20} />
+              <span className="sidebar-btn-label">{item.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* User Footer Profile & Logout */}
-      <div style={styles.footer}>
-        <div style={styles.userInfo}>
+      <div className="sidebar-footer">
+        <div className="sidebar-user-info">
           <img
             src={user?.avatar || `https://ui-avatars.com/api/?background=6366F1&color=fff&name=${encodeURIComponent(user?.fullName || 'U')}`}
             alt="profile"
-            style={styles.avatar}
+            className="sidebar-avatar"
           />
-          <div style={styles.userText}>
-            <p style={styles.name} className="text-truncate">{user?.fullName}</p>
-            <p style={styles.username} className="text-truncate">@{user?.username}</p>
+          <div className="sidebar-user-text">
+            <p className="sidebar-name text-truncate">{user?.fullName}</p>
+            <p className="sidebar-username text-truncate">@{user?.username}</p>
           </div>
         </div>
 
-        <button onClick={handleLogout} style={styles.logoutBtn} className="clay-btn clay-btn-secondary" title="Sign Out">
+        <button onClick={handleLogout} className="sidebar-logout-btn clay-btn" title="Sign Out">
           <LogOut size={16} />
-          <span style={styles.logoutText}>Logout</span>
+          <span className="sidebar-logout-text">Logout</span>
         </button>
       </div>
     </div>
   );
 };
 
-const styles = {
-  container: {
-    height: '100%',
-    width: '280px',
-    display: 'flex',
-    flexDirection: 'column',
-    background: '#ffffff',
-    padding: '24px 16px',
-    borderRadius: '24px',
-    flexShrink: 0,
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '32px',
-    paddingLeft: '8px',
-  },
-  logoBox: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '12px',
-    background: 'var(--clay-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: 'var(--clay-shadow-button)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-  },
-  logoIcon: {
-    width: '20px',
-    height: '20px',
-    color: '#ffffff',
-  },
-  logoName: {
-    fontSize: '20px',
-    fontWeight: 800,
-    color: 'var(--text-primary)',
-    letterSpacing: '-0.3px',
-  },
-  nav: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    flex: 1,
-  },
-  navBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    width: '100%',
-    padding: '14px 16px',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: '16px',
-    cursor: 'pointer',
-    textAlign: 'left',
-    transition: 'all 0.2s ease',
-    color: 'var(--text-secondary)',
-  },
-  navBtnActive: {
-    background: 'var(--clay-primary-light)',
-    boxShadow: 'inset 0 -2px 4px rgba(0, 0, 0, 0.02), inset 0 2px 4px rgba(255, 255, 255, 0.85)',
-    border: '1px solid rgba(99, 102, 241, 0.15)',
-    color: 'var(--clay-primary)',
-    fontWeight: 700,
-  },
-  btnLabel: {
-    fontSize: '14px',
-    fontWeight: 500,
-  },
-  btnLabelActive: {
-    fontWeight: 700,
-  },
-  footer: {
-    paddingTop: '16px',
-    borderTop: '1px solid #f1f5f9',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  userInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    paddingLeft: '8px',
-  },
-  avatar: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '12px',
-    objectFit: 'cover',
-    background: '#f1f5f9',
-    border: '1.5px solid var(--clay-primary-light)',
-  },
-  userText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  name: {
-    fontSize: '14px',
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-  },
-  username: {
-    fontSize: '11px',
-    color: 'var(--text-light)',
-    marginTop: '1px',
-  },
-  logoutBtn: {
-    width: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    padding: '12px 16px',
-    borderRadius: '14px',
-    fontSize: '13px',
-    color: 'var(--clay-danger)',
-    borderColor: 'var(--clay-danger-light)',
-  },
-  logoutText: {
-    fontWeight: 600,
-  },
-};
-
 export default ModernSidebar;
+

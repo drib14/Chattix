@@ -1,28 +1,47 @@
 import { SignIn, SignUp } from '@clerk/clerk-react';
 
+const Logo = ({ className = "brand-logo-svg" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={className}>
+    <defs>
+      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#a5b4fc" />
+        <stop offset="100%" stopColor="#6366f1" />
+      </linearGradient>
+      <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fbcfe8" />
+        <stop offset="100%" stopColor="#f43f5e" />
+      </linearGradient>
+    </defs>
+    <rect x="15" y="15" width="70" height="70" rx="26" fill="url(#bgGrad)" />
+    <path d="M 35 85 L 45 70 L 25 70 Z" fill="#6366f1" />
+    <path d="M 30 30 Q 50 15 70 30" stroke="white" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.35" />
+    <circle cx="70" cy="70" r="18" fill="url(#accentGrad)" />
+    <path d="M 62 62 Q 70 54 78 62" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.45" />
+  </svg>
+);
+
 const LoginRegister = ({ mode }) => {
   return (
-    <div style={styles.container} className="chat-bg-pattern">
+    <div className="auth-container flex-center chat-bg-pattern">
       {/* Soft floating blur shapes */}
-      <div style={{ ...styles.bubble, ...styles.bubble1 }} />
-      <div style={{ ...styles.bubble, ...styles.bubble2 }} />
+      <div className="bg-blob bg-blob-1" />
+      <div className="bg-blob bg-blob-2" />
+      <div className="bg-blob bg-blob-3" />
 
-      <div style={styles.card} className="clay-card animate-pop-in">
+      <div className="auth-card clay-card animate-pop-in">
         {/* Custom Clay Brand Logo */}
-        <div style={styles.logoHeader}>
-          <div style={styles.logoIconContainer}>
-            <svg style={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+        <div className="auth-header">
+          <div className="clay-logo-container">
+            <Logo />
           </div>
-          <h2 style={styles.logoText}>Chattix</h2>
-          <p style={styles.logoSubtext}>
+          <h2 className="auth-title">Chattix</h2>
+          <p className="auth-subtitle">
             {mode === 'login' ? 'Sign in to access your chats' : 'Create an account to start messaging'}
           </p>
         </div>
 
         {/* Clerk Auths widgets configured to merge with Clay index.css rules */}
-        <div style={styles.widgetWrapper}>
+        <div className="auth-widget-wrapper">
           {mode === 'login' ? (
             <SignIn
               routing="path"
@@ -74,16 +93,16 @@ const LoginRegister = ({ mode }) => {
         </div>
 
         {/* Custom styled redirect text */}
-        <div style={styles.footerLink}>
+        <div className="auth-footer-link">
           {mode === 'login' ? (
             <>
               Don't have an account?{' '}
-              <a href="/register" style={styles.link}>Sign up</a>
+              <a href="/register" className="auth-link">Sign up</a>
             </>
           ) : (
             <>
               Already have an account?{' '}
-              <a href="/login" style={styles.link}>Sign in</a>
+              <a href="/login" className="auth-link">Sign in</a>
             </>
           )}
         </div>
@@ -92,104 +111,5 @@ const LoginRegister = ({ mode }) => {
   );
 };
 
-const styles = {
-  container: {
-    width: '100vw',
-    height: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  bubble: {
-    position: 'absolute',
-    borderRadius: '50%',
-    filter: 'blur(80px)',
-    opacity: 0.4,
-  },
-  bubble1: {
-    width: '200px',
-    height: '200px',
-    background: '#c7d2fe',
-    top: '10%',
-    left: '12%',
-  },
-  bubble2: {
-    width: '280px',
-    height: '280px',
-    background: '#fbcfe8',
-    bottom: '10%',
-    right: '12%',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '420px',
-    padding: '40px 32px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    background: 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(10px)',
-    zIndex: 10,
-  },
-  logoHeader: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-    marginBottom: '24px',
-  },
-  logoIconContainer: {
-    width: '56px',
-    height: '56px',
-    borderRadius: '18px',
-    background: 'var(--clay-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: 'var(--clay-shadow-button)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    marginBottom: '12px',
-  },
-  logoIcon: {
-    width: '28px',
-    height: '28px',
-    color: '#ffffff',
-  },
-  logoText: {
-    fontSize: '26px',
-    fontWeight: 800,
-    color: 'var(--text-primary)',
-    letterSpacing: '-0.5px',
-  },
-  logoSubtext: {
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    marginTop: '4px',
-    fontWeight: 500,
-  },
-  widgetWrapper: {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  footerLink: {
-    marginTop: '24px',
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    borderTop: '1px solid #f1f5f9',
-    paddingTop: '16px',
-    width: '100%',
-    textAlign: 'center',
-    fontWeight: 500,
-  },
-  link: {
-    color: 'var(--clay-primary)',
-    textDecoration: 'none',
-    fontWeight: 700,
-  },
-};
-
 export default LoginRegister;
+

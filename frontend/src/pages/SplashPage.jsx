@@ -1,5 +1,25 @@
 import { useEffect, useState } from 'react';
 
+const Logo = ({ className = "brand-logo-svg" }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" className={className}>
+    <defs>
+      <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#a5b4fc" />
+        <stop offset="100%" stopColor="#6366f1" />
+      </linearGradient>
+      <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fbcfe8" />
+        <stop offset="100%" stopColor="#f43f5e" />
+      </linearGradient>
+    </defs>
+    <rect x="15" y="15" width="70" height="70" rx="26" fill="url(#bgGrad)" />
+    <path d="M 35 85 L 45 70 L 25 70 Z" fill="#6366f1" />
+    <path d="M 30 30 Q 50 15 70 30" stroke="white" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.35" />
+    <circle cx="70" cy="70" r="18" fill="url(#accentGrad)" />
+    <path d="M 62 62 Q 70 54 78 62" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.45" />
+  </svg>
+);
+
 const SplashPage = ({ onFinish }) => {
   const [progress, setProgress] = useState(0);
 
@@ -20,125 +40,30 @@ const SplashPage = ({ onFinish }) => {
   }, [onFinish]);
 
   return (
-    <div style={styles.container}>
+    <div className="splash-container flex-center">
       {/* Background organic blur bubbles */}
-      <div style={{ ...styles.bubble, ...styles.bubble1 }} />
-      <div style={{ ...styles.bubble, ...styles.bubble2 }} />
+      <div className="bg-blob bg-blob-1" />
+      <div className="bg-blob bg-blob-2" />
+      <div className="bg-blob bg-blob-3" />
       
-      <div style={styles.card} className="clay-card">
-        {/* Clay SVG Logo */}
-        <div style={styles.logoWrapper} className="pulse-logo">
-          <svg style={styles.logoIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+      <div className="splash-card clay-card animate-pop-in">
+        {/* Unified Clay SVG Logo */}
+        <div className="clay-logo-container">
+          <Logo />
         </div>
 
-        <h1 style={styles.title}>Chattix</h1>
-        <p style={styles.subtitle}>Minimalist Clay Messaging</p>
+        <h1 className="splash-title">Chattix</h1>
+        <p className="splash-subtitle">Minimalist Clay Messaging</p>
 
         {/* Dynamic Progress Bar */}
-        <div style={styles.progressContainer}>
-          <div style={{ ...styles.progressBar, width: `${progress}%` }} />
+        <div className="splash-progress-container">
+          <div className="splash-progress-bar" style={{ width: `${progress}%` }} />
         </div>
-        <span style={styles.progressText}>{progress}%</span>
+        <span className="splash-progress-text">{progress}%</span>
       </div>
     </div>
   );
 };
 
-const styles = {
-  container: {
-    width: '100vw',
-    height: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#f1f5f9',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  bubble: {
-    position: 'absolute',
-    borderRadius: '50%',
-    filter: 'blur(80px)',
-    opacity: 0.45,
-  },
-  bubble1: {
-    width: '250px',
-    height: '250px',
-    background: '#a5b4fc',
-    top: '15%',
-    left: '15%',
-  },
-  bubble2: {
-    width: '320px',
-    height: '320px',
-    background: '#fbcfe8',
-    bottom: '15%',
-    right: '15%',
-  },
-  card: {
-    padding: '48px 40px',
-    width: '90%',
-    maxWidth: '380px',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-    zIndex: 10,
-    background: 'rgba(255, 255, 255, 0.85)',
-    backdropFilter: 'blur(8px)',
-  },
-  logoWrapper: {
-    width: '72px',
-    height: '72px',
-    borderRadius: '22px',
-    background: 'var(--clay-primary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: 'var(--clay-shadow-button)',
-    border: '1px solid rgba(255, 255, 255, 0.25)',
-    marginBottom: '20px',
-  },
-  logoIcon: {
-    width: '38px',
-    height: '38px',
-    color: '#ffffff',
-  },
-  title: {
-    fontSize: '32px',
-    fontWeight: 800,
-    letterSpacing: '-0.5px',
-    color: 'var(--text-primary)',
-    marginBottom: '4px',
-  },
-  subtitle: {
-    fontSize: '14px',
-    color: 'var(--text-secondary)',
-    fontWeight: 500,
-    marginBottom: '32px',
-  },
-  progressContainer: {
-    width: '100%',
-    height: '8px',
-    background: '#e2e8f0',
-    borderRadius: '9999px',
-    overflow: 'hidden',
-    marginBottom: '8px',
-    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)',
-  },
-  progressBar: {
-    height: '100%',
-    background: 'var(--clay-primary)',
-    borderRadius: '9999px',
-    transition: 'width 0.1s ease-out',
-  },
-  progressText: {
-    fontSize: '11px',
-    fontWeight: 700,
-    color: 'var(--clay-primary)',
-  },
-};
-
 export default SplashPage;
+

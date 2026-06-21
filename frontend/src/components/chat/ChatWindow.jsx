@@ -243,27 +243,28 @@ const ChatWindow = () => {
 
   if (!selectedChat) {
     return (
-      <div style={styles.blankState}>
-        <div style={styles.blankIconBox}>💬</div>
-        <h4 style={styles.blankTitle}>Your Chattix Space</h4>
-        <p style={styles.blankSubtitle}>Select a chat room or start searching for friends to start messaging.</p>
+      <div className="chat-window-blank-state">
+        <div className="chat-window-blank-icon-box">💬</div>
+        <h4 className="chat-window-blank-title">Your Chattix Space</h4>
+        <p className="chat-window-blank-subtitle">Select a chat room or start searching for friends to start messaging.</p>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className="chat-window-container">
       {/* Header Profile Section */}
-      <div style={styles.header}>
-        <div style={styles.headerInfo}>
+      <div className="chat-window-header">
+        <div className="chat-window-header-info">
           <img
             src={partnerDetails?.avatar || `https://ui-avatars.com/api/?background=6366F1&color=fff&name=${encodeURIComponent(partnerDetails?.name || 'U')}`}
             alt=""
-            style={styles.avatar}
+            className="chat-window-avatar"
           />
           <div>
-            <h4 style={styles.name}>{partnerDetails?.name}</h4>
-            <span style={styles.status}>
+            <h4 className="chat-window-name">{partnerDetails?.name}</h4>
+            <span className="chat-window-status">
+              {selectedChat.isGroup && <span className="clay-online" style={{ border: 'none', boxShadow: 'none', display: 'inline-block', position: 'static' }} />}
               {selectedChat.isGroup
                 ? `${selectedChat.participants?.length || 0} participants`
                 : partnerDetails?.isOnline
@@ -275,11 +276,11 @@ const ChatWindow = () => {
       </div>
 
       {/* Messages Logs Area */}
-      <div style={styles.messageArea}>
+      <div className="chat-window-message-area">
         {fetching ? (
           <SkeletalLoader type="bubble" count={5} />
         ) : messages.length === 0 ? (
-          <div style={styles.emptyPrompt}>
+          <div className="chat-window-empty-prompt">
             <span>👋</span>
             <p>Say hello to start the conversation!</p>
           </div>
@@ -296,13 +297,13 @@ const ChatWindow = () => {
 
         {/* Typing indicator bubble */}
         {typingPartner && (
-          <div style={styles.typingRow}>
-            <div style={styles.typingBubble} className="clay-bubble-other">
-              <span style={styles.typingText}>@{typingPartner} is typing</span>
-              <div style={styles.dots}>
-                <div style={styles.dot} />
-                <div style={styles.dot} />
-                <div style={styles.dot} />
+          <div className="chat-window-typing-row">
+            <div className="chat-window-typing-bubble clay-bubble-other">
+              <span className="chat-window-typing-text">@{typingPartner} is typing</span>
+              <div className="chat-window-typing-dots">
+                <div className="chat-window-typing-dot" />
+                <div className="chat-window-typing-dot" />
+                <div className="chat-window-typing-dot" />
               </div>
             </div>
           </div>
@@ -312,38 +313,38 @@ const ChatWindow = () => {
 
       {/* Upload Progress Overlay */}
       {uploadPercent !== null && (
-        <div style={styles.progressOverlay}>
-          <div style={styles.progressCard} className="clay-card">
-            <span style={styles.uploadingName} className="text-truncate">Uploading: {uploadingName}</span>
-            <div style={styles.progressBarWrapper}>
-              <div style={{ ...styles.progressBar, width: `${uploadPercent}%` }} />
+        <div className="chat-window-progress-overlay">
+          <div className="chat-window-progress-card clay-card">
+            <span className="chat-window-upload-name text-truncate">Uploading: {uploadingName}</span>
+            <div className="chat-window-progress-bar-wrapper">
+              <div className="chat-window-progress-bar" style={{ width: `${uploadPercent}%` }} />
             </div>
-            <span style={styles.progressPercent}>{uploadPercent}% completed</span>
+            <span className="chat-window-progress-percent">{uploadPercent}% completed</span>
           </div>
         </div>
       )}
 
       {/* Action Input Panel Footer */}
-      <div style={styles.inputPanel}>
+      <div className="chat-window-input-panel">
         {isRecording ? (
-          <div style={styles.recordingRow} className="clay-card">
-            <span style={styles.recordingTimer}>Recording: {formatTimer(recordingSeconds)}</span>
-            <div style={styles.wave} />
-            <button onClick={stopRecording} style={styles.stopBtn} className="clay-btn">
+          <div className="chat-window-recording-row clay-card">
+            <span className="chat-window-recording-timer">Recording: {formatTimer(recordingSeconds)}</span>
+            <div style={{ flex: 1 }} />
+            <button onClick={stopRecording} className="chat-window-stop-btn">
               <Square size={14} fill="currentColor" />
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSend} style={styles.inputForm}>
+          <form onSubmit={handleSend} className="chat-window-input-form">
             {/* Input triggers */}
-            <div style={styles.options}>
-              <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.optBtn} title="Send Image/Video">
+            <div className="chat-window-options">
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="chat-window-opt-btn" title="Send Image/Video">
                 <Image size={18} />
               </button>
-              <button type="button" onClick={() => docInputRef.current?.click()} style={styles.optBtn} title="Attach Document">
+              <button type="button" onClick={() => docInputRef.current?.click()} className="chat-window-opt-btn" title="Attach Document">
                 <Paperclip size={18} />
               </button>
-              <button type="button" onClick={startRecording} style={styles.optBtn} title="Record voice message">
+              <button type="button" onClick={startRecording} className="chat-window-opt-btn" title="Record voice message">
                 <Mic size={18} />
               </button>
             </div>
@@ -356,11 +357,10 @@ const ChatWindow = () => {
               placeholder="Type your message..."
               value={messageText}
               onChange={handleInputChange}
-              className="clay-input"
-              style={styles.textInput}
+              className="clay-input chat-window-text-input"
             />
 
-            <button type="submit" disabled={!messageText.trim()} style={styles.sendBtn} className="clay-btn clay-btn-primary">
+            <button type="submit" disabled={!messageText.trim()} className="clay-btn clay-btn-primary chat-window-send-btn">
               <Send size={16} />
             </button>
           </form>
@@ -379,223 +379,5 @@ const ChatWindow = () => {
   );
 };
 
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    width: '100%',
-    position: 'relative',
-  },
-  blankState: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    padding: '24px',
-    background: '#ffffff',
-  },
-  blankIconBox: {
-    fontSize: '48px',
-    marginBottom: '16px',
-  },
-  blankTitle: {
-    fontSize: '18px',
-    fontWeight: 800,
-    color: 'var(--text-primary)',
-    marginBottom: '6px',
-  },
-  blankSubtitle: {
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    maxWidth: '300px',
-  },
-  header: {
-    height: '68px',
-    borderBottom: '1px solid #f1f5f9',
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 20px',
-    background: '#ffffff',
-    zIndex: 10,
-  },
-  headerInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  avatar: {
-    width: '38px',
-    height: '38px',
-    borderRadius: '12px',
-    objectFit: 'cover',
-    background: '#f1f5f9',
-  },
-  name: {
-    fontSize: '14.5px',
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-  },
-  status: {
-    fontSize: '11px',
-    color: 'var(--text-light)',
-    fontWeight: 500,
-  },
-  messageArea: {
-    flex: 1,
-    overflowY: 'auto',
-    padding: '20px',
-    background: '#f8fafc',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  emptyPrompt: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    color: 'var(--text-light)',
-    fontSize: '13px',
-    height: '100%',
-  },
-  typingRow: {
-    display: 'flex',
-    justifyContent: 'flex-start',
-    width: '100%',
-    marginBottom: '8px',
-  },
-  typingBubble: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '10px 14px',
-  },
-  typingText: {
-    fontSize: '12.5px',
-    color: 'var(--text-secondary)',
-    fontWeight: 500,
-  },
-  dots: {
-    display: 'flex',
-    gap: '3px',
-  },
-  dot: {
-    width: '5px',
-    height: '5px',
-    background: 'var(--clay-primary)',
-    borderRadius: '50%',
-    animation: 'pulseSkeletal 1.2s infinite ease-in-out',
-  },
-  progressOverlay: {
-    position: 'absolute',
-    bottom: '80px',
-    left: '20px',
-    right: '20px',
-    zIndex: 100,
-  },
-  progressCard: {
-    padding: '14px 16px',
-    display: 'flex',
-    flexDirection: 'column',
-    background: 'rgba(255,255,255,0.95)',
-    backdropFilter: 'blur(8px)',
-  },
-  uploadingName: {
-    fontSize: '12px',
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-    marginBottom: '6px',
-  },
-  progressBarWrapper: {
-    width: '100%',
-    height: '6px',
-    background: '#e2e8f0',
-    borderRadius: '9999px',
-    overflow: 'hidden',
-    marginBottom: '4px',
-  },
-  progressBar: {
-    height: '100%',
-    background: 'var(--clay-primary)',
-    borderRadius: '9999px',
-  },
-  progressPercent: {
-    fontSize: '10px',
-    fontWeight: 700,
-    color: 'var(--clay-primary)',
-    alignSelf: 'flex-end',
-  },
-  inputPanel: {
-    padding: '14px 20px',
-    background: '#ffffff',
-    borderTop: '1px solid #f1f5f9',
-  },
-  inputForm: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    width: '100%',
-  },
-  options: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-  },
-  optBtn: {
-    background: 'transparent',
-    border: 'none',
-    width: '38px',
-    height: '38px',
-    borderRadius: '10px',
-    color: 'var(--text-secondary)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  },
-  textInput: {
-    flex: 1,
-    padding: '12px 18px',
-  },
-  sendBtn: {
-    width: '42px',
-    height: '42px',
-    borderRadius: '12px',
-    padding: 0,
-    flexShrink: 0,
-  },
-  recordingRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 16px',
-    background: 'var(--clay-danger-light)',
-    border: '1px solid rgba(239, 68, 68, 0.15)',
-    width: '100%',
-  },
-  recordingTimer: {
-    fontSize: '13px',
-    fontWeight: 700,
-    color: 'var(--clay-danger)',
-  },
-  stopBtn: {
-    background: 'var(--clay-danger)',
-    color: '#ffffff',
-    border: 'none',
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: 'var(--clay-shadow-button)',
-  },
-};
-
 export default ChatWindow;
+

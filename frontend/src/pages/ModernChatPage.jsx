@@ -58,33 +58,37 @@ const ModernChatPage = () => {
   };
 
   return (
-    <div style={styles.page} className="chat-bg-pattern">
-      <div style={styles.gridContainer}>
+    <div className="chat-page-container chat-bg-pattern">
+      {/* Background organic blur bubbles */}
+      <div className="bg-blob bg-blob-1" />
+      <div className="bg-blob bg-blob-2" />
+      <div className="bg-blob bg-blob-3" />
+
+      <div className="chat-grid-layout">
         {/* Persistent Sidebar Navigation */}
-        <div style={styles.sidebarSection}>
+        <div className="chat-sidebar-wrapper">
           <ModernSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         </div>
 
         {/* Dynamic Lists Column */}
-        <div style={styles.listSection} className="clay-card">
+        <div className="chat-list-column clay-card">
           {/* Header Search for Chats List tab */}
           {activeTab === 'chats' && (
-            <div style={styles.searchHeader}>
+            <div className="chat-search-header-container">
               <input
                 type="text"
                 placeholder="Search chats..."
                 value={listSearchQuery}
                 onChange={(e) => setListSearchQuery(e.target.value)}
-                className="clay-input"
-                style={styles.listSearchInput}
+                className="clay-input chat-search-input"
               />
             </div>
           )}
-          <div style={styles.listContent}>{renderActiveList()}</div>
+          <div className="chat-list-content-area">{renderActiveList()}</div>
         </div>
 
         {/* Primary Message Stream Panel */}
-        <div style={styles.chatSection} className="clay-card">
+        <div className="chat-window-column clay-card">
           <ChatWindow />
         </div>
       </div>
@@ -92,57 +96,5 @@ const ModernChatPage = () => {
   );
 };
 
-const styles = {
-  page: {
-    width: '100vw',
-    height: '100vh',
-    overflow: 'hidden',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-  },
-  gridContainer: {
-    display: 'flex',
-    width: '100%',
-    height: '100%',
-    maxWidth: '1440px',
-    gap: '20px',
-    position: 'relative',
-  },
-  sidebarSection: {
-    display: 'flex',
-    height: '100%',
-    flexShrink: 0,
-  },
-  listSection: {
-    width: '320px',
-    height: '100%',
-    background: '#ffffff',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    flexShrink: 0,
-  },
-  searchHeader: {
-    padding: '20px 16px 12px 16px',
-    borderBottom: '1px solid #f1f5f9',
-  },
-  listSearchInput: {
-    padding: '10px 16px',
-    borderRadius: '12px',
-  },
-  listContent: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  chatSection: {
-    flex: 1,
-    height: '100%',
-    background: '#ffffff',
-    overflow: 'hidden',
-    display: 'flex',
-  },
-};
-
 export default ModernChatPage;
+
