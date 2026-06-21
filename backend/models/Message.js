@@ -20,7 +20,7 @@ const messageSchema = new mongoose.Schema(
       {
         url: { type: String, required: true },
         filename: { type: String, required: true },
-        type: { type: String, enum: ['image', 'video', 'audio', 'file'], required: true },
+        type: { type: String, enum: ['image', 'video', 'audio', 'file', 'gif'], required: true },
         size: { type: Number },
       },
     ],
@@ -42,6 +42,46 @@ const messageSchema = new mongoose.Schema(
         },
       },
     ],
+    reactions: [
+      {
+        emoji: { type: String, required: true },
+        users: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+          },
+        ],
+      },
+    ],
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
+    editHistory: [
+      {
+        text: { type: String },
+        editedAt: { type: Date, default: Date.now },
+      },
+    ],
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    forwardedFrom: {
+      messageId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Message',
+      },
+      senderName: { type: String },
+    },
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+    },
   },
   { timestamps: true }
 );

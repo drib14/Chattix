@@ -29,6 +29,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    avatarPublicId: {
+      type: String,
+      default: '',
+    },
+    bio: {
+      type: String,
+      default: '',
+    },
     isOnline: {
       type: Boolean,
       default: false,
@@ -36,6 +44,11 @@ const userSchema = new mongoose.Schema(
     lastSeen: {
       type: Date,
       default: Date.now,
+    },
+    status: {
+      type: String,
+      default: 'available',
+      enum: ['available', 'away', 'busy', 'offline'],
     },
   },
   { timestamps: true }

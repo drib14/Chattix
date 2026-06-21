@@ -5,6 +5,8 @@ import { useUser, useSession } from '@clerk/clerk-react';
 import SplashPage from './pages/SplashPage';
 import LoginRegister from './pages/LoginRegister';
 import ModernChatPage from './pages/ModernChatPage';
+import ProfilePage from './pages/ProfilePage';
+import MediaGalleryPage from './pages/MediaGalleryPage';
 import { setCredentials, logout } from './redux/slices/authSlice';
 
 function App() {
@@ -68,6 +70,18 @@ function App() {
       <Route
         path="/messages"
         element={isSignedIn ? <ModernChatPage /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/messages/:chatId"
+        element={isSignedIn ? <ModernChatPage /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/profile/:userId"
+        element={isSignedIn ? <ProfilePage /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/gallery/:chatId"
+        element={isSignedIn ? <MediaGalleryPage /> : <Navigate to="/login" />}
       />
       <Route
         path="/"

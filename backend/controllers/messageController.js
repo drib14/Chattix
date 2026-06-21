@@ -156,3 +156,219 @@ export const uploadAttachment = async (req, res) => {
     res.status(500).json({ message: 'Attachment upload failed' });
   }
 };
+
+// Edit message
+export const editMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    if (message.sender.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to edit this message' });
+    }
+
+    // Store edit history
+    message.editHistory.push({
+      text: message.text,
+      editedAt: new Date(),
+    });
+
+    message.text = text;
+    message.isEdited = true;
+
+    await message.save();
+    await message.populate('sender', 'fullName username avatar email isOnline');
+
+    // Emit socket event
+    if (req.io) {
+      req.io.to(message.chat).emit('message_edited', message);
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete message
+export const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    if (message.sender.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to delete this message' });
+    }
+
+    message.isDeleted = true;
+    message.text = '[This message was deleted]';
+    message.attachments = [];
+
+    await message.save();
+
+    // Emit socket event
+    if (req.io) {
+      req.io.to(message.chat).emit('message_deleted', { messageId: message._id });
+    }
+
+    res.status(200).json({ message: 'Message deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Pin message
+export const pinMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { chatId } = req.body;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    message.isPinned = !message.isPinned;
+    await message.save();
+
+    // Update chat's pinned messages
+    const chat = await Chat.findById(chatId);
+    if (message.isPinned) {
+      if (!chat.pinnedMessages.includes(messageId)) {
+        chat.pinnedMessages.push(messageId);
+      }
+    } else {
+      chat.pinnedMessages = chat.pinnedMessages.filter(id => id.toString() !== messageId);
+    }
+    await chat.save();
+
+    // Emit socket event
+    if (req.io) {
+      req.io.to(chatId).emit('message_pinned', { messageId, isPinned: message.isPinned });
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Forward message
+export const forwardMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { targetChatId } = req.body;
+
+    const originalMessage = await Message.findById(messageId).populate('sender');
+    if (!originalMessage) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    const newMessage = new Message({
+      chat: targetChatId,
+      sender: req.user._id,
+      text: originalMessage.text,
+      attachments: originalMessage.attachments,
+      linkPreview: originalMessage.linkPreview,
+      forwardedFrom: {
+        messageId: originalMessage._id,
+        senderName: originalMessage.sender.fullName,
+      },
+    });
+
+    await newMessage.save();
+    await newMessage.populate('sender', 'fullName username avatar email isOnline');
+
+    // Update last message
+    await Chat.findByIdAndUpdate(targetChatId, { lastMessage: newMessage });
+
+    // Emit socket event
+    if (req.io) {
+      req.io.to(targetChatId).emit('message_received', newMessage);
+    }
+
+    res.status(200).json(newMessage);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Add reaction to message
+export const addReaction = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Find existing reaction
+    let reaction = message.reactions.find(r => r.emoji === emoji);
+    if (!reaction) {
+      reaction = { emoji, users: [] };
+      message.reactions.push(reaction);
+    }
+
+    // Add user if not already reacted
+    if (!reaction.users.includes(req.user._id)) {
+      reaction.users.push(req.user._id);
+    }
+
+    await message.save();
+
+    // Emit socket event
+    if (req.io) {
+      req.io.to(message.chat).emit('reaction_added', { messageId, emoji, userId: req.user._id });
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Remove reaction from message
+export const removeReaction = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Find and update reaction
+    message.reactions = message.reactions.map(r => {
+      if (r.emoji === emoji) {
+        r.users = r.users.filter(userId => userId.toString() !== req.user._id.toString());
+      }
+      return r;
+    });
+
+    // Remove empty reactions
+    message.reactions = message.reactions.filter(r => r.users.length > 0);
+
+    await message.save();
+
+    // Emit socket event
+    if (req.io) {
+      req.io.to(message.chat).emit('reaction_removed', { messageId, emoji, userId: req.user._id });
+    }
+
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

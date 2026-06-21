@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ModernSidebar from '../components/chat/ModernSidebar';
 import ChatList from '../components/chat/ChatList';
 import UserSearch from '../components/chat/UserSearch';
@@ -8,21 +8,34 @@ import GroupsList from '../components/chat/GroupsList';
 import UserProfile from '../components/chat/UserProfile';
 import ChatWindow from '../components/chat/ChatWindow';
 import socketService from '../services/socket';
-import { setOnlineUsers } from '../redux/slices/chatSlice';
+import { setOnlineUsers, setSelectedChat } from '../redux/slices/chatSlice';
 
 const ModernChatPage = () => {
   const [activeTab, setActiveTab] = useState('chats');
   const [listSearchQuery, setListSearchQuery] = useState('');
-  const { selectedChat, token } = useSelector((state) => state.chat);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
+  const { selectedChat, token, chats } = useSelector((state) => state.chat);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { chatId } = useParams();
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
+
+  // Auto-select chat from URL parameter
+  useEffect(() => {
+    if (chatId && chats.length > 0) {
+      const chat = chats.find(c => c._id === chatId);
+      if (chat && selectedChat?._id !== chatId) {
+        dispatch(setSelectedChat(chat));
+        setMobileShowChat(true);
+      }
+    }
+  }, [chatId, chats, dispatch, selectedChat]);
 
   // Hook up Socket events for online users tracking
   useEffect(() => {
@@ -42,6 +55,13 @@ const ModernChatPage = () => {
 
   const handleChatStarted = () => {
     setActiveTab('chats');
+    setMobileShowChat(true);
+  };
+
+  const handleSelectChat = (chat) => {
+    dispatch(setSelectedChat(chat));
+    navigate(`/messages/${chat._id}`);
+    setMobileShowChat(true);
   };
 
   const renderActiveList = () => {
@@ -53,7 +73,7 @@ const ModernChatPage = () => {
       case 'profile':
         return <UserProfile />;
       default:
-        return <ChatList searchQuery={listSearchQuery} />;
+        return <ChatList searchQuery={listSearchQuery} onSelectChat={handleSelectChat} />;
     }
   };
 
@@ -71,7 +91,7 @@ const ModernChatPage = () => {
         </div>
 
         {/* Dynamic Lists Column */}
-        <div className="chat-list-column clay-card">
+        <div className={`chat-list-column clay-card ${mobileShowChat && selectedChat ? 'hidden-mobile' : ''}`}>
           {/* Header Search for Chats List tab */}
           {activeTab === 'chats' && (
             <div className="chat-search-header-container">
@@ -88,8 +108,15 @@ const ModernChatPage = () => {
         </div>
 
         {/* Primary Message Stream Panel */}
-        <div className="chat-window-column clay-card">
-          <ChatWindow />
+        <div className={`chat-window-column clay-card ${!mobileShowChat || !selectedChat ? 'hidden-mobile' : ''}`}>
+          {selectedChat ? (
+            <ChatWindow onBack={() => setMobileShowChat(false)} />
+          ) : (
+            <div className="empty-chat-state">
+              <h2>Welcome to Chattix</h2>
+              <p>Select a chat to start messaging</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import socketHandler from './socket/socketHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 
 dotenv.config();
 
@@ -53,6 +54,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/events', eventRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', time: new Date() });
