@@ -117,10 +117,10 @@ const ClayDoodleModal = ({ isOpen, onClose, onSend }) => {
 
   return (
     <div className="doodle-modal-backdrop">
-      <div className="doodle-modal-card clay-card animate-pop-in">
+      <div className="doodle-modal-card clay-card animate-pop-in" id="doodle-modal-card">
         <div className="doodle-modal-header">
           <h3 className="doodle-modal-title">Clay Sketchpad</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} id="doodle-close-x-btn">
             <X size={20} />
           </button>
         </div>
@@ -137,6 +137,7 @@ const ClayDoodleModal = ({ isOpen, onClose, onSend }) => {
             onTouchMove={draw}
             onTouchEnd={stopDrawing}
             className="doodle-canvas"
+            id="doodle-canvas"
           />
         </div>
 
@@ -155,6 +156,7 @@ const ClayDoodleModal = ({ isOpen, onClose, onSend }) => {
                   className={`doodle-color-btn ${color === c && !isEraser ? 'doodle-color-btn-active' : ''}`}
                   style={{ backgroundColor: c }}
                   title={c}
+                  id={`doodle-color-btn-${c.replace('#', '')}`}
                 />
               ))}
               
@@ -164,6 +166,7 @@ const ClayDoodleModal = ({ isOpen, onClose, onSend }) => {
                 className={`doodle-color-btn flex-center ${isEraser ? 'doodle-color-btn-active' : ''}`}
                 style={{ backgroundColor: '#ffffff', color: '#1e293b' }}
                 title="Eraser"
+                id="doodle-eraser-btn"
               >
                 <Eraser size={14} />
               </button>
@@ -179,6 +182,7 @@ const ClayDoodleModal = ({ isOpen, onClose, onSend }) => {
                 value={brushSize}
                 onChange={(e) => setBrushSize(Number(e.target.value))}
                 className="doodle-size-slider"
+                id="doodle-size-slider"
               />
             </div>
           </div>
@@ -186,14 +190,14 @@ const ClayDoodleModal = ({ isOpen, onClose, onSend }) => {
 
         {/* Action Actions Panel */}
         <div className="doodle-actions">
-          <button onClick={clearCanvas} className="clay-btn clay-btn-secondary doodle-btn flex-center" title="Clear board">
+          <button onClick={clearCanvas} className="clay-btn clay-btn-secondary doodle-btn flex-center" title="Clear board" id="doodle-clear-btn">
             <Trash2 size={16} />
             Clear
           </button>
-          <button onClick={onClose} className="clay-btn clay-btn-secondary doodle-btn">
+          <button onClick={onClose} className="clay-btn clay-btn-secondary doodle-btn" id="doodle-cancel-btn">
             Cancel
           </button>
-          <button onClick={handleSend} className="clay-btn clay-btn-primary doodle-btn">
+          <button onClick={handleSend} className="clay-btn clay-btn-primary doodle-btn" id="doodle-send-btn">
             Send Doodle
           </button>
         </div>

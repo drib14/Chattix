@@ -19,11 +19,12 @@ const LinkPreviewCard = ({ preview }) => {
       rel="noopener noreferrer"
       style={styles.card}
       className="clay-card"
+      id={`link-preview-card-${url}`}
       onClick={(e) => e.stopPropagation()} // Stop bubble triggering click events
     >
       {image && (
         <div style={styles.imageWrapper}>
-          <img src={image} alt="Link Preview" style={styles.image} />
+          <img src={image} alt="Link Preview" style={styles.image} id={`link-preview-img-${url}`} />
         </div>
       )}
 

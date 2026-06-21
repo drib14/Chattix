@@ -397,30 +397,30 @@ const ChatWindow = () => {
           <div className="chat-window-recording-row clay-card">
             <span className="chat-window-recording-timer">Recording: {formatTimer(recordingSeconds)}</span>
             <div style={{ flex: 1 }} />
-            <button onClick={stopRecording} className="chat-window-stop-btn">
+            <button onClick={stopRecording} className="chat-window-stop-btn" id="chat-stop-record-btn">
               <Square size={14} fill="currentColor" />
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSend} className="chat-window-input-form">
+          <form onSubmit={handleSend} className="chat-window-input-form" id="chat-message-form">
             {/* Input triggers */}
             <div className="chat-window-options">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="chat-window-opt-btn" title="Send Image/Video">
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="chat-window-opt-btn" title="Send Image/Video" id="chat-image-attach-btn">
                 <Image size={18} />
               </button>
-              <button type="button" onClick={() => docInputRef.current?.click()} className="chat-window-opt-btn" title="Attach Document">
+              <button type="button" onClick={() => docInputRef.current?.click()} className="chat-window-opt-btn" title="Attach Document" id="chat-doc-attach-btn">
                 <Paperclip size={18} />
               </button>
-              <button type="button" onClick={startRecording} className="chat-window-opt-btn" title="Record voice message">
+              <button type="button" onClick={startRecording} className="chat-window-opt-btn" title="Record voice message" id="chat-mic-record-btn">
                 <Mic size={18} />
               </button>
-              <button type="button" onClick={() => setIsDoodleOpen(true)} className="chat-window-opt-btn" title="Draw Clay Doodle">
+              <button type="button" onClick={() => setIsDoodleOpen(true)} className="chat-window-opt-btn" title="Draw Clay Doodle" id="chat-doodle-palette-btn">
                 <Palette size={18} />
               </button>
             </div>
 
-            <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => handleFileUpload(e.target.files[0])} />
-            <input ref={docInputRef} type="file" style={{ display: 'none' }} accept="*" onChange={(e) => handleFileUpload(e.target.files[0])} />
+            <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => handleFileUpload(e.target.files[0])} id="chat-file-input" />
+            <input ref={docInputRef} type="file" style={{ display: 'none' }} accept="*" onChange={(e) => handleFileUpload(e.target.files[0])} id="chat-doc-input" />
 
             <input
               type="text"
@@ -428,9 +428,10 @@ const ChatWindow = () => {
               value={messageText}
               onChange={handleInputChange}
               className="clay-input chat-window-text-input"
+              id="chat-text-input"
             />
 
-            <button type="submit" disabled={!messageText.trim()} className="clay-btn clay-btn-primary chat-window-send-btn">
+            <button type="submit" disabled={!messageText.trim()} className="clay-btn clay-btn-primary chat-window-send-btn" id="chat-send-btn">
               <Send size={16} />
             </button>
           </form>

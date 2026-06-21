@@ -19,7 +19,14 @@ const ChatBubble = ({ message, isOwn, onViewMedia }) => {
       } else if (part.match(/https?:\/\/[^\s]+|\b[a-z0-9-]+\.[a-z]{2,}\b/i)) {
         const href = part.startsWith('http') ? part : `https://${part}`;
         return (
-          <a key={idx} href={href} target="_blank" rel="noopener noreferrer" className="bubble-link">
+          <a
+            key={idx}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bubble-link"
+            id={`bubble-text-link-${message._id}-${idx}`}
+          >
             {part}
           </a>
         );
@@ -69,15 +76,15 @@ const ChatBubble = ({ message, isOwn, onViewMedia }) => {
             <div className="bubble-attachments-container">
               {/* Image Thumbnail */}
               {attachment.type === 'image' && (
-                <div className="bubble-media-wrapper" onClick={() => onViewMedia(attachment.url)}>
-                  <img src={attachment.url} alt="" className="bubble-media-element" />
+                <div className="bubble-media-wrapper" onClick={() => onViewMedia(attachment.url)} id={`bubble-media-wrapper-${message._id}`}>
+                  <img src={attachment.url} alt="" className="bubble-media-element" id={`bubble-media-img-${message._id}`} />
                 </div>
               )}
 
               {/* Video Thumbnail */}
               {attachment.type === 'video' && (
-                <div className="bubble-media-wrapper" onClick={() => onViewMedia(attachment.url)}>
-                  <video src={attachment.url} className="bubble-media-element" />
+                <div className="bubble-media-wrapper" onClick={() => onViewMedia(attachment.url)} id={`bubble-media-wrapper-${message._id}`}>
+                  <video src={attachment.url} className="bubble-media-element" id={`bubble-media-video-${message._id}`} />
                   <div className="bubble-play-overlay">
                     <div className="bubble-play-icon">▶</div>
                   </div>
@@ -126,6 +133,7 @@ const ChatBubble = ({ message, isOwn, onViewMedia }) => {
                       rel="noreferrer"
                       download
                       className="bubble-file-download"
+                      id={`bubble-file-download-${message._id}`}
                       style={{ color: isOwn ? '#ffffff' : 'var(--text-secondary)' }}
                       title="Download attachment"
                     >

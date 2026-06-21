@@ -27,45 +27,45 @@ const MediaGalleryModal = ({ isOpen, onClose, activeMediaUrl, setActiveMediaUrl,
   const activeMedia = mediaList[currentIndex] || { url: activeMediaUrl, type: 'image' };
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
+    <div style={styles.overlay} onClick={onClose} id="media-gallery-overlay">
       {/* Lightbox Header Close Button */}
-      <button style={styles.closeBtn} onClick={onClose} title="Close Lightbox">
+      <button style={styles.closeBtn} onClick={onClose} title="Close Lightbox" id="media-gallery-close-btn">
         <X size={24} />
       </button>
 
       {/* Main Attachment Render Pane */}
-      <div style={styles.viewerContainer} onClick={(e) => e.stopPropagation()}>
+      <div style={styles.viewerContainer} onClick={(e) => e.stopPropagation()} id="media-gallery-viewer-container">
         {currentIndex > 0 && (
-          <button style={{ ...styles.navBtn, left: '20px' }} onClick={handlePrev} title="Previous Media">
+          <button style={{ ...styles.navBtn, left: '20px' }} onClick={handlePrev} title="Previous Media" id="media-gallery-prev-btn">
             <ChevronLeft size={32} />
           </button>
         )}
 
-        <div style={styles.mediaWrapper}>
+        <div style={styles.mediaWrapper} id="media-gallery-wrapper">
           {activeMedia.type === 'video' ? (
-            <video src={activeMedia.url} controls autoPlay style={styles.mediaElement} />
+            <video src={activeMedia.url} controls autoPlay style={styles.mediaElement} id="media-gallery-video" />
           ) : (
-            <img src={activeMedia.url} alt="Lightbox Attachment" style={styles.mediaElement} />
+            <img src={activeMedia.url} alt="Lightbox Attachment" style={styles.mediaElement} id="media-gallery-img" />
           )}
 
           {/* Details Label */}
-          <div style={styles.mediaHeader}>
-            <span style={styles.filename} className="text-truncate">{activeMedia.filename}</span>
-            <a href={activeMedia.url} target="_blank" rel="noreferrer" download style={styles.downloadLink} title="Download original">
+          <div style={styles.mediaHeader} id="media-gallery-header-info">
+            <span style={styles.filename} className="text-truncate" id="media-gallery-filename">{activeMedia.filename}</span>
+            <a href={activeMedia.url} target="_blank" rel="noreferrer" download style={styles.downloadLink} title="Download original" id="media-gallery-download-link">
               <Download size={18} />
             </a>
           </div>
         </div>
 
         {currentIndex < mediaList.length - 1 && (
-          <button style={{ ...styles.navBtn, right: '20px' }} onClick={handleNext} title="Next Media">
+          <button style={{ ...styles.navBtn, right: '20px' }} onClick={handleNext} title="Next Media" id="media-gallery-next-btn">
             <ChevronRight size={32} />
           </button>
         )}
       </div>
 
       {/* Messenger-style bottom thumbnail preview strip */}
-      <div style={styles.thumbnailStrip} onClick={(e) => e.stopPropagation()}>
+      <div style={styles.thumbnailStrip} onClick={(e) => e.stopPropagation()} id="media-gallery-thumbnail-strip">
         <div style={styles.scrollStrip}>
           {mediaList.map((m, idx) => {
             const isSelected = idx === currentIndex;
@@ -73,6 +73,7 @@ const MediaGalleryModal = ({ isOpen, onClose, activeMediaUrl, setActiveMediaUrl,
               <div
                 key={idx}
                 onClick={() => setActiveMediaUrl(m.url)}
+                id={`media-gallery-thumb-${idx}`}
                 style={{
                   ...styles.thumbWrapper,
                   ...(isSelected ? styles.thumbSelected : {}),
