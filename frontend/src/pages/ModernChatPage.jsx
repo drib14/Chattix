@@ -67,9 +67,9 @@ const ModernChatPage = () => {
   const renderActiveList = () => {
     switch (activeTab) {
       case 'search':
-        return <UserSearch onChatStarted={handleChatStarted} />;
+        return <UserSearch onChatCreated={handleSelectChat} />;
       case 'groups':
-        return <GroupsList onChatStarted={handleChatStarted} />;
+        return <GroupsList onChatCreated={handleSelectChat} />;
       case 'profile':
         return <UserProfile />;
       default:

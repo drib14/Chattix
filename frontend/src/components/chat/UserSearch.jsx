@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Search } from 'lucide-react';
 import api from '../../services/api';
-import { setSelectedChat, setChats } from '../../redux/slices/chatSlice';
+import { setChats } from '../../redux/slices/chatSlice';
 import SkeletalLoader from '../ui/SkeletalLoader';
 
-const UserSearch = ({ onChatStarted }) => {
+const UserSearch = ({ onChatCreated }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,9 +32,8 @@ const UserSearch = ({ onChatStarted }) => {
       // Reload chats list
       const chatsData = await api.get('/chats');
       dispatch(setChats(chatsData));
-      dispatch(setSelectedChat(chat));
-      if (onChatStarted) {
-        onChatStarted(); // Trigger navigation shift
+      if (onChatCreated) {
+        onChatCreated(chat); // Pass chat to parent for navigation
       }
     } catch (err) {
       console.error('Failed to start chat:', err);

@@ -18,7 +18,7 @@ const formatLastSeen = (lastSeenDate) => {
   return `${diffDays}d`;
 };
 
-const ChatList = ({ searchQuery }) => {
+const ChatList = ({ searchQuery, onSelectChat }) => {
   const dispatch = useDispatch();
   const { chats, selectedChat, onlineUsers } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.auth);
@@ -86,7 +86,7 @@ const ChatList = ({ searchQuery }) => {
             return (
               <div
                 key={chat._id}
-                onClick={() => dispatch(setSelectedChat(chat))}
+                onClick={() => onSelectChat && onSelectChat(chat)}
                 className={`chat-list-item ${isSelected ? 'chat-list-item-active' : ''}`}
               >
                 {/* Avatar status bubble */}
