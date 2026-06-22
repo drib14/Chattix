@@ -83,8 +83,11 @@ export default function Dashboard() {
       avatar: user.imageUrl,
     };
 
-    const saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+    let saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+    // Filter out if this account already exists to prevent duplicate cards
+    saved = saved.filter(acc => acc.clerkId !== user.id);
     saved.push(newAccount);
+
     localStorage.setItem('chattix_saved_accounts', JSON.stringify(saved));
     setShowSaveBanner(false);
   };

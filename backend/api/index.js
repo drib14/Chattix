@@ -103,29 +103,22 @@ app.post('/api/auth/sync', authLimiter, checkAuth, async (req, res) => {
       return res.status(400).json({ message: 'Valid token and email are required' });
     }
 
-    // Check if user exists, if not, create them
-    let user = await User.findOne({ clerkId });
+    // Atomic update or insert (upsert) to completely prevent race conditions
+    // from React StrictMode causing duplicate user documents
+    const updateData = {
+      email,
+      firstName,
+      lastName,
+      profileImageUrl
+    };
 
-    if (!user) {
-      user = new User({
-        clerkId,
-        email,
-        username: username || 'chattix_user',
-        firstName,
-        lastName,
-        profileImageUrl,
-      });
-      await user.save();
-      return res.status(201).json({ message: 'User created successfully', user });
-    }
+    if (username) updateData.username = username;
 
-    // Update user info if it has changed
-    user.email = email;
-    if (username) user.username = username;
-    user.firstName = firstName;
-    user.lastName = lastName;
-    user.profileImageUrl = profileImageUrl;
-    await user.save();
+    const user = await User.findOneAndUpdate(
+      { clerkId },
+      { $set: updateData, $setOnInsert: { username: username || 'chattix_user' } },
+      { new: true, upsert: true }
+    );
 
     return res.status(200).json({ message: 'User synced successfully', user });
 

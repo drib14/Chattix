@@ -48,7 +48,7 @@ export default function ChatArea() {
         <MessageBubble
           key={msg._id}
           message={msg}
-          isOwn={msg.senderId?._id === dbUser?._id}
+          isOwn={String(msg.senderId?._id) === String(dbUser?._id)}
         />
       ))}
 

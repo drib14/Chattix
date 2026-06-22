@@ -76,11 +76,11 @@ export default function MessageBubble({ message, isOwn }) {
         <div className={`relative px-4 py-2 shadow-sm ${
           isOwn
             ? 'bg-chattix-teal text-white rounded-2xl rounded-br-sm'
-            : 'bg-white text-gray-800 rounded-2xl rounded-bl-sm border border-gray-100'
+            : 'bg-white text-gray-800 rounded-2xl rounded-bl-sm shadow-clay-card border border-transparent'
         }`}>
           {renderContent()}
 
-          <span className={`text-[9px] block mt-1 text-right ${isOwn ? 'text-chattix-teal-light text-white/70' : 'text-gray-400'}`}>
+          <span className={`text-[9px] block mt-1 text-right ${isOwn ? 'text-white/70' : 'text-gray-400'}`}>
             {format(new Date(message.createdAt), 'h:mm a')}
           </span>
         </div>

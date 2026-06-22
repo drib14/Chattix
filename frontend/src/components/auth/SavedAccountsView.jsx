@@ -11,7 +11,7 @@ export default function SavedAccountsView({ onContinueNew }) {
     return JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
   });
 
-  const { isLoaded } = useSignIn();
+  const { isLoaded, signIn } = useSignIn();
   const { setActive, client } = useClerk();
   const navigate = useNavigate();
 
@@ -35,8 +35,13 @@ export default function SavedAccountsView({ onContinueNew }) {
         await setActive({ session: existingSession.id });
         navigate('/');
       } else {
-        // Otherwise, send them to login and prefill their email
-        navigate('/login', { state: { identifier: account.email } });
+        // If the session has completely expired but the account is known to be Google-linked,
+        // we can try to seamlessly redirect to Google again, passing the login hint.
+        signIn.authenticateWithRedirect({
+          strategy: 'oauth_google',
+          redirectUrl: '/',
+          redirectUrlComplete: '/',
+        });
       }
     } catch (error) {
       console.error("Error signing in with saved account", error);
