@@ -2,15 +2,24 @@ import { useState, useEffect } from 'react';
 import { useSignIn, useClerk } from '@clerk/clerk-react';
 import { LogIn, UserPlus, X } from 'lucide-react';
 
+import { useNavigate } from 'react-router-dom';
+
 export default function SavedAccountsView({ onContinueNew }) {
-  const [savedAccounts, setSavedAccounts] = useState([]);
+  // Initialize state synchronously so we don't flash an empty array
+  // and trigger the redirect prematurely on the first render.
+  const [savedAccounts, setSavedAccounts] = useState(() => {
+    return JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+  });
+
   const { signIn, isLoaded } = useSignIn();
   const { setActive } = useClerk();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const accounts = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
-    setSavedAccounts(accounts);
-  }, []);
+    if (savedAccounts.length === 0) {
+      navigate('/login');
+    }
+  }, [savedAccounts, navigate]);
 
   const handleSignIn = async (account) => {
     if (!isLoaded) return;
@@ -40,19 +49,7 @@ export default function SavedAccountsView({ onContinueNew }) {
   };
 
   if (savedAccounts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 glass clay-card w-full max-w-md mx-auto mt-20">
-        <img src="/chattix-logo.png" alt="Chattix Logo" className="w-24 h-24 mb-6 drop-shadow-md" />
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Welcome to Chattix</h2>
-        <button
-          onClick={onContinueNew}
-          className="clay-btn flex items-center justify-center w-full py-3 px-4 font-semibold text-gray-700 hover:text-chattix-teal"
-        >
-          <LogIn className="w-5 h-5 mr-2" />
-          Sign In with Google
-        </button>
-      </div>
-    );
+    return null;
   }
 
   return (

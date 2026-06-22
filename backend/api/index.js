@@ -30,7 +30,7 @@ const authLimiter = rateLimit({
 // Auth Sync Endpoint
 app.post('/api/auth/sync', authLimiter, requireAuth(), async (req, res) => {
   try {
-    const { email, firstName, lastName, profileImageUrl } = req.body;
+    const { email, firstName, lastName, profileImageUrl, username } = req.body;
 
     // Use the verified clerk user ID from the token
     const clerkId = req.auth.userId;
@@ -46,6 +46,7 @@ app.post('/api/auth/sync', authLimiter, requireAuth(), async (req, res) => {
       user = new User({
         clerkId,
         email,
+        username: username || 'chattix_user',
         firstName,
         lastName,
         profileImageUrl,
@@ -56,6 +57,7 @@ app.post('/api/auth/sync', authLimiter, requireAuth(), async (req, res) => {
 
     // Update user info if it has changed
     user.email = email;
+    if (username) user.username = username;
     user.firstName = firstName;
     user.lastName = lastName;
     user.profileImageUrl = profileImageUrl;

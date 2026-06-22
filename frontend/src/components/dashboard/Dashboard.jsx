@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Dashboard() {
   const { user } = useUser();
-  const { signOut, openUserProfile, session, openSignIn } = useClerk();
+  const { signOut, openUserProfile, openSignIn } = useClerk();
   const [showSaveBanner, setShowSaveBanner] = useState(false);
 
   useEffect(() => {
-    if (user && session) {
+    if (user) {
       // Check if user is already saved
       const saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
       const isSaved = saved.some(acc => acc.clerkId === user.id);
@@ -18,25 +18,8 @@ export default function Dashboard() {
       if (!isSaved && !dismissed) {
         setShowSaveBanner(true);
       }
-
-      session.getToken().then((token) => {
-        // Sync with backend (fire and forget)
-        fetch(import.meta.env.VITE_API_URL + '/auth/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            email: user.primaryEmailAddress?.emailAddress,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profileImageUrl: user.imageUrl,
-          })
-        }).catch(err => console.error("Failed to sync user:", err));
-      });
     }
-  }, [user, session]);
+  }, [user]);
 
   const handleSaveAccount = () => {
     if (!user) return;
