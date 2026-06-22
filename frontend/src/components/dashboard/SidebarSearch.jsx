@@ -60,10 +60,10 @@ export default function SidebarSearch({ onSelectUser }) {
 
       {query && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white/90 backdrop-blur-md rounded-xl shadow-clay-card border border-gray-100 max-h-60 overflow-y-auto z-50 p-2">
-          {results.length === 0 && !loading && (
+          {(!Array.isArray(results) || results.length === 0) && !loading && (
             <p className="text-center text-gray-500 text-sm py-4">No users found.</p>
           )}
-          {results.map(user => (
+          {Array.isArray(results) && results.map(user => (
             <div
               key={user._id}
               onClick={() => {
