@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { Reply, Share, Trash2 } from 'lucide-react';
 import { setReplyingTo, openForwardModal, openDeleteModal } from '../../store/uiSlice';
 
-export default function MessageBubble({ message, isOwn }) {
+export default function MessageBubble({ message, isOwn, showAvatar, isConsecutive }) {
   const dispatch = useDispatch();
 
   const handleReply = () => dispatch(setReplyingTo(message));
@@ -30,6 +30,18 @@ export default function MessageBubble({ message, isOwn }) {
             📄 Download File
           </a>
         );
+      case 'location':
+        return (
+          <div className="flex flex-col">
+            <img src={message.content} alt="Location Map" className="max-w-[250px] rounded-lg cursor-pointer hover:opacity-90 mb-2" />
+            {message.linkPreview && (
+              <a href={message.linkPreview.url} target="_blank" rel="noopener noreferrer" className="block bg-white/50 rounded-lg p-2 hover:bg-white/80 transition border border-gray-200 text-gray-800">
+                <h5 className="font-bold text-xs truncate">{message.linkPreview.title}</h5>
+                {message.linkPreview.description && <p className="text-[10px] text-gray-500 line-clamp-2">{message.linkPreview.description}</p>}
+              </a>
+            )}
+          </div>
+        );
       default:
         return (
           <div className="flex flex-col">
@@ -47,14 +59,18 @@ export default function MessageBubble({ message, isOwn }) {
   };
 
   return (
-    <div className={`flex w-full mb-4 group ${isOwn ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex w-full group ${isConsecutive ? 'mb-1' : 'mb-4'} ${isOwn ? 'justify-end' : 'justify-start'}`}>
 
       {!isOwn && (
-        <img
-          src={message.senderId?.profileImageUrl || '/chattix-logo.png'}
-          alt="Avatar"
-          className="w-8 h-8 rounded-full mr-2 self-end shadow-sm"
-        />
+        <div className="w-8 h-8 mr-2 self-end flex-shrink-0">
+          {showAvatar && (
+            <img
+              src={message.senderId?.profileImageUrl || '/chattix-logo.png'}
+              alt="Avatar"
+              className="w-full h-full rounded-full object-cover shadow-sm"
+            />
+          )}
+        </div>
       )}
 
       <div className={`flex flex-col relative max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
@@ -73,10 +89,10 @@ export default function MessageBubble({ message, isOwn }) {
           </div>
         )}
 
-        <div className={`relative px-4 py-2 shadow-sm ${
+        <div className={`relative px-4 py-2 text-[15px] leading-relaxed shadow-sm ${
           isOwn
-            ? 'bg-chattix-teal text-white rounded-2xl rounded-br-sm'
-            : 'bg-white text-gray-800 rounded-2xl rounded-bl-sm shadow-clay-card border border-transparent'
+            ? `bg-chattix-teal text-white rounded-2xl ${isConsecutive ? 'rounded-br-2xl' : 'rounded-br-sm'}`
+            : `bg-white text-gray-800 rounded-2xl shadow-clay-card border border-transparent ${isConsecutive ? 'rounded-bl-2xl' : 'rounded-bl-sm'}`
         }`}>
           {renderContent()}
 

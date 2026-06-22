@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/clerk-react';
 import { Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -8,7 +7,6 @@ export default function SidebarSearch({ onSelectUser }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { getToken } = useAuth();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -18,7 +16,7 @@ export default function SidebarSearch({ onSelectUser }) {
       }
       setLoading(true);
       try {
-        const token = await getToken();
+        const token = localStorage.getItem('chattix_token');
         const res = await fetch(`${import.meta.env.VITE_API_URL}/users/search?query=${query}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -42,7 +40,7 @@ export default function SidebarSearch({ onSelectUser }) {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [query, getToken]);
+  }, [query]);
 
   return (
     <div className="relative">

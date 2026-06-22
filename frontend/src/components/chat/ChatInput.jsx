@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth, useUser } from '@clerk/clerk-react';
-import { Smile, Paperclip, Image as ImageIcon, Mic, Send, ThumbsUp, X, FileImage } from 'lucide-react';
+import { Smile, Paperclip, Image as ImageIcon, Mic, Send, ThumbsUp, X, FileImage, MapPin } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { Grid } from '@giphy/react-components';
 import { GiphyFetch } from '@giphy/js-fetch-api';
@@ -23,7 +23,7 @@ export default function ChatInput() {
   const typingTimeoutRef = useRef(null);
 
   const dispatch = useDispatch();
-  const { getToken } = useAuth();
+  const { token: getTokenFallback } = useAppAuth(); // Added fallback as getToken() from Clerk is deprecated in pure custom auth
   const { user } = useUser();
   const { dbUser } = useAppAuth();
   const socket = useSocket();
@@ -65,7 +65,7 @@ export default function ChatInput() {
     setShowGif(false);
 
     try {
-      const token = await getToken();
+      const token = localStorage.getItem('chattix_token');
       const formData = new FormData();
       formData.append('conversationId', activeConversation._id);
       formData.append('type', 'gif');
@@ -84,6 +84,46 @@ export default function ChatInput() {
     } catch(err) {
       console.error(err);
     }
+  };
+
+  const handleLocationShare = async () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        const locationUrl = `https://maps.locationiq.com/v3/staticmap?key=${import.meta.env.VITE_LOCATIONIQ_ACCESS_TOKEN}&center=${latitude},${longitude}&zoom=14&size=400x300&markers=${latitude},${longitude}|icon:large-red-cutout`;
+
+        const token = localStorage.getItem('chattix_token');
+        const formData = new FormData();
+        formData.append('conversationId', activeConversation._id);
+        formData.append('type', 'location');
+        formData.append('content', locationUrl);
+        formData.append('linkPreview', JSON.stringify({
+          title: "My Location",
+          description: `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`,
+          url: `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=15/${latitude}/${longitude}`
+        }));
+
+        if (replyingToMessage) {
+          formData.append('replyTo', replyingToMessage._id);
+          dispatch(clearReplyingTo());
+        }
+
+        await fetch(`${import.meta.env.VITE_API_URL}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        });
+      } catch (err) {
+        console.error("Failed to send location:", err);
+      }
+    }, () => {
+      alert("Unable to retrieve your location");
+    });
   };
 
   const handleFileChange = (e) => {
@@ -125,7 +165,7 @@ export default function ChatInput() {
     if (!text.trim() && !selectedFile && !reactionEmoji) return;
 
     try {
-      const token = await getToken();
+      const token = localStorage.getItem('chattix_token');
       const formData = new FormData();
       formData.append('conversationId', activeConversation._id);
 
@@ -224,6 +264,10 @@ export default function ChatInput() {
 
         <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-500 hover:text-chattix-teal transition-colors clay-btn">
           <Paperclip className="w-5 h-5" />
+        </button>
+
+        <button onClick={handleLocationShare} className="p-2 text-gray-500 hover:text-chattix-teal transition-colors clay-btn">
+          <MapPin className="w-5 h-5" />
         </button>
 
         <input

@@ -1,13 +1,11 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { closeDeleteModal } from '../../store/uiSlice';
-import { useAuth } from '@clerk/clerk-react';
 import { setMessages } from '../../store/chatSlice';
 import { X, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function DeleteModal() {
   const dispatch = useDispatch();
-  const { getToken } = useAuth();
   const { isDeleteModalOpen, deleteMessageId } = useSelector(state => state.ui);
   const messages = useSelector(state => state.chat.messages);
   const [loading, setLoading] = useState(false);
@@ -17,7 +15,7 @@ export default function DeleteModal() {
   const handleDelete = async () => {
     setLoading(true);
     try {
-      const token = await getToken();
+      const token = localStorage.getItem('chattix_token');
       await fetch(`${import.meta.env.VITE_API_URL}/messages/${deleteMessageId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }

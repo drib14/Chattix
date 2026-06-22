@@ -12,14 +12,12 @@ import { useAppAuth } from './AuthContext'; // Import this to get the mongo db u
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
-  const { isSignedIn } = useAuth();
-  const { user } = useUser();
-  const { dbUser } = useAppAuth(); // Assuming we export dbUser from here
+  const { dbUser } = useAppAuth();
   const dispatch = useDispatch();
 
   useEffect(() => {
     // Only connect when we have resolved the mongo DB user id
-    if (isSignedIn && user && dbUser) {
+    if (dbUser) {
       const socketInstance = io(import.meta.env.VITE_SOCKET_URL, {
         query: {
           userId: dbUser._id // Send MongoDB ID
@@ -55,7 +53,7 @@ export const SocketProvider = ({ children }) => {
         socketInstance.disconnect();
       };
     }
-  }, [isSignedIn, user, dbUser, dispatch]);
+  }, [dbUser, dispatch]);
 
   return (
     <SocketContext.Provider value={socket}>

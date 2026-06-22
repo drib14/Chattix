@@ -3,8 +3,11 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   clerkId: {
     type: String,
-    required: true,
+    sparse: true,
     unique: true,
+  },
+  password: {
+    type: String,
   },
   email: {
     type: String,

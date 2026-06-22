@@ -7,9 +7,10 @@ const upload = require('../middleware/upload');
 const axios = require('axios');
 const { checkAuth } = require('../middleware/auth');
 
-// --- Helper: Get DB User from Clerk ID ---
-const getDbUser = async (clerkId) => {
-  return await User.findOne({ clerkId });
+// --- Helper: Get DB User ---
+// In custom JWT auth, req.user.id is already the MongoDB _id
+const getDbUser = async (reqUserId) => {
+  return await User.findById(reqUserId);
 };
 
 // --- User Search ---
@@ -18,11 +19,9 @@ router.get('/users/search', checkAuth, async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(200).json([]);
 
-    const dbUser = await getDbUser(req.auth.userId);
-
     const users = await User.find({
       $and: [
-        { _id: { $ne: dbUser._id } }, // Exclude self
+        { _id: { $ne: req.user.id } }, // Exclude self
         {
           $or: [
             { username: { $regex: query, $options: 'i' } },
@@ -44,11 +43,8 @@ router.get('/users/search', checkAuth, async (req, res) => {
 // Get all conversations for current user
 router.get('/conversations', checkAuth, async (req, res) => {
   try {
-    const dbUser = await getDbUser(req.auth.userId);
-    if (!dbUser) return res.status(404).json({ error: "User not found" });
-
     const conversations = await Conversation.find({
-      participants: dbUser._id
+      participants: req.user.id
     })
     .populate('participants', 'firstName lastName username profileImageUrl isOnline lastSeen')
     .populate('lastMessage')
@@ -64,17 +60,16 @@ router.get('/conversations', checkAuth, async (req, res) => {
 router.post('/conversations', checkAuth, async (req, res) => {
   try {
     const { participantId } = req.body;
-    const dbUser = await getDbUser(req.auth.userId);
 
     // Check if conversation already exists
     let conversation = await Conversation.findOne({
-      participants: { $all: [dbUser._id, participantId] },
+      participants: { $all: [req.user.id, participantId] },
       $expr: { $eq: [{ $size: "$participants" }, 2] } // strictly 2 participants
     }).populate('participants', 'firstName lastName username profileImageUrl isOnline lastSeen');
 
     if (!conversation) {
       conversation = await Conversation.create({
-        participants: [dbUser._id, participantId]
+        participants: [req.user.id, participantId]
       });
       conversation = await conversation.populate('participants', 'firstName lastName username profileImageUrl isOnline lastSeen');
     }
@@ -108,7 +103,6 @@ router.get('/messages/:conversationId', checkAuth, async (req, res) => {
 // Send a message (handles all types)
 router.post('/messages', checkAuth, upload.single('media'), async (req, res) => {
   try {
-    const dbUser = await getDbUser(req.auth.userId);
     const { conversationId, type, content, replyTo, forwarded, linkPreview } = req.body;
 
     let finalContent = content;
@@ -125,7 +119,7 @@ router.post('/messages', checkAuth, upload.single('media'), async (req, res) => 
 
     const newMessage = await Message.create({
       conversationId,
-      senderId: dbUser._id,
+      senderId: req.user.id,
       type: type || (req.file ? (req.file.mimetype.split('/')[0]) : 'text'),
       content: finalContent,
       replyTo: replyTo || null,
@@ -167,11 +161,10 @@ router.post('/messages', checkAuth, upload.single('media'), async (req, res) => 
 // Delete a message
 router.delete('/messages/:id', checkAuth, async (req, res) => {
   try {
-    const dbUser = await getDbUser(req.auth.userId);
     const message = await Message.findById(req.params.id);
 
     if (!message) return res.status(404).json({ error: "Message not found" });
-    if (message.senderId.toString() !== dbUser._id.toString()) {
+    if (message.senderId.toString() !== req.user.id) {
       return res.status(403).json({ error: "Unauthorized to delete this message" });
     }
 

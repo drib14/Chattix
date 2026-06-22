@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/clerk-react';
-import { LogOut, MessageSquare, Settings, ShieldAlert, ArrowRightLeft, Check, X } from 'lucide-react';
+import { LogOut, MessageSquare, Settings, ShieldAlert, ArrowRightLeft, Check, X, Phone, Video, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { setActiveConversation } from '../../store/chatSlice';
@@ -9,11 +9,13 @@ import ConversationList from './ConversationList';
 import ChatArea from '../chat/ChatArea';
 import ChatInput from '../chat/ChatInput';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAppAuth } from '../../contexts/AuthContext';
+import SwitchAccountModal from '../modals/SwitchAccountModal';
 
 export default function Dashboard() {
-  const { user } = useUser();
-  const { signOut, openUserProfile, openSignIn, session } = useClerk();
+  const { dbUser, logout } = useAppAuth();
   const [showSaveBanner, setShowSaveBanner] = useState(false);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { conversationId } = useParams();
@@ -38,9 +40,9 @@ export default function Dashboard() {
 
       // If we navigated to a new chat (e.g., from search) and it's not yet in the Redux list,
       // we need to fetch all conversations to populate it so Redux can see it.
-      if (session) {
+      const token = localStorage.getItem('chattix_token');
+      if (token) {
         try {
-          const token = await session.getToken();
           const res = await fetch(`${import.meta.env.VITE_API_URL}/conversations`, {
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -59,33 +61,35 @@ export default function Dashboard() {
     };
 
     fetchAndSetConversation();
-  }, [conversationId, conversations, dispatch, session]);
+  }, [conversationId, conversations, dispatch]);
 
   useEffect(() => {
-    if (user) {
-      // Check if user is already saved
+    if (dbUser) {
+      // Check if user is already saved locally
       const saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
-      const isSaved = saved.some(acc => acc.clerkId === user.id);
-      const dismissed = localStorage.getItem(`chattix_dismissed_save_${user.id}`);
+      const isSaved = saved.some(acc => acc._id === dbUser._id);
+      const dismissed = localStorage.getItem(`chattix_dismissed_save_${dbUser._id}`);
 
       if (!isSaved && !dismissed) {
         setShowSaveBanner(true);
       }
     }
-  }, [user]);
+  }, [dbUser]);
 
   const handleSaveAccount = () => {
-    if (!user) return;
+    if (!dbUser) return;
     const newAccount = {
-      clerkId: user.id,
-      email: user.primaryEmailAddress?.emailAddress,
-      name: user.fullName || user.firstName,
-      avatar: user.imageUrl,
+      _id: dbUser._id,
+      email: dbUser.email,
+      username: dbUser.username,
+      name: `${dbUser.firstName} ${dbUser.lastName}`,
+      avatar: dbUser.profileImageUrl,
+      token: localStorage.getItem('chattix_token')
     };
 
     let saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
     // Filter out if this account already exists to prevent duplicate cards
-    saved = saved.filter(acc => acc.clerkId !== user.id);
+    saved = saved.filter(acc => acc._id !== dbUser._id);
     saved.push(newAccount);
 
     localStorage.setItem('chattix_saved_accounts', JSON.stringify(saved));
@@ -93,18 +97,19 @@ export default function Dashboard() {
   };
 
   const handleDismissBanner = () => {
-    if (user) {
-      localStorage.setItem(`chattix_dismissed_save_${user.id}`, 'true');
+    if (dbUser) {
+      localStorage.setItem(`chattix_dismissed_save_${dbUser._id}`, 'true');
     }
     setShowSaveBanner(false);
   };
 
   const handleSwitchAccount = () => {
-    openSignIn();
+    setShowSwitchModal(true);
   };
 
   return (
     <div className="flex h-screen bg-chattix-bg p-4 gap-4 relative overflow-hidden">
+      <SwitchAccountModal isOpen={showSwitchModal} onClose={() => setShowSwitchModal(false)} />
 
       {/* Save Account Banner */}
       <AnimatePresence>
@@ -136,10 +141,10 @@ export default function Dashboard() {
       <div className="w-80 clay-card flex flex-col overflow-hidden">
         {/* Header / Profile */}
         <div className="p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => openUserProfile()}>
-            <img src={user?.imageUrl} alt="Profile" className="w-10 h-10 rounded-full border-2 border-white shadow-sm group-hover:scale-105 transition-transform" />
+          <div className="flex items-center gap-3 cursor-pointer group">
+            <img src={dbUser?.profileImageUrl || '/chattix-logo.png'} alt="Profile" className="w-10 h-10 rounded-full border-2 border-white shadow-sm group-hover:scale-105 transition-transform object-cover" />
             <div className="overflow-hidden">
-              <h2 className="font-bold text-gray-800 truncate">{user?.fullName || 'User'}</h2>
+              <h2 className="font-bold text-gray-800 truncate">{dbUser?.firstName} {dbUser?.lastName}</h2>
               <p className="text-xs text-chattix-teal font-medium">My Account</p>
             </div>
           </div>
@@ -153,7 +158,7 @@ export default function Dashboard() {
           <SidebarSearch onSelectUser={async (selectedUser) => {
              // Create or get conversation
              try {
-                const token = await session.getToken();
+                const token = localStorage.getItem('chattix_token');
                 const res = await fetch(`${import.meta.env.VITE_API_URL}/conversations`, {
                   method: 'POST',
                   headers: {
@@ -183,7 +188,7 @@ export default function Dashboard() {
             Switch Account
           </button>
           <button
-            onClick={() => signOut()}
+            onClick={logout}
             className="clay-btn flex items-center justify-center gap-2 w-full py-2 px-4 text-sm font-medium text-red-500 transition-colors"
           >
             <LogOut className="w-4 h-4" />
@@ -200,7 +205,7 @@ export default function Dashboard() {
             <div className="h-20 p-4 flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
                 {(() => {
-                  const otherParticipant = activeConversation.participants.find(p => p.clerkId !== user.id) || activeConversation.participants[0];
+                  const otherParticipant = activeConversation.participants.find(p => String(p._id) !== String(dbUser?._id)) || activeConversation.participants[0];
                   return (
                     <>
                       <div className="relative">
@@ -217,6 +222,17 @@ export default function Dashboard() {
                   );
                 })()}
               </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2 text-chattix-teal hover:bg-chattix-teal/10 rounded-full transition-colors">
+                  <Phone className="w-5 h-5" />
+                </button>
+                <button className="p-2 text-chattix-teal hover:bg-chattix-teal/10 rounded-full transition-colors">
+                  <Video className="w-5 h-5" />
+                </button>
+                <button className="p-2 text-chattix-teal hover:bg-chattix-teal/10 rounded-full transition-colors">
+                  <Info className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Messages Area */}
@@ -227,7 +243,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-            <img src="/chattix-logo.png" alt="Chattix Logo" className="w-32 h-32 mb-6 opacity-80 drop-shadow-md object-contain" />
+            <img src="/chattix-logo.png" alt="Chattix Logo" className="w-48 h-48 mb-6 opacity-80 drop-shadow-md object-contain" />
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to Chattix</h1>
             <p className="text-gray-500 max-w-md">
               Experience seamless real-time messaging with a beautiful, soft UI. Select a conversation or start a new one to begin.

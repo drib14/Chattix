@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useSignIn } from '@clerk/clerk-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useAppAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
-  const { isLoaded, signIn, setActive } = useSignIn();
+  const { isLoaded, signIn } = useSignIn();
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAppAuth();
 
-  // Use state passed from SavedAccountsView, if any
   const [identifier, setIdentifier] = useState(location.state?.identifier || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -16,26 +17,25 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isLoaded) return;
-
     setLoading(true);
     setError('');
 
     try {
-      const result = await signIn.create({
-        identifier, // Can be email or username
-        password,
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
       });
+      const data = await res.json();
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
+      if (res.ok) {
+        login(data);
         navigate('/');
       } else {
-        // Handle cases like 2FA or unverified email
-        setError("Further verification required. Please check your email/settings.");
+        setError(data.error || "An error occurred during sign in.");
       }
     } catch (err) {
-      setError(err.errors?.[0]?.longMessage || "An error occurred during sign in.");
+      setError(err.message);
     } finally {
       setLoading(false);
     }

@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { closeForwardModal } from '../../store/uiSlice';
-import { useAuth } from '@clerk/clerk-react';
 import { X, Send, Loader2 } from 'lucide-react';
 
 export default function ForwardModal() {
   const dispatch = useDispatch();
-  const { getToken } = useAuth();
   const { isForwardModalOpen, forwardMessageId } = useSelector(state => state.ui);
   const conversations = useSelector(state => state.chat.conversations);
   const messages = useSelector(state => state.chat.messages);
@@ -22,7 +20,7 @@ export default function ForwardModal() {
 
     setLoadingConvId(conversationId);
     try {
-      const token = await getToken();
+      const token = localStorage.getItem('chattix_token');
       await fetch(`${import.meta.env.VITE_API_URL}/messages`, {
         method: 'POST',
         headers: {

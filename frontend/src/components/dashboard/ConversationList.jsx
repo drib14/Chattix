@@ -1,20 +1,20 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAuth } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
 import { setConversations } from '../../store/chatSlice';
 import { formatDistanceToNow } from 'date-fns';
+import { useAppAuth } from '../../contexts/AuthContext';
 
 export default function ConversationList() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { conversations, activeConversation } = useSelector(state => state.chat);
-  const { getToken, userId } = useAuth(); // Clerk userId
+  const { dbUser } = useAppAuth();
 
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const token = await getToken();
+        const token = localStorage.getItem('chattix_token');
         const res = await fetch(`${import.meta.env.VITE_API_URL}/conversations`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -30,7 +30,7 @@ export default function ConversationList() {
       }
     };
     fetchConversations();
-  }, [getToken, dispatch]);
+  }, [dispatch]);
 
   const handleSelect = (conv) => {
     navigate(`/c/${conv._id}`);
@@ -48,7 +48,7 @@ export default function ConversationList() {
     <div className="flex flex-col gap-2 p-2">
       {conversations.map(conv => {
         // Find the other participant
-        const otherParticipant = conv.participants.find(p => p.clerkId !== userId) || conv.participants[0];
+        const otherParticipant = conv.participants.find(p => String(p._id) !== String(dbUser?._id)) || conv.participants[0];
         const isActive = activeConversation?._id === conv._id;
 
         return (

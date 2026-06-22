@@ -1,17 +1,23 @@
-const { getAuth } = require('@clerk/express');
+const jwt = require('jsonwebtoken');
 
-// According to Clerk v1 docs for @clerk/express, getAuth(req) should be used
-// to extract the session securely from the request object.
+// Custom JWT Authentication Middleware
 const checkAuth = (req, res, next) => {
   try {
-    const auth = getAuth(req);
+    let token;
 
-    if (!auth || !auth.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
     }
 
-    // Attach auth back to req so routes can use req.auth.userId
-    req.auth = auth;
+    if (!token) {
+      return res.status(401).json({ error: 'Not authorized to access this route' });
+    }
+
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    // Attach the decoded MongoDB user ID to req.user
+    req.user = { id: decoded.id };
+
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
