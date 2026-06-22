@@ -11,8 +11,8 @@ export default function SavedAccountsView({ onContinueNew }) {
     return JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
   });
 
-  const { signIn, isLoaded } = useSignIn();
-  const { setActive } = useClerk();
+  const { isLoaded } = useSignIn();
+  const { setActive, client } = useClerk();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,22 +22,25 @@ export default function SavedAccountsView({ onContinueNew }) {
   }, [savedAccounts, navigate]);
 
   const handleSignIn = async (account) => {
-    if (!isLoaded) return;
-    try {
-      // In a fully integrated Clerk flow with saved sessions, we might use setActive.
-      // Or we prompt them to log in via Google.
-      // Since they are "saved", if a session token exists we could use it,
-      // but typically we just redirect to the Google OAuth flow for that specific user or just generic.
+    if (!isLoaded || !client) return;
 
-      // For this step, we just trigger standard Google sign in
-      // or if you want to be specific, you can pass loginHint.
-      await signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/',
-        redirectUrlComplete: '/',
-      });
+    try {
+      // Check if Clerk has an active/available session for this user ID
+      const existingSession = client.sessions.find(
+        (session) => session.user.id === account.clerkId
+      );
+
+      if (existingSession) {
+        // If session exists in background, instantly switch to it
+        await setActive({ session: existingSession.id });
+        navigate('/');
+      } else {
+        // Otherwise, send them to login and prefill their email
+        navigate('/login', { state: { identifier: account.email } });
+      }
     } catch (error) {
       console.error("Error signing in with saved account", error);
+      navigate('/login', { state: { identifier: account.email } });
     }
   };
 
