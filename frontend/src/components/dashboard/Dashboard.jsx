@@ -23,15 +23,43 @@ export default function Dashboard() {
 
   // Sync URL conversationId with Redux activeConversation
   useEffect(() => {
-    if (conversationId && conversations.length > 0) {
-      const conv = conversations.find(c => c._id === conversationId);
-      if (conv) {
-        dispatch(setActiveConversation(conv));
+    const fetchAndSetConversation = async () => {
+      if (!conversationId) {
+        dispatch(setActiveConversation(null));
+        return;
       }
-    } else if (!conversationId) {
-      dispatch(setActiveConversation(null));
-    }
-  }, [conversationId, conversations, dispatch]);
+
+      // If we already have it in the list, just set it
+      const existingConv = conversations.find(c => c._id === conversationId);
+      if (existingConv) {
+        dispatch(setActiveConversation(existingConv));
+        return;
+      }
+
+      // If we navigated to a new chat (e.g., from search) and it's not yet in the Redux list,
+      // we need to fetch all conversations to populate it so Redux can see it.
+      if (session) {
+        try {
+          const token = await session.getToken();
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/conversations`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            // Find the active one from the newly fetched data and dispatch
+            const conv = data.find(c => c._id === conversationId);
+            if (conv) {
+              dispatch(setActiveConversation(conv));
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load conversation from URL", e);
+        }
+      }
+    };
+
+    fetchAndSetConversation();
+  }, [conversationId, conversations, dispatch, session]);
 
   useEffect(() => {
     if (user) {
