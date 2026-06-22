@@ -1,15 +1,40 @@
 import { useState, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/clerk-react';
-import { LogOut, MessageSquare, Search, Settings, ShieldAlert, ArrowRightLeft, Check, X } from 'lucide-react';
+import { LogOut, MessageSquare, Settings, ShieldAlert, ArrowRightLeft, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { setActiveConversation } from '../../store/chatSlice';
+import SidebarSearch from './SidebarSearch';
+import ConversationList from './ConversationList';
+import ChatArea from '../chat/ChatArea';
+import ChatInput from '../chat/ChatInput';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user } = useUser();
-  const { signOut, openUserProfile, session, openSignIn } = useClerk();
+  const { signOut, openUserProfile, openSignIn, session } = useClerk();
   const [showSaveBanner, setShowSaveBanner] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { conversationId } = useParams();
+
+  const activeConversation = useSelector(state => state.chat.activeConversation);
+  const conversations = useSelector(state => state.chat.conversations);
+
+  // Sync URL conversationId with Redux activeConversation
+  useEffect(() => {
+    if (conversationId && conversations.length > 0) {
+      const conv = conversations.find(c => c._id === conversationId);
+      if (conv) {
+        dispatch(setActiveConversation(conv));
+      }
+    } else if (!conversationId) {
+      dispatch(setActiveConversation(null));
+    }
+  }, [conversationId, conversations, dispatch]);
 
   useEffect(() => {
-    if (user && session) {
+    if (user) {
       // Check if user is already saved
       const saved = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
       const isSaved = saved.some(acc => acc.clerkId === user.id);
@@ -18,25 +43,8 @@ export default function Dashboard() {
       if (!isSaved && !dismissed) {
         setShowSaveBanner(true);
       }
-
-      session.getToken().then((token) => {
-        // Sync with backend (fire and forget)
-        fetch(import.meta.env.VITE_API_URL + '/auth/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            email: user.primaryEmailAddress?.emailAddress,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profileImageUrl: user.imageUrl,
-          })
-        }).catch(err => console.error("Failed to sync user:", err));
-      });
     }
-  }, [user, session]);
+  }, [user]);
 
   const handleSaveAccount = () => {
     if (!user) return;
@@ -110,25 +118,28 @@ export default function Dashboard() {
         </div>
 
         {/* Search */}
-        <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search chats..."
-              className="w-full bg-white/50 border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-chattix-teal/50 shadow-inner"
-            />
-          </div>
+        <div className="p-4 z-20">
+          <SidebarSearch onSelectUser={async (selectedUser) => {
+             // Create or get conversation
+             try {
+                const token = await session.getToken();
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/conversations`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ participantId: selectedUser._id })
+                });
+                const conv = await res.json();
+                navigate(`/c/${conv._id}`);
+             } catch(e) { console.error(e); }
+          }} />
         </div>
 
-        {/* Chat List Placeholder */}
+        {/* Chat List */}
         <div className="flex-1 overflow-y-auto p-2">
-          <div className="flex flex-col items-center justify-center h-full text-center p-4">
-            <div className="w-16 h-16 bg-chattix-teal/10 rounded-full flex items-center justify-center mb-3">
-              <MessageSquare className="w-8 h-8 text-chattix-teal" />
-            </div>
-            <p className="text-gray-500 text-sm">No conversations yet.<br/>Start chatting!</p>
-          </div>
+          <ConversationList />
         </div>
 
         {/* Footer Actions */}
@@ -151,12 +162,47 @@ export default function Dashboard() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 glass clay-card flex flex-col items-center justify-center text-center p-8">
-        <img src="/chattix-logo.png" alt="Chattix Logo" className="w-32 h-32 mb-6 opacity-80 drop-shadow-md" />
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to Chattix</h1>
-        <p className="text-gray-500 max-w-md">
-          Experience seamless real-time messaging with a beautiful, soft UI. Select a conversation or start a new one to begin.
-        </p>
+      <div className="flex-1 glass clay-card flex flex-col overflow-hidden relative">
+        {activeConversation ? (
+          <div className="flex flex-col h-full">
+            {/* Chat Header */}
+            <div className="h-20 border-b border-gray-100/50 p-4 flex items-center justify-between shadow-sm z-10 bg-white/40 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const otherParticipant = activeConversation.participants.find(p => p.clerkId !== user.id) || activeConversation.participants[0];
+                  return (
+                    <>
+                      <div className="relative">
+                        <img src={otherParticipant.profileImageUrl || '/chattix-logo.png'} alt="Avatar" className="w-10 h-10 rounded-full object-cover shadow-sm" />
+                        {otherParticipant.isOnline && (
+                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-800 leading-tight">{otherParticipant.firstName} {otherParticipant.lastName}</h3>
+                        <p className="text-xs text-gray-500">{otherParticipant.isOnline ? 'Active now' : 'Offline'}</p>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Messages Area */}
+            <ChatArea />
+
+            {/* Input Area */}
+            <ChatInput />
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+            <img src="/chattix-logo.png" alt="Chattix Logo" className="w-32 h-32 mb-6 opacity-80 drop-shadow-md object-contain" />
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome to Chattix</h1>
+            <p className="text-gray-500 max-w-md">
+              Experience seamless real-time messaging with a beautiful, soft UI. Select a conversation or start a new one to begin.
+            </p>
+          </div>
+        )}
       </div>
 
     </div>

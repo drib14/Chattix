@@ -11,6 +11,11 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  username: {
+    type: String,
+    required: true,
+    default: 'chattix_user',
+  },
   firstName: {
     type: String,
   },
@@ -20,6 +25,14 @@ const userSchema = new mongoose.Schema({
   profileImageUrl: {
     type: String,
   },
+  lastSeen: {
+    type: Date,
+    default: Date.now,
+  },
+  isOnline: {
+    type: Boolean,
+    default: false,
+  }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

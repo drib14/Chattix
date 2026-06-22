@@ -16,8 +16,6 @@ export default function SplashScreen() {
           src="/chattix-logo.png"
           alt="Chattix Logo"
           className="w-32 h-32 object-contain"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         />
       </motion.div>
       <motion.h1

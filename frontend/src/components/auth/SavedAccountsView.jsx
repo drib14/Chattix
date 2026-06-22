@@ -2,33 +2,45 @@ import { useState, useEffect } from 'react';
 import { useSignIn, useClerk } from '@clerk/clerk-react';
 import { LogIn, UserPlus, X } from 'lucide-react';
 
+import { useNavigate } from 'react-router-dom';
+
 export default function SavedAccountsView({ onContinueNew }) {
-  const [savedAccounts, setSavedAccounts] = useState([]);
-  const { signIn, isLoaded } = useSignIn();
-  const { setActive } = useClerk();
+  // Initialize state synchronously so we don't flash an empty array
+  // and trigger the redirect prematurely on the first render.
+  const [savedAccounts, setSavedAccounts] = useState(() => {
+    return JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
+  });
+
+  const { isLoaded } = useSignIn();
+  const { setActive, client } = useClerk();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const accounts = JSON.parse(localStorage.getItem('chattix_saved_accounts') || '[]');
-    setSavedAccounts(accounts);
-  }, []);
+    if (savedAccounts.length === 0) {
+      navigate('/login');
+    }
+  }, [savedAccounts, navigate]);
 
   const handleSignIn = async (account) => {
-    if (!isLoaded) return;
-    try {
-      // In a fully integrated Clerk flow with saved sessions, we might use setActive.
-      // Or we prompt them to log in via Google.
-      // Since they are "saved", if a session token exists we could use it,
-      // but typically we just redirect to the Google OAuth flow for that specific user or just generic.
+    if (!isLoaded || !client) return;
 
-      // For this step, we just trigger standard Google sign in
-      // or if you want to be specific, you can pass loginHint.
-      await signIn.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/',
-        redirectUrlComplete: '/',
-      });
+    try {
+      // Check if Clerk has an active/available session for this user ID
+      const existingSession = client.sessions.find(
+        (session) => session.user.id === account.clerkId
+      );
+
+      if (existingSession) {
+        // If session exists in background, instantly switch to it
+        await setActive({ session: existingSession.id });
+        navigate('/');
+      } else {
+        // Otherwise, send them to login and prefill their email
+        navigate('/login', { state: { identifier: account.email } });
+      }
     } catch (error) {
       console.error("Error signing in with saved account", error);
+      navigate('/login', { state: { identifier: account.email } });
     }
   };
 
@@ -40,24 +52,12 @@ export default function SavedAccountsView({ onContinueNew }) {
   };
 
   if (savedAccounts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 glass clay-card w-full max-w-md mx-auto mt-20">
-        <img src="/chattix-logo.png" alt="Chattix Logo" className="w-24 h-24 mb-6 drop-shadow-md" />
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Welcome to Chattix</h2>
-        <button
-          onClick={onContinueNew}
-          className="clay-btn flex items-center justify-center w-full py-3 px-4 font-semibold text-gray-700 hover:text-chattix-teal"
-        >
-          <LogIn className="w-5 h-5 mr-2" />
-          Sign In with Google
-        </button>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <img src="/chattix-logo.png" alt="Chattix Logo" className="w-20 h-20 mb-8 drop-shadow-md" />
+      <img src="/chattix-logo.png" alt="Chattix Logo" className="w-20 h-20 mb-8 drop-shadow-md object-contain" />
       <h2 className="text-2xl font-bold mb-8 text-gray-800">Recent Logins</h2>
 
       <div className="flex flex-wrap gap-6 justify-center max-w-2xl">

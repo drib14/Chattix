@@ -4,33 +4,97 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
-const { clerkMiddleware, requireAuth } = require('@clerk/express');
+const { clerkMiddleware } = require('@clerk/express');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+const { checkAuth } = require('../middleware/auth');
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use(clerkMiddleware());
 
 app.use(cors());
 app.use(express.json());
 
+// --- Socket.io Setup ---
+const userSocketMap = {}; // Maps DB userId to socketId
+
+io.on('connection', async (socket) => {
+  // Query parameter will be the MongoDB User _id, passed from the frontend
+  const dbUserId = socket.handshake.query.userId;
+  if (dbUserId && mongoose.Types.ObjectId.isValid(dbUserId)) {
+    userSocketMap[dbUserId] = socket.id;
+    // Update user online status in DB
+    try {
+      await User.findByIdAndUpdate(dbUserId, { isOnline: true }).exec();
+      io.emit('userOnlineStatus', { userId: dbUserId, isOnline: true });
+    } catch(err) {
+      console.error("Socket user update error", err);
+    }
+  }
+
+  socket.on('typing', ({ conversationId, senderId, receiverId }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('typing', { conversationId, senderId });
+    }
+  });
+
+  socket.on('stopTyping', ({ conversationId, senderId, receiverId }) => {
+    const receiverSocketId = userSocketMap[receiverId];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('stopTyping', { conversationId, senderId });
+    }
+  });
+
+  socket.on('disconnect', async () => {
+    if (dbUserId && mongoose.Types.ObjectId.isValid(dbUserId)) {
+      delete userSocketMap[dbUserId];
+      try {
+        await User.findByIdAndUpdate(dbUserId, { isOnline: false, lastSeen: Date.now() }).exec();
+        io.emit('userOnlineStatus', { userId: dbUserId, isOnline: false, lastSeen: Date.now() });
+      } catch(err) {
+        console.error("Socket user disconnect error", err);
+      }
+    }
+  });
+});
+
+// Pass io to req object for use in routes
+app.use((req, res, next) => {
+  req.io = io;
+  req.userSocketMap = userSocketMap;
+  next();
+});
+
+const chatRoutes = require('../routes/chat');
+app.use('/api', chatRoutes);
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// Rate Limiting for Auth Endpoints
+// Rate Limiting for Auth Endpoints (relaxed for dev)
 const authLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 5, // Limit each IP to 5 requests per `window` (here, per minute)
-  message: { message: 'Too many requests from this IP, please try again after a minute' },
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window`
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 // Auth Sync Endpoint
-app.post('/api/auth/sync', authLimiter, requireAuth(), async (req, res) => {
+app.post('/api/auth/sync', authLimiter, checkAuth, async (req, res) => {
   try {
-    const { email, firstName, lastName, profileImageUrl } = req.body;
+    const { email, firstName, lastName, profileImageUrl, username } = req.body;
 
     // Use the verified clerk user ID from the token
     const clerkId = req.auth.userId;
@@ -46,6 +110,7 @@ app.post('/api/auth/sync', authLimiter, requireAuth(), async (req, res) => {
       user = new User({
         clerkId,
         email,
+        username: username || 'chattix_user',
         firstName,
         lastName,
         profileImageUrl,
@@ -56,6 +121,7 @@ app.post('/api/auth/sync', authLimiter, requireAuth(), async (req, res) => {
 
     // Update user info if it has changed
     user.email = email;
+    if (username) user.username = username;
     user.firstName = firstName;
     user.lastName = lastName;
     user.profileImageUrl = profileImageUrl;
@@ -78,7 +144,7 @@ module.exports = app;
 
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
+  httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 }

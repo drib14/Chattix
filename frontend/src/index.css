@@ -20,10 +20,10 @@
     @apply bg-[#F4F7F9] shadow-clay-card rounded-2xl;
   }
   .clay-btn {
-    @apply bg-[#F4F7F9] shadow-clay-card rounded-xl active:shadow-clay-inset transition-shadow duration-200;
+    @apply bg-[#F4F7F9] shadow-clay-card rounded-xl active:shadow-clay-inset transition-shadow duration-200 cursor-pointer;
   }
   .clay-btn-teal {
-    @apply bg-chattix-teal text-white shadow-clay-teal rounded-xl active:shadow-clay-teal-inset transition-shadow duration-200 border-none;
+    @apply bg-chattix-teal text-white shadow-clay-teal rounded-xl active:shadow-clay-teal-inset transition-shadow duration-200 border-none cursor-pointer;
   }
 }
 
