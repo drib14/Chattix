@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import { protect } from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
 import cloudinary from '../config/cloudinary.js';
@@ -6,12 +7,11 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
-// Synchronize and return user profile information
-router.get('/me', protect, (req, res) => {
-  res.status(200).json({
-    success: true,
-    user: req.user,
-  });
+// Multer memory configuration
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit for images
 });
 
 // Update Profile

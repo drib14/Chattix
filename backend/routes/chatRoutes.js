@@ -16,4 +16,12 @@ router.post('/group', protect, createGroupChat);
 router.get('/users', protect, searchUsers);
 router.put('/:chatId', protect, updateChatSettings);
 
+// Chat tools
+router.put('/:chatId/nickname', protect, setChatNickname);
+router.put('/:chatId/pin', protect, togglePinChat);
+router.get('/:chatId/pinned-messages', protect, getPinnedMessages);
+router.get('/:chatId/media', protect, getSharedMedia);
+router.get('/:chatId/files', protect, getSharedFiles);
+router.get('/:chatId/links', protect, getSharedLinks);
+
 export default router;

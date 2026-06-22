@@ -5,6 +5,7 @@ const initialState = {
   selectedChat: null,
   messages: [],
   onlineUsers: [],
+  token: null,
 };
 
 const chatSlice = createSlice({
@@ -37,6 +38,9 @@ const chatSlice = createSlice({
     setOnlineUsers: (state, action) => {
       state.onlineUsers = Array.isArray(action.payload) ? action.payload : [];
     },
+    setToken: (state, action) => {
+      state.token = action.payload;
+    },
     updateChatLastMessage: (state, action) => {
       const { chatId, message } = action.payload;
       // Update in local chats list
@@ -59,6 +63,7 @@ export const {
   addMessage,
   updateMessageState,
   setOnlineUsers,
+  setToken,
   updateChatLastMessage,
 } = chatSlice.actions;
 

@@ -5,7 +5,7 @@ import api from '../../services/api';
 import { setSelectedChat, setChats } from '../../redux/slices/chatSlice';
 import SkeletalLoader from '../ui/SkeletalLoader';
 
-const GroupsList = ({ onChatStarted }) => {
+const GroupsList = ({ onChatCreated }) => {
   const [groupName, setGroupName] = useState('');
   const [friendsList, setFriendsList] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
@@ -51,12 +51,11 @@ const GroupsList = ({ onChatStarted }) => {
       // Refresh chats list
       const chatsData = await api.get('/chats');
       dispatch(setChats(chatsData));
-      dispatch(setSelectedChat(chat));
       // Clear forms
       setGroupName('');
       setSelectedMembers([]);
-      if (onChatStarted) {
-        onChatStarted();
+      if (onChatCreated) {
+        onChatCreated(chat); // Pass chat to parent for navigation
       }
       navigate(`/messages/${chat._id}`);
     } catch (err) {

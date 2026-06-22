@@ -5,6 +5,8 @@ import { useUser, useSession } from '@clerk/clerk-react';
 import SplashPage from './pages/SplashPage';
 import LoginRegister from './pages/LoginRegister';
 import ModernChatPage from './pages/ModernChatPage';
+import ProfilePage from './pages/ProfilePage';
+import MediaGalleryPage from './pages/MediaGalleryPage';
 import { setCredentials, logout } from './redux/slices/authSlice';
 import { setTokenProvider } from './services/api';
 
