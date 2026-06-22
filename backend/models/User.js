@@ -45,10 +45,15 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    status: {
+    pinnedChats: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Chat',
+      },
+    ],
+    quickReaction: {
       type: String,
-      default: 'available',
-      enum: ['available', 'away', 'busy', 'offline'],
+      default: '👍',
     },
   },
   { timestamps: true }

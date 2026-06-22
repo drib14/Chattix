@@ -42,45 +42,46 @@ const messageSchema = new mongoose.Schema(
         },
       },
     ],
-    reactions: [
-      {
-        emoji: { type: String, required: true },
-        users: [
-          {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-          },
-        ],
-      },
-    ],
-    isEdited: {
-      type: Boolean,
-      default: false,
-    },
-    editHistory: [
-      {
-        text: { type: String },
-        editedAt: { type: Date, default: Date.now },
-      },
-    ],
-    isPinned: {
-      type: Boolean,
-      default: false,
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
     },
     isDeleted: {
       type: Boolean,
       default: false,
     },
-    forwardedFrom: {
-      messageId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Message',
-      },
-      senderName: { type: String },
+    isEdited: {
+      type: Boolean,
+      default: false,
     },
-    replyTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Message',
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    reactions: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        emoji: { type: String },
+      },
+    ],
+    type: {
+      type: String,
+      enum: ['text', 'system', 'event'],
+      default: 'text',
+    },
+    eventDetails: {
+      title: { type: String },
+      date: { type: Date },
+      location: { type: String },
+      rsvps: [
+        {
+          user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+          status: { type: String, enum: ['going', 'maybe', 'not_going'] },
+        },
+      ],
     },
   },
   { timestamps: true }

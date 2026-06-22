@@ -11,14 +11,14 @@ const MediaGalleryModal = ({ isOpen, onClose, activeMediaUrl, setActiveMediaUrl,
   const currentIndex = mediaList.findIndex((m) => m.url === activeMediaUrl);
 
   const handlePrev = (e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (currentIndex > 0) {
       setActiveMediaUrl(mediaList[currentIndex - 1].url);
     }
   };
 
   const handleNext = (e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (currentIndex < mediaList.length - 1) {
       setActiveMediaUrl(mediaList[currentIndex + 1].url);
     }
@@ -27,8 +27,18 @@ const MediaGalleryModal = ({ isOpen, onClose, activeMediaUrl, setActiveMediaUrl,
   const activeMedia = mediaList[currentIndex] || { url: activeMediaUrl, type: 'image' };
 
   return (
-    <div style={styles.overlay} onClick={onClose} id="media-gallery-overlay">
-      {/* Lightbox Header Close Button */}
+    <div
+      style={styles.overlay}
+      onClick={onClose}
+      id="media-gallery-overlay"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+        if (e.key === 'ArrowLeft') handlePrev();
+        if (e.key === 'ArrowRight') handleNext();
+      }}
+      ref={(el) => el && el.focus()}
+    >
       <button style={styles.closeBtn} onClick={onClose} title="Close Lightbox" id="media-gallery-close-btn">
         <X size={24} />
       </button>

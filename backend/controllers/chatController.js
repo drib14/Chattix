@@ -131,138 +131,42 @@ export const searchUsers = async (req, res) => {
   }
 };
 
-// Set chat nickname for a user
-export const setChatNickname = async (req, res) => {
+export const updateChatSettings = async (req, res) => {
+  const { chatId } = req.params;
+  const { nicknames, groupName, groupAvatar } = req.body;
+
   try {
-    const { chatId } = req.params;
-    const { userId, nickname } = req.body;
+    const updateData = {};
+    if (nicknames) updateData.nicknames = nicknames;
+    if (groupName) updateData.groupName = groupName;
+    if (groupAvatar) updateData.groupAvatar = groupAvatar;
 
-    const chat = await Chat.findById(chatId);
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
+    const chat = await Chat.findByIdAndUpdate(chatId, updateData, { new: true })
+      .populate('participants', '-clerkId')
+      .populate('admins', '-clerkId')
+      .populate('lastMessage');
+
+    // Create system message for nickname/group update
+    if (nicknames || groupName) {
+       let text = `${req.user.fullName} updated chat settings`;
+       if (groupName) text = `${req.user.fullName} changed group name to ${groupName}`;
+       else if (nicknames) text = `${req.user.fullName} updated nicknames`;
+
+       const sysMsg = await Message.create({
+         chat: chat._id,
+         sender: req.user._id,
+         type: 'system',
+         text
+       });
+       chat.lastMessage = sysMsg;
+       await chat.save();
+
+       if (req.io) {
+          req.io.to(chat._id.toString()).emit('message_received', sysMsg);
+       }
     }
 
-    // Check if user is in this chat
-    if (!chat.participants.includes(userId)) {
-      return res.status(403).json({ message: 'User not in this chat' });
-    }
-
-    // Find or create nickname entry
-    let nicknameEntry = chat.nicknames.find(n => n.user.toString() === userId);
-    if (!nicknameEntry) {
-      chat.nicknames.push({ user: userId, nickname });
-    } else {
-      nicknameEntry.nickname = nickname;
-    }
-
-    await chat.save();
     res.status(200).json(chat);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Pin or unpin chat
-export const togglePinChat = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-
-    const chat = await Chat.findById(chatId);
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
-    }
-
-    const userId = req.user._id;
-    const isPinnedByUser = chat.isPinned.includes(userId);
-
-    if (isPinnedByUser) {
-      chat.isPinned = chat.isPinned.filter(id => id.toString() !== userId.toString());
-    } else {
-      chat.isPinned.push(userId);
-    }
-
-    await chat.save();
-    res.status(200).json(chat);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get pinned messages for a chat
-export const getPinnedMessages = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-
-    const chat = await Chat.findById(chatId).populate({
-      path: 'pinnedMessages',
-      populate: { path: 'sender', select: 'fullName username avatar' },
-    });
-
-    if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
-    }
-
-    res.status(200).json(chat.pinnedMessages);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get shared media in chat
-export const getSharedMedia = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-    const Message = require('../models/Message.js').default;
-
-    const mediaMessages = await Message.find({
-      chat: chatId,
-      $or: [
-        { 'attachments.type': { $in: ['image', 'video'] } },
-        { linkPreview: { $exists: true, $ne: null } },
-      ],
-    })
-      .populate('sender', 'fullName username avatar')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(mediaMessages);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get shared files in chat
-export const getSharedFiles = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-    const Message = require('../models/Message.js').default;
-
-    const fileMessages = await Message.find({
-      chat: chatId,
-      'attachments.type': { $in: ['file', 'audio'] },
-    })
-      .populate('sender', 'fullName username avatar')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(fileMessages);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get shared links in chat
-export const getSharedLinks = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-    const Message = require('../models/Message.js').default;
-
-    const linkMessages = await Message.find({
-      chat: chatId,
-      linkPreview: { $exists: true, $ne: null },
-    })
-      .populate('sender', 'fullName username avatar')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(linkMessages);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

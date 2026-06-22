@@ -5,12 +5,7 @@ import {
   allMessages,
   sendMessage,
   uploadAttachment,
-  editMessage,
   deleteMessage,
-  pinMessage,
-  forwardMessage,
-  addReaction,
-  removeReaction,
 } from '../controllers/messageController.js';
 
 const router = express.Router();
@@ -25,6 +20,7 @@ const upload = multer({
 router.get('/:chatId', protect, allMessages);
 router.post('/', protect, sendMessage);
 router.post('/upload', protect, upload.single('file'), uploadAttachment);
+router.delete('/:id', protect, deleteMessage);
 
 // Message CRUD operations
 router.put('/:messageId/edit', protect, editMessage);

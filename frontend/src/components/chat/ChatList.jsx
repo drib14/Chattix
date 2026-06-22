@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { setChats, setSelectedChat } from '../../redux/slices/chatSlice';
 import api from '../../services/api';
 import SkeletalLoader from '../ui/SkeletalLoader';
@@ -18,8 +19,10 @@ const formatLastSeen = (lastSeenDate) => {
   return `${diffDays}d`;
 };
 
-const ChatList = ({ searchQuery, onSelectChat }) => {
+const ChatList = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
   const { chats, selectedChat, onlineUsers } = useSelector((state) => state.chat);
   const { user } = useSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
@@ -61,16 +64,32 @@ const ChatList = ({ searchQuery, onSelectChat }) => {
 
   const filteredChats = chats.filter((c) => {
     const details = getChatDetails(c);
-    return details.name.toLowerCase().includes((searchQuery || '').toLowerCase());
+    return details.name.toLowerCase().includes((localSearchQuery || '').toLowerCase());
   });
 
   if (loading) {
     return <SkeletalLoader type="list" count={6} />;
   }
 
+  const pinnedChats = filteredChats.filter(chat => user?.pinnedChats?.includes(chat._id));
+  const otherChats = filteredChats.filter(chat => !user?.pinnedChats?.includes(chat._id));
+
   return (
     <div className="chat-list-container">
-      <h3 className="chat-list-title">Recent Conversations</h3>
+      <div className="chat-search-header-container" style={{ padding: '24px 20px 16px 20px', borderBottom: '1.5px solid rgba(226, 232, 240, 0.6)' }}>
+        <input
+          type="text"
+          placeholder="Search chats..."
+          value={localSearchQuery}
+          onChange={(e) => setLocalSearchQuery(e.target.value)}
+          className="clay-input chat-search-input"
+          style={{ padding: '12px 18px', borderRadius: '16px', width: '100%' }}
+        />
+      </div>
+
+      <h3 className="chat-list-title" style={{ padding: '16px 20px 8px', fontSize: '13px', textTransform: 'uppercase', color: 'var(--text-light)', fontWeight: 800, letterSpacing: '0.5px' }}>
+        {pinnedChats.length > 0 ? 'Pinned Conversations' : 'Recent Conversations'}
+      </h3>
       
       {filteredChats.length === 0 ? (
         <div className="chat-list-empty">
@@ -79,14 +98,67 @@ const ChatList = ({ searchQuery, onSelectChat }) => {
         </div>
       ) : (
         <div className="chat-list-wrapper">
-          {filteredChats.map((chat) => {
+          {pinnedChats.map((chat) => {
+            const details = getChatDetails(chat);
+            const isSelected = selectedChat?._id === chat._id;
+
+            return (
+              <div
+                key={chat._id}
+                onClick={() => {
+                  dispatch(setSelectedChat(chat));
+                  navigate(`/messages/${chat._id}`);
+                }}
+                className={`chat-list-item ${isSelected ? 'chat-list-item-active' : ''}`}
+              >
+                <div className="chat-list-item-avatar-wrapper">
+                  <img src={details.avatar} alt="avatar" className="chat-list-item-avatar" />
+                  <div style={{ position: 'absolute', top: -5, right: -5, fontSize: '12px' }}>📌</div>
+                  {details.isOnline ? (
+                    <div className="chat-list-item-status clay-online" />
+                  ) : (
+                    details.lastSeen && (
+                      <div className="chat-list-item-status-offline">
+                        {formatLastSeen(details.lastSeen)}
+                      </div>
+                    )
+                  )}
+                </div>
+                <div className="chat-list-item-content">
+                  <div className="chat-list-item-header">
+                    <h5 className="chat-list-item-name">{details.name}</h5>
+                    <span className="chat-list-item-time">
+                      {chat.lastMessage?.createdAt && new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <div className="chat-list-item-preview">
+                    {chat.lastMessage ? (
+                      <p className={`preview-text ${!chat.lastMessage.seenBy?.some(s => s.user === user._id) ? 'unread' : ''}`}>
+                        {chat.lastMessage.sender === user?._id ? 'You: ' : ''}
+                        {chat.lastMessage.text || 'Sent an attachment'}
+                      </p>
+                    ) : (
+                      <p className="preview-text">No messages yet</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {pinnedChats.length > 0 && <h3 className="chat-list-title" style={{ padding: '16px 20px 8px', fontSize: '13px', textTransform: 'uppercase', color: 'var(--text-light)', fontWeight: 800, letterSpacing: '0.5px' }}>Recent Conversations</h3>}
+
+          {otherChats.map((chat) => {
             const details = getChatDetails(chat);
             const isSelected = selectedChat?._id === chat._id;
             
             return (
               <div
                 key={chat._id}
-                onClick={() => onSelectChat && onSelectChat(chat)}
+                onClick={() => {
+                  dispatch(setSelectedChat(chat));
+                  navigate(`/messages/${chat._id}`);
+                }}
                 className={`chat-list-item ${isSelected ? 'chat-list-item-active' : ''}`}
               >
                 {/* Avatar status bubble */}

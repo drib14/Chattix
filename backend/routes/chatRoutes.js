@@ -5,12 +5,7 @@ import {
   fetchChats,
   createGroupChat,
   searchUsers,
-  setChatNickname,
-  togglePinChat,
-  getPinnedMessages,
-  getSharedMedia,
-  getSharedFiles,
-  getSharedLinks,
+  updateChatSettings,
 } from '../controllers/chatController.js';
 
 const router = express.Router();
@@ -19,6 +14,7 @@ router.post('/', protect, accessChat);
 router.get('/', protect, fetchChats);
 router.post('/group', protect, createGroupChat);
 router.get('/users', protect, searchUsers);
+router.put('/:chatId', protect, updateChatSettings);
 
 // Chat tools
 router.put('/:chatId/nickname', protect, setChatNickname);

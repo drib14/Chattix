@@ -1,9 +1,29 @@
-import { FileText, Download } from 'lucide-react';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { FileText, Download, Smile, Reply, MoreVertical, Trash } from 'lucide-react';
 import LinkPreviewCard from './LinkPreviewCard';
 import VoicePlayer from './VoicePlayer';
+import { api } from '../../services/api';
+import { updateMessageState } from '../../redux/slices/chatSlice';
+import ConfirmationModal from '../modals/ConfirmationModal';
 
 const ChatBubble = ({ message, isOwn, onViewMedia }) => {
+  const [showTimestamp, setShowTimestamp] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const attachment = message.attachments?.[0];
+  const dispatch = useDispatch();
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/messages/${message._id}`);
+      dispatch(updateMessageState({ messageId: message._id, updates: { isDeleted: true, text: '', attachments: [], linkPreview: null } }));
+      setShowMoreActions(false);
+      setShowDeleteModal(false);
+    } catch (err) {
+      console.error("Failed to delete message:", err);
+    }
+  };
 
   const formatText = (text) => {
     if (!text) return null;
@@ -42,37 +62,94 @@ const ChatBubble = ({ message, isOwn, onViewMedia }) => {
     return `${(kb / 1024).toFixed(1)} MB`;
   };
 
-  return (
-    <div className="bubble-row" style={{ justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
-      {/* Sender Avatar */}
-      {!isOwn && (
-        <img
-          src={message.sender?.avatar || `https://ui-avatars.com/api/?background=6366F1&color=fff&name=${encodeURIComponent(message.sender?.fullName || 'U')}`}
-          alt=""
-          className="bubble-sender-avatar"
-        />
+  const renderActions = () => (
+    <div className="bubble-actions" style={{ flexDirection: isOwn ? 'row-reverse' : 'row', position: 'relative' }}>
+      <button
+        className="bubble-action-btn"
+        title="Quick React"
+        onClick={() => {
+          // Here we would typically dispatch an action or API call to save the reaction
+          // e.g. api.post(`/messages/${message._id}/react`, { emoji: user?.quickReaction || '👍' })
+          console.log(`Reacted with ${message.sender?.quickReaction || '👍'}`);
+        }}
+      >
+        <span style={{ fontSize: '12px' }}>{message.sender?.quickReaction || '👍'}</span>
+      </button>
+      <button className="bubble-action-btn" title="React"><Smile size={14} /></button>
+      <button className="bubble-action-btn" title="Reply"><Reply size={14} /></button>
+      <button className="bubble-action-btn" title="More" onClick={() => setShowMoreActions(!showMoreActions)}>
+        <MoreVertical size={14} />
+      </button>
+
+      {showMoreActions && isOwn && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          right: isOwn ? '0' : 'auto',
+          left: isOwn ? 'auto' : '0',
+          background: 'white',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          borderRadius: '8px',
+          padding: '4px',
+          zIndex: 10
+        }}>
+          <button
+            onClick={() => { setShowDeleteModal(true); setShowMoreActions(false); }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', padding: '6px 12px', width: '100%', cursor: 'pointer', color: 'var(--clay-danger)', fontSize: '12px', fontWeight: 'bold' }}
+          >
+            <Trash size={12} /> Unsend
+          </button>
+        </div>
       )}
 
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        title="Unsend Message"
+        message="Are you sure you want to unsend this message for everyone? This action cannot be undone."
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteModal(false)}
+        confirmText="Unsend"
+      />
+    </div>
+  );
+
+  if (message.type === 'system') {
+    return (
+      <div className="system-message-row">
+        <span className="system-message-bubble">{message.text}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bubble-row" style={{ justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
+      {/* Name details are removed from bubble to match Messenger, as they are in the header */}
+
+      {!isOwn && !message.isDeleted && renderActions()}
+
       <div className="bubble-wrapper" style={{ alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
-        {/* Name details */}
-        {!isOwn && <span className="bubble-sender-name">{message.sender?.fullName}</span>}
 
         <div
-          className={`${isOwn ? 'clay-bubble-own' : 'clay-bubble-other'} bubble-content-box`}
-          style={{
+          onClick={() => !message.isDeleted && setShowTimestamp(!showTimestamp)}
+          className={message.isDeleted ? 'bubble-message-deleted' : `${isOwn ? 'clay-bubble-own' : 'clay-bubble-other'} bubble-content-box`}
+          style={!message.isDeleted ? {
             padding: attachment && !message.text ? '0' : '10px 16px',
             background: attachment && !message.text ? 'transparent' : undefined,
             border: attachment && !message.text ? 'none' : undefined,
             boxShadow: attachment && !message.text ? 'none' : undefined,
-          }}
+          } : {}}
         >
-          {/* Main text message */}
-          {message.text && (
-            <p className="bubble-message-text">{formatText(message.text)}</p>
-          )}
+          {message.isDeleted ? (
+            <span>You unsent a message</span>
+          ) : (
+            <>
+              {/* Main text message */}
+              {message.text && (
+                <p className="bubble-message-text">{formatText(message.text)}</p>
+              )}
 
-          {/* Attachment options rendering */}
-          {attachment && (
+              {/* Attachment options rendering */}
+              {attachment && (
             <div className="bubble-attachments-container">
               {/* Image Thumbnail */}
               {attachment.type === 'image' && (
@@ -145,17 +222,28 @@ const ChatBubble = ({ message, isOwn, onViewMedia }) => {
             </div>
           )}
 
-          {/* Scraped OpenGraph Link Previews */}
-          {message.linkPreview && (
-            <LinkPreviewCard preview={message.linkPreview} />
+              {/* Scraped OpenGraph Link Previews */}
+              {message.linkPreview && (
+                <LinkPreviewCard preview={message.linkPreview} />
+              )}
+            </>
           )}
         </div>
         
-        {/* Timestamp */}
-        <span className="bubble-timestamp">
-          {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
+        {/* Read Receipt / Time shows conditionally on click */}
+        {showTimestamp && (
+          <div className="bubble-timestamp-popup" id={`bubble-time-${message._id}`}>
+            {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {isOwn && (
+              <span className="bubble-read-receipt" id={`bubble-receipt-${message._id}`}>
+                {message.seenBy?.some((s) => s.user !== message.sender._id || s.user !== message.sender) ? ' • Read' : ' • Sent'}
+              </span>
+            )}
+          </div>
+        )}
       </div>
+
+      {isOwn && !message.isDeleted && renderActions()}
     </div>
   );
 };

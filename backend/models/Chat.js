@@ -40,36 +40,10 @@ const chatSchema = new mongoose.Schema(
         nickname: { type: String },
       },
     ],
-    isPinned: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-      },
-    ],
-    pinnedMessages: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Message',
-      },
-    ],
-    sharedMedia: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Message',
-      },
-    ],
-    sharedFiles: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Message',
-      },
-    ],
-    sharedLinks: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Message',
-      },
-    ],
+    theme: {
+      type: String,
+      default: 'default',
+    },
   },
   { timestamps: true }
 );
