@@ -22,10 +22,16 @@ export default function SidebarSearch({ onSelectUser }) {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/users/search?query=${query}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (!res.ok) throw new Error("Failed to search users");
         const data = await res.json();
-        setResults(data);
+        if (Array.isArray(data)) {
+          setResults(data);
+        } else {
+          setResults([]);
+        }
       } catch (err) {
         console.error(err);
+        setResults([]);
       } finally {
         setLoading(false);
       }
