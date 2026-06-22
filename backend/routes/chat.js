@@ -5,7 +5,7 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const upload = require('../middleware/upload');
 const axios = require('axios');
-const { requireAuth } = require('@clerk/express');
+const { checkAuth } = require('../middleware/auth');
 
 // --- Helper: Get DB User from Clerk ID ---
 const getDbUser = async (clerkId) => {
@@ -13,7 +13,7 @@ const getDbUser = async (clerkId) => {
 };
 
 // --- User Search ---
-router.get('/users/search', requireAuth(), async (req, res) => {
+router.get('/users/search', checkAuth, async (req, res) => {
   try {
     const { query } = req.query;
     if (!query) return res.status(200).json([]);
@@ -42,7 +42,7 @@ router.get('/users/search', requireAuth(), async (req, res) => {
 // --- Conversations ---
 
 // Get all conversations for current user
-router.get('/conversations', requireAuth(), async (req, res) => {
+router.get('/conversations', checkAuth, async (req, res) => {
   try {
     const dbUser = await getDbUser(req.auth.userId);
     if (!dbUser) return res.status(404).json({ error: "User not found" });
@@ -61,7 +61,7 @@ router.get('/conversations', requireAuth(), async (req, res) => {
 });
 
 // Create or get existing conversation
-router.post('/conversations', requireAuth(), async (req, res) => {
+router.post('/conversations', checkAuth, async (req, res) => {
   try {
     const { participantId } = req.body;
     const dbUser = await getDbUser(req.auth.userId);
@@ -88,7 +88,7 @@ router.post('/conversations', requireAuth(), async (req, res) => {
 // --- Messages ---
 
 // Get messages for a conversation
-router.get('/messages/:conversationId', requireAuth(), async (req, res) => {
+router.get('/messages/:conversationId', checkAuth, async (req, res) => {
   try {
     const messages = await Message.find({ conversationId: req.params.conversationId })
       .populate('senderId', 'firstName lastName profileImageUrl')
@@ -106,7 +106,7 @@ router.get('/messages/:conversationId', requireAuth(), async (req, res) => {
 });
 
 // Send a message (handles all types)
-router.post('/messages', requireAuth(), upload.single('media'), async (req, res) => {
+router.post('/messages', checkAuth, upload.single('media'), async (req, res) => {
   try {
     const dbUser = await getDbUser(req.auth.userId);
     const { conversationId, type, content, replyTo, forwarded, linkPreview } = req.body;
@@ -165,7 +165,7 @@ router.post('/messages', requireAuth(), upload.single('media'), async (req, res)
 });
 
 // Delete a message
-router.delete('/messages/:id', requireAuth(), async (req, res) => {
+router.delete('/messages/:id', checkAuth, async (req, res) => {
   try {
     const dbUser = await getDbUser(req.auth.userId);
     const message = await Message.findById(req.params.id);
@@ -198,7 +198,7 @@ router.delete('/messages/:id', requireAuth(), async (req, res) => {
 
 // --- Utils ---
 // Link Preview Scraper
-router.post('/utils/link-preview', requireAuth(), async (req, res) => {
+router.post('/utils/link-preview', checkAuth, async (req, res) => {
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL required' });

@@ -33,6 +33,10 @@ export default function AppRoutes() {
         element={!isSignedIn ? <SavedAccountsView onContinueNew={() => window.location.assign('/login')} /> : <Navigate to="/" />}
       />
       <Route
+        path="/c/:conversationId"
+        element={isSignedIn ? <DashboardPage /> : <Navigate to="/saved" />}
+      />
+      <Route
         path="/"
         element={isSignedIn ? <DashboardPage /> : <Navigate to="/saved" />}
       />

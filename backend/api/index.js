@@ -4,9 +4,10 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
-const { clerkMiddleware, requireAuth } = require('@clerk/express');
+const { clerkMiddleware } = require('@clerk/express');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const { checkAuth } = require('../middleware/auth');
 
 const app = express();
 const httpServer = createServer(app);
@@ -81,17 +82,17 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// Rate Limiting for Auth Endpoints
+// Rate Limiting for Auth Endpoints (relaxed for dev)
 const authLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 5, // Limit each IP to 5 requests per `window` (here, per minute)
-  message: { message: 'Too many requests from this IP, please try again after a minute' },
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window`
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 // Auth Sync Endpoint
-app.post('/api/auth/sync', authLimiter, requireAuth(), async (req, res) => {
+app.post('/api/auth/sync', authLimiter, checkAuth, async (req, res) => {
   try {
     const { email, firstName, lastName, profileImageUrl, username } = req.body;
 

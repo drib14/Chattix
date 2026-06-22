@@ -8,13 +8,30 @@ import SidebarSearch from './SidebarSearch';
 import ConversationList from './ConversationList';
 import ChatArea from '../chat/ChatArea';
 import ChatInput from '../chat/ChatInput';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user } = useUser();
   const { signOut, openUserProfile, openSignIn, session } = useClerk();
   const [showSaveBanner, setShowSaveBanner] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { conversationId } = useParams();
+
   const activeConversation = useSelector(state => state.chat.activeConversation);
+  const conversations = useSelector(state => state.chat.conversations);
+
+  // Sync URL conversationId with Redux activeConversation
+  useEffect(() => {
+    if (conversationId && conversations.length > 0) {
+      const conv = conversations.find(c => c._id === conversationId);
+      if (conv) {
+        dispatch(setActiveConversation(conv));
+      }
+    } else if (!conversationId) {
+      dispatch(setActiveConversation(null));
+    }
+  }, [conversationId, conversations, dispatch]);
 
   useEffect(() => {
     if (user) {
@@ -115,7 +132,7 @@ export default function Dashboard() {
                   body: JSON.stringify({ participantId: selectedUser._id })
                 });
                 const conv = await res.json();
-                dispatch(setActiveConversation(conv));
+                navigate(`/c/${conv._id}`);
              } catch(e) { console.error(e); }
           }} />
         </div>

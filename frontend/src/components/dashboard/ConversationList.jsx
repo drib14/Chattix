@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '@clerk/clerk-react';
-import { setConversations, setActiveConversation } from '../../store/chatSlice';
+import { useNavigate } from 'react-router-dom';
+import { setConversations } from '../../store/chatSlice';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function ConversationList() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { conversations, activeConversation } = useSelector(state => state.chat);
   const { getToken, userId } = useAuth(); // Clerk userId
 
@@ -16,8 +18,13 @@ export default function ConversationList() {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/conversations`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (!res.ok) throw new Error("Failed to fetch conversations");
         const data = await res.json();
-        dispatch(setConversations(data));
+        if (Array.isArray(data)) {
+          dispatch(setConversations(data));
+        } else {
+          dispatch(setConversations([]));
+        }
       } catch (err) {
         console.error(err);
       }
@@ -26,10 +33,10 @@ export default function ConversationList() {
   }, [getToken, dispatch]);
 
   const handleSelect = (conv) => {
-    dispatch(setActiveConversation(conv));
+    navigate(`/c/${conv._id}`);
   };
 
-  if (conversations.length === 0) {
+  if (!Array.isArray(conversations) || conversations.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-4">
         <p className="text-gray-500 text-sm">No conversations yet.<br/>Start chatting!</p>

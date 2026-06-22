@@ -4,12 +4,13 @@ import { useAuth } from '@clerk/clerk-react';
 import { setMessages } from '../../store/chatSlice';
 import MessageBubble from './MessageBubble';
 import { Loader2 } from 'lucide-react';
+import { useAppAuth } from '../../contexts/AuthContext';
 
 export default function ChatArea() {
   const dispatch = useDispatch();
   const { getToken, userId } = useAuth();
   const { messages, activeConversation, typingUsers } = useSelector(state => state.chat);
-  const { dbUser } = require('../../contexts/AuthContext').useAppAuth();
+  const { dbUser } = useAppAuth();
   const bottomRef = useRef(null);
 
   useEffect(() => {
