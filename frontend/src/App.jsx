@@ -6,6 +6,7 @@ import SplashPage from './pages/SplashPage';
 import LoginRegister from './pages/LoginRegister';
 import ModernChatPage from './pages/ModernChatPage';
 import { setCredentials, logout } from './redux/slices/authSlice';
+import { setTokenProvider } from './services/api';
 
 function App() {
   const { user } = useSelector((state) => state.auth);
@@ -17,6 +18,13 @@ function App() {
   
   const [splashFinished, setSplashFinished] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
+  // Expose session.getToken to the API layer to prevent 401 Unauthorized errors
+  useEffect(() => {
+    if (session) {
+      setTokenProvider(() => session.getToken());
+    }
+  }, [session]);
 
   // Sync Clerk Authentication with backend database user record
   useEffect(() => {
@@ -67,6 +75,10 @@ function App() {
       />
       <Route
         path="/messages"
+        element={isSignedIn ? <ModernChatPage /> : <Navigate to="/login" />}
+      />
+      <Route
+        path="/messages/:chatId"
         element={isSignedIn ? <ModernChatPage /> : <Navigate to="/login" />}
       />
       <Route

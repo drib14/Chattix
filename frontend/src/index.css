@@ -906,6 +906,7 @@ body::before {
   padding: 0 24px;
   background: rgba(255, 255, 255, 0.75);
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .chat-window-header-info {
@@ -1059,6 +1060,7 @@ body::before {
   padding: 16px 24px;
   background: rgba(255, 255, 255, 0.8);
   border-top: 1.5px solid rgba(226, 232, 240, 0.6);
+  flex-shrink: 0;
 }
 
 .chat-window-input-form {
@@ -2128,4 +2130,248 @@ body::before {
 /* Limit message bubble stretch for better readability on large screens */
 .bubble-wrapper {
   max-width: 75% !important;
+}
+
+/* RESPONSIVENESS UPDATES */
+
+/* Mobile & Tablet Styles */
+@media (max-width: 992px) {
+  .chat-sidebar-wrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    z-index: 50;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid rgba(226, 232, 240, 0.6);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+  }
+
+  .sidebar-container {
+    width: 100%;
+    height: 100%;
+    flex-direction: row;
+    padding: 0 10px;
+    justify-content: space-around;
+    align-items: center;
+    border-right: none;
+  }
+
+  .sidebar-nav-item {
+    margin-bottom: 0;
+    padding: 10px 14px;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+  .sidebar-brand-container {
+    display: none;
+  }
+
+  .chat-grid-layout {
+    flex-direction: column;
+    padding-bottom: 70px; /* space for bottom nav */
+  }
+
+  .chat-list-column {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+    max-height: 40vh; /* list takes top part */
+    flex-shrink: 0;
+  }
+
+  .chat-window-column {
+    width: 100%;
+    flex: 1;
+    height: 60vh;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Toggle view for mobile (only show list OR chat window depending on route/selection) */
+  .chat-page-container.mobile-list-view .chat-window-column {
+    display: none !important;
+  }
+
+  .chat-page-container.mobile-list-view .chat-list-column {
+    max-height: 100%;
+    height: 100%;
+    flex: 1;
+  }
+
+  .chat-page-container.mobile-chat-view .chat-list-column {
+    display: none !important;
+  }
+
+  .chat-page-container.mobile-chat-view .chat-window-column {
+    max-height: 100%;
+    height: 100%;
+    flex: 1;
+  }
+}
+
+/* Back button in Chat Window header for Mobile */
+.mobile-back-btn {
+  display: none;
+}
+@media (max-width: 768px) {
+  .mobile-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--clay-primary-light);
+    color: var(--clay-primary);
+    border: none;
+    margin-right: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+}
+
+/* Additional fixes for flex containers */
+.chat-window-container, .chat-grid-layout {
+  min-height: 0; /* Prevents flexbox overflow */
+}
+
+.chat-window-message-area {
+  min-height: 0;
+}
+
+.chat-list-scroll {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Fix for mobile chat view height */
+@media (max-width: 768px) {
+  .chat-grid-layout {
+    height: 100vh !important;
+  }
+}
+
+.plus-menu-item {
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.plus-menu-item:hover {
+  background: var(--clay-primary-light);
+  color: var(--clay-primary);
+}
+
+/* Messenger style message actions */
+.bubble-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  padding: 0 8px;
+}
+
+.bubble-row:hover .bubble-actions {
+  opacity: 1;
+}
+
+.bubble-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.bubble-action-btn:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--text-primary);
+}
+
+.bubble-timestamp-popup {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 4px;
+  text-align: center;
+  width: 100%;
+}
+
+.bubble-message-deleted {
+  background: rgba(226, 232, 240, 0.4);
+  color: var(--text-light);
+  font-style: italic;
+  padding: 10px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+.system-message-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.system-message-bubble {
+  background: rgba(226, 232, 240, 0.5);
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: center;
+}
+
+.bubble-read-receipt {
+  font-size: 10px;
+  color: var(--text-light);
+  margin-left: 4px;
+}
+
+
+/* Info Panel custom styles */
+.info-panel-container::-webkit-scrollbar {
+  width: 4px;
+}
+.info-panel-container::-webkit-scrollbar-thumb {
+  background: rgba(226, 232, 240, 0.8);
+  border-radius: 4px;
+}
+
+@media (max-width: 1200px) {
+  .info-panel-container {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 100;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+  }
 }

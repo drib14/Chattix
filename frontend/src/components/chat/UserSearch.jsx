@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import api from '../../services/api';
 import { setSelectedChat, setChats } from '../../redux/slices/chatSlice';
@@ -10,6 +11,7 @@ const UserSearch = ({ onChatStarted }) => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -36,6 +38,7 @@ const UserSearch = ({ onChatStarted }) => {
       if (onChatStarted) {
         onChatStarted(); // Trigger navigation shift
       }
+      navigate(`/messages/${chat._id}`);
     } catch (err) {
       console.error('Failed to start chat:', err);
     }

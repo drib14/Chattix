@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Send, Image, Mic, Paperclip, Square, Palette } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Send, Image, Mic, Paperclip, Square, Palette, ChevronLeft, Plus, Smile, Calendar, X } from 'lucide-react';
 import api from '../../services/api';
 import socketService from '../../services/socket';
-import { addMessage, setMessages, updateChatLastMessage } from '../../redux/slices/chatSlice';
+import { addMessage, setMessages, updateChatLastMessage, updateMessageState } from '../../redux/slices/chatSlice';
 import ChatBubble from './ChatBubble';
 import SkeletalLoader from '../ui/SkeletalLoader';
 import MediaGalleryModal from '../modals/MediaGalleryModal';
 import ClayDoodleModal from '../modals/ClayDoodleModal';
+import EmojiPicker from './EmojiPicker';
+import GiphySearch from './GiphySearch';
+import InfoPanel from './InfoPanel';
 
 const playNotificationSound = () => {
   try {
@@ -82,8 +86,12 @@ const ChatWindow = () => {
   const [activeMediaUrl, setActiveMediaUrl] = useState(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDoodleOpen, setIsDoodleOpen] = useState(false);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [showGiphy, setShowGiphy] = useState(false);
+  const [showInfoPanel, setShowInfoPanel] = useState(false);
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const docInputRef = useRef(null);
@@ -133,6 +141,10 @@ const ChatWindow = () => {
       }
     };
 
+    const onMessageDeleted = (messageId) => {
+      dispatch(updateMessageState({ messageId, updates: { isDeleted: true, text: '', attachments: [], linkPreview: null } }));
+    };
+
     const onTyping = ({ chatId, username }) => {
       if (chatId === selectedChat._id && username !== user?.username) {
         setTypingPartner(username);
@@ -146,12 +158,14 @@ const ChatWindow = () => {
     };
 
     socketService.on('message_received', onMessageReceived);
+    socketService.on('message_deleted', onMessageDeleted);
     socketService.on('typing', onTyping);
     socketService.on('stop_typing', onStopTyping);
 
     return () => {
       socketService.leaveChat(selectedChat._id);
       socketService.off('message_received', onMessageReceived);
+      socketService.off('message_deleted', onMessageDeleted);
       socketService.off('typing', onTyping);
       socketService.off('stop_typing', onStopTyping);
       setTypingPartner(null);
@@ -173,6 +187,24 @@ const ChatWindow = () => {
   };
 
   // Submit Text Message
+  const handleSendTextOrGif = async (text, gifUrl = null) => {
+    const payload = {
+      chatId: selectedChat._id,
+      text: text,
+    };
+    if (gifUrl) {
+      payload.attachments = [{ url: gifUrl, filename: 'giphy.gif', type: 'image' }];
+    }
+
+    try {
+      const sentMsg = await api.post('/messages', payload);
+      dispatch(addMessage(sentMsg));
+      dispatch(updateChatLastMessage({ chatId: selectedChat._id, message: sentMsg }));
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    }
+  };
+
   const handleSend = async (e) => {
     e?.preventDefault();
     if (!messageText.trim() && !uploadPercent) return;
@@ -185,13 +217,7 @@ const ChatWindow = () => {
     setMessageText('');
     socketService.emit('stop_typing', { chatId: selectedChat._id, username: user?.username });
 
-    try {
-      const sentMsg = await api.post('/messages', payload);
-      dispatch(addMessage(sentMsg));
-      dispatch(updateChatLastMessage({ chatId: selectedChat._id, message: sentMsg }));
-    } catch (err) {
-      console.error('Failed to send message:', err);
-    }
+    await handleSendTextOrGif(payload.text);
   };
 
   // Direct Attachment Uploader with Progress Bar hooks
@@ -317,6 +343,9 @@ const ChatWindow = () => {
     <div className="chat-window-container">
       {/* Header Profile Section */}
       <div className="chat-window-header">
+        <button className="mobile-back-btn" onClick={() => navigate('/messages')}>
+          <ChevronLeft size={24} />
+        </button>
         <div className="chat-window-header-info">
           <img
             src={partnerDetails?.avatar || `https://ui-avatars.com/api/?background=6366F1&color=fff&name=${encodeURIComponent(partnerDetails?.name || 'U')}`}
@@ -340,10 +369,22 @@ const ChatWindow = () => {
             </span>
           </div>
         </div>
+
+        <div style={{ marginLeft: 'auto' }}>
+          <button
+            onClick={() => setShowInfoPanel(!showInfoPanel)}
+            className="chat-window-opt-btn"
+            title="Chat Info"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          </button>
+        </div>
       </div>
 
-      {/* Messages Logs Area */}
-      <div className="chat-window-message-area">
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {/* Messages Logs Area */}
+          <div className="chat-window-message-area">
         {fetching ? (
           <SkeletalLoader type="bubble" count={5} />
         ) : messages.length === 0 ? (
@@ -391,9 +432,9 @@ const ChatWindow = () => {
         </div>
       )}
 
-      {/* Action Input Panel Footer */}
-      <div className="chat-window-input-panel">
-        {isRecording ? (
+          {/* Action Input Panel Footer */}
+          <div className="chat-window-input-panel">
+            {isRecording ? (
           <div className="chat-window-recording-row clay-card">
             <span className="chat-window-recording-timer">Recording: {formatTimer(recordingSeconds)}</span>
             <div style={{ flex: 1 }} />
@@ -404,55 +445,115 @@ const ChatWindow = () => {
         ) : (
           <form onSubmit={handleSend} className="chat-window-input-form" id="chat-message-form">
             {/* Input triggers */}
-            <div className="chat-window-options">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="chat-window-opt-btn" title="Send Image/Video" id="chat-image-attach-btn">
+            <div className="chat-window-options" style={{ position: 'relative' }}>
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPlusMenu(!showPlusMenu)}
+                  className={`chat-window-opt-btn ${showPlusMenu ? 'active' : ''}`}
+                  title="More Tools"
+                >
+                  <Plus size={20} style={{ transition: 'transform 0.2s', transform: showPlusMenu ? 'rotate(45deg)' : 'none' }} />
+                </button>
+
+                {/* Plus Menu Dropdown */}
+                {showPlusMenu && (
+                  <div className="clay-card plus-menu-dropdown" style={{
+                    position: 'absolute',
+                    bottom: '100%',
+                    left: 0,
+                    marginBottom: '10px',
+                    padding: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    background: 'rgba(255,255,255,0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '16px',
+                    zIndex: 100,
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                    width: 'max-content'
+                  }}>
+                    <button type="button" onClick={() => { setShowGiphy(!showGiphy); setShowPlusMenu(false); }} className="plus-menu-item">
+                      GIFs
+                    </button>
+                    <button type="button" onClick={() => { docInputRef.current?.click(); setShowPlusMenu(false); }} className="plus-menu-item">
+                      <Paperclip size={16} style={{ marginRight: '8px' }} /> File
+                    </button>
+                    <button type="button" onClick={() => { setIsDoodleOpen(true); setShowPlusMenu(false); }} className="plus-menu-item">
+                      <Palette size={16} style={{ marginRight: '8px' }} /> Doodle
+                    </button>
+                    <button type="button" onClick={() => { /* Event tool placeholder */ setShowPlusMenu(false); }} className="plus-menu-item">
+                      <Calendar size={16} style={{ marginRight: '8px' }} /> Create Event
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="chat-window-opt-btn" title="Send Media">
                 <Image size={18} />
               </button>
-              <button type="button" onClick={() => docInputRef.current?.click()} className="chat-window-opt-btn" title="Attach Document" id="chat-doc-attach-btn">
-                <Paperclip size={18} />
-              </button>
-              <button type="button" onClick={startRecording} className="chat-window-opt-btn" title="Record voice message" id="chat-mic-record-btn">
+              <button type="button" onClick={startRecording} className="chat-window-opt-btn" title="Voice Message">
                 <Mic size={18} />
-              </button>
-              <button type="button" onClick={() => setIsDoodleOpen(true)} className="chat-window-opt-btn" title="Draw Clay Doodle" id="chat-doodle-palette-btn">
-                <Palette size={18} />
               </button>
             </div>
 
             <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => handleFileUpload(e.target.files[0])} id="chat-file-input" />
             <input ref={docInputRef} type="file" style={{ display: 'none' }} accept="*" onChange={(e) => handleFileUpload(e.target.files[0])} id="chat-doc-input" />
 
-            <input
-              type="text"
-              placeholder="Type your message..."
-              value={messageText}
-              onChange={handleInputChange}
-              className="clay-input chat-window-text-input"
-              id="chat-text-input"
-            />
+            <div style={{ flex: 1, position: 'relative' }}>
+              {showGiphy && (
+                <div style={{ position: 'absolute', bottom: '100%', left: 0, marginBottom: '10px', background: 'white', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 101 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 10px 0', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Giphy</span>
+                    <button type="button" onClick={() => setShowGiphy(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={16}/></button>
+                  </div>
+                  <GiphySearch onGifSelect={(url) => { handleSendTextOrGif('', url); setShowGiphy(false); }} />
+                </div>
+              )}
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={messageText}
+                onChange={handleInputChange}
+                className="clay-input chat-window-text-input"
+                id="chat-text-input"
+                style={{ width: '100%' }}
+              />
+            </div>
 
-            <button type="submit" disabled={!messageText.trim()} className="clay-btn clay-btn-primary chat-window-send-btn" id="chat-send-btn">
-              <Send size={16} />
-            </button>
-          </form>
+                <EmojiPicker onEmojiSelect={(emoji) => setMessageText(prev => prev + emoji)} />
+
+                <button type="submit" disabled={!messageText.trim()} className="clay-btn clay-btn-primary chat-window-send-btn" id="chat-send-btn">
+                  <Send size={16} />
+                </button>
+              </form>
+            )}
+          </div>
+
+          {/* Lightbox Rendering System */}
+          <MediaGalleryModal
+            isOpen={isGalleryOpen}
+            onClose={() => setIsGalleryOpen(false)}
+            activeMediaUrl={activeMediaUrl}
+            setActiveMediaUrl={setActiveMediaUrl}
+            messages={messages}
+          />
+
+          {/* Clay Doodle Draw Modal */}
+          <ClayDoodleModal
+            isOpen={isDoodleOpen}
+            onClose={() => setIsDoodleOpen(false)}
+            onSend={handleFileUpload}
+          />
+
+        </div>
+
+        {/* Info Panel rendered conditionally */}
+        {showInfoPanel && (
+          <InfoPanel onClose={() => setShowInfoPanel(false)} onSearch={(query) => console.log('Searching for:', query)} />
         )}
       </div>
-
-      {/* Messenger Lightbox Modal */}
-      <MediaGalleryModal
-        isOpen={isGalleryOpen}
-        onClose={() => setIsGalleryOpen(false)}
-        activeMediaUrl={activeMediaUrl}
-        setActiveMediaUrl={setActiveMediaUrl}
-        messages={messages}
-      />
-
-      {/* Clay Doodle Draw Modal */}
-      <ClayDoodleModal
-        isOpen={isDoodleOpen}
-        onClose={() => setIsDoodleOpen(false)}
-        onSend={handleFileUpload}
-      />
     </div>
   );
 };

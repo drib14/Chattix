@@ -31,6 +31,19 @@ const chatSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Message',
     },
+    nicknames: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        nickname: { type: String },
+      },
+    ],
+    theme: {
+      type: String,
+      default: 'default',
+    },
   },
   { timestamps: true }
 );

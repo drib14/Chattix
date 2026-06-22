@@ -5,6 +5,7 @@ import {
   allMessages,
   sendMessage,
   uploadAttachment,
+  deleteMessage,
 } from '../controllers/messageController.js';
 
 const router = express.Router();
@@ -19,5 +20,6 @@ const upload = multer({
 router.get('/:chatId', protect, allMessages);
 router.post('/', protect, sendMessage);
 router.post('/upload', protect, upload.single('file'), uploadAttachment);
+router.delete('/:id', protect, deleteMessage);
 
 export default router;

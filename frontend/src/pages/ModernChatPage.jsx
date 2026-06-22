@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import ModernSidebar from '../components/chat/ModernSidebar';
 import ChatList from '../components/chat/ChatList';
 import UserSearch from '../components/chat/UserSearch';
@@ -8,14 +8,15 @@ import GroupsList from '../components/chat/GroupsList';
 import UserProfile from '../components/chat/UserProfile';
 import ChatWindow from '../components/chat/ChatWindow';
 import socketService from '../services/socket';
-import { setOnlineUsers } from '../redux/slices/chatSlice';
+import { setOnlineUsers, setSelectedChat } from '../redux/slices/chatSlice';
 
 const ModernChatPage = () => {
   const [activeTab, setActiveTab] = useState('chats');
   const [listSearchQuery, setListSearchQuery] = useState('');
-  const { selectedChat, token } = useSelector((state) => state.chat);
+  const { selectedChat, token, chats } = useSelector((state) => state.chat);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const navigate = useNavigate();
+  const { chatId } = useParams();
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -40,6 +41,19 @@ const ModernChatPage = () => {
     }
   }, [user?._id, token, dispatch]);
 
+  // Handle setting selected chat via URL parameter
+  useEffect(() => {
+    if (chatId && chats.length > 0) {
+      const chatFromUrl = chats.find(c => c._id === chatId);
+      if (chatFromUrl && selectedChat?._id !== chatId) {
+        dispatch(setSelectedChat(chatFromUrl));
+      }
+    } else if (!chatId && selectedChat) {
+       // if user is at /messages but a chat is selected, we could navigate to /messages/:chatId
+       navigate(`/messages/${selectedChat._id}`, { replace: true });
+    }
+  }, [chatId, chats, selectedChat, dispatch, navigate]);
+
   const handleChatStarted = () => {
     setActiveTab('chats');
   };
@@ -53,12 +67,12 @@ const ModernChatPage = () => {
       case 'profile':
         return <UserProfile />;
       default:
-        return <ChatList searchQuery={listSearchQuery} />;
+        return <ChatList />;
     }
   };
 
   return (
-    <div className="chat-page-container chat-bg-pattern">
+    <div className={`chat-page-container chat-bg-pattern ${chatId ? 'mobile-chat-view' : 'mobile-list-view'}`}>
       {/* Background organic blur bubbles */}
       <div className="bg-blob bg-blob-1" />
       <div className="bg-blob bg-blob-2" />
@@ -72,18 +86,6 @@ const ModernChatPage = () => {
 
         {/* Dynamic Lists Column */}
         <div className="chat-list-column clay-card">
-          {/* Header Search for Chats List tab */}
-          {activeTab === 'chats' && (
-            <div className="chat-search-header-container">
-              <input
-                type="text"
-                placeholder="Search chats..."
-                value={listSearchQuery}
-                onChange={(e) => setListSearchQuery(e.target.value)}
-                className="clay-input chat-search-input"
-              />
-            </div>
-          )}
           <div className="chat-list-content-area">{renderActiveList()}</div>
         </div>
 

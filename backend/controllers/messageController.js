@@ -156,3 +156,29 @@ export const uploadAttachment = async (req, res) => {
     res.status(500).json({ message: 'Attachment upload failed' });
   }
 };
+
+export const deleteMessage = async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.id);
+    if (!message) return res.status(404).json({ message: 'Message not found' });
+
+    // Authorization
+    if (message.sender.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'Not authorized to delete' });
+    }
+
+    message.isDeleted = true;
+    message.text = '';
+    message.attachments = [];
+    message.linkPreview = null;
+    await message.save();
+
+    if (req.io) {
+      req.io.to(message.chat.toString()).emit('message_deleted', message._id);
+    }
+
+    res.status(200).json({ success: true, message: 'Message deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to delete message' });
+  }
+};

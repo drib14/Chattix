@@ -130,3 +130,44 @@ export const searchUsers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const updateChatSettings = async (req, res) => {
+  const { chatId } = req.params;
+  const { nicknames, groupName, groupAvatar } = req.body;
+
+  try {
+    const updateData = {};
+    if (nicknames) updateData.nicknames = nicknames;
+    if (groupName) updateData.groupName = groupName;
+    if (groupAvatar) updateData.groupAvatar = groupAvatar;
+
+    const chat = await Chat.findByIdAndUpdate(chatId, updateData, { new: true })
+      .populate('participants', '-clerkId')
+      .populate('admins', '-clerkId')
+      .populate('lastMessage');
+
+    // Create system message for nickname/group update
+    if (nicknames || groupName) {
+       let text = `${req.user.fullName} updated chat settings`;
+       if (groupName) text = `${req.user.fullName} changed group name to ${groupName}`;
+       else if (nicknames) text = `${req.user.fullName} updated nicknames`;
+
+       const sysMsg = await Message.create({
+         chat: chat._id,
+         sender: req.user._id,
+         type: 'system',
+         text
+       });
+       chat.lastMessage = sysMsg;
+       await chat.save();
+
+       if (req.io) {
+          req.io.to(chat._id.toString()).emit('message_received', sysMsg);
+       }
+    }
+
+    res.status(200).json(chat);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

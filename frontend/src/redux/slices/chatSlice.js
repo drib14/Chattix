@@ -27,6 +27,13 @@ const chatSlice = createSlice({
         state.messages.push(action.payload);
       }
     },
+    updateMessageState: (state, action) => {
+      const { messageId, updates } = action.payload;
+      const index = state.messages.findIndex((m) => m._id === messageId);
+      if (index !== -1) {
+        state.messages[index] = { ...state.messages[index], ...updates };
+      }
+    },
     setOnlineUsers: (state, action) => {
       state.onlineUsers = Array.isArray(action.payload) ? action.payload : [];
     },
@@ -50,6 +57,7 @@ export const {
   setSelectedChat,
   setMessages,
   addMessage,
+  updateMessageState,
   setOnlineUsers,
   updateChatLastMessage,
 } = chatSlice.actions;

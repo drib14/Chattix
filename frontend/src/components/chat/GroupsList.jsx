@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { setSelectedChat, setChats } from '../../redux/slices/chatSlice';
 import SkeletalLoader from '../ui/SkeletalLoader';
@@ -11,6 +12,7 @@ const GroupsList = ({ onChatStarted }) => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -56,6 +58,7 @@ const GroupsList = ({ onChatStarted }) => {
       if (onChatStarted) {
         onChatStarted();
       }
+      navigate(`/messages/${chat._id}`);
     } catch (err) {
       console.error('Group chat creation error:', err);
     } finally {

@@ -1,10 +1,32 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const getHeaders = () => {
-  const token = localStorage.getItem('token');
+// This lets us dynamically fetch the token from Clerk if it expires,
+// rather than relying only on a potentially stale localStorage value.
+let getClerkTokenCallback = null;
+
+export const setTokenProvider = (getToken) => {
+  getClerkTokenCallback = getToken;
+};
+
+const getHeaders = async () => {
+  let token = localStorage.getItem('token');
+
+  if (getClerkTokenCallback) {
+    try {
+      const freshToken = await getClerkTokenCallback();
+      if (freshToken) {
+        token = freshToken;
+        localStorage.setItem('token', token);
+      }
+    } catch (e) {
+      console.warn("Failed to get fresh Clerk token", e);
+    }
+  }
+
   const headers = {
     'Content-Type': 'application/json',
   };
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -13,9 +35,10 @@ const getHeaders = () => {
 
 export const api = {
   get: async (endpoint) => {
+    const headers = await getHeaders();
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'GET',
-      headers: getHeaders(),
+      headers,
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -25,9 +48,10 @@ export const api = {
   },
 
   post: async (endpoint, body) => {
+    const headers = await getHeaders();
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers,
       body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -37,9 +61,42 @@ export const api = {
     return res.json();
   },
 
-  // Custom upload method with manual progress callback if supported
+  put: async (endpoint, body) => {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'API request failed');
+    }
+    return res.json();
+  },
+
+  delete: async (endpoint) => {
+    const headers = await getHeaders();
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'API request failed');
+    }
+    return res.json();
+  },
+
   upload: async (endpoint, formData, onProgress) => {
-    const token = localStorage.getItem('token');
+    let token = localStorage.getItem('token');
+
+    if (getClerkTokenCallback) {
+      try {
+        const freshToken = await getClerkTokenCallback();
+        if (freshToken) token = freshToken;
+      } catch (e) {}
+    }
     
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
