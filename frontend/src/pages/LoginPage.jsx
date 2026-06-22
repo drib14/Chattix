@@ -52,7 +52,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-chattix-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-md glass clay-card p-8">
+      <div className="w-full max-w-md clay-card p-8">
         <div className="flex flex-col items-center mb-8">
           <img src="/chattix-logo.png" alt="Chattix Logo" className="w-16 h-16 mb-4 drop-shadow-md object-contain" />
           <h2 className="text-2xl font-bold text-gray-800">Welcome Back</h2>
@@ -72,7 +72,7 @@ export default function LoginPage() {
               type="text"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full bg-white/50 border border-gray-200 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-chattix-teal/50 shadow-inner"
+              className="w-full clay-input py-3 px-4 text-sm focus:ring-2 focus:ring-chattix-teal/50"
               placeholder="Enter your email or username"
               required
             />
@@ -84,7 +84,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-white/50 border border-gray-200 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-chattix-teal/50 shadow-inner"
+              className="w-full clay-input py-3 px-4 text-sm focus:ring-2 focus:ring-chattix-teal/50"
               placeholder="••••••••"
               required
             />
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
         <button
           onClick={handleGoogleSignIn}
-          className="w-full mt-6 clay-btn flex items-center justify-center gap-3 py-3 px-4 font-semibold text-gray-700 hover:text-chattix-teal transition-colors bg-white/60"
+          className="w-full mt-6 clay-btn flex items-center justify-center gap-3 py-3 px-4 font-semibold text-gray-700 hover:text-chattix-teal transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

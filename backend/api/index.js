@@ -112,12 +112,23 @@ app.post('/api/auth/sync', authLimiter, checkAuth, async (req, res) => {
       profileImageUrl
     };
 
-    if (username) updateData.username = username;
+    let setOnInsertData = {};
+
+    if (username) {
+      updateData.username = username;
+    } else {
+      setOnInsertData.username = 'chattix_user';
+    }
+
+    const updateQuery = { $set: updateData };
+    if (Object.keys(setOnInsertData).length > 0) {
+      updateQuery.$setOnInsert = setOnInsertData;
+    }
 
     const user = await User.findOneAndUpdate(
       { clerkId },
-      { $set: updateData, $setOnInsert: { username: username || 'chattix_user' } },
-      { new: true, upsert: true }
+      updateQuery,
+      { returnDocument: 'after', upsert: true }
     );
 
     return res.status(200).json({ message: 'User synced successfully', user });

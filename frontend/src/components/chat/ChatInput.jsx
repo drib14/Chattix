@@ -198,7 +198,7 @@ export default function ChatInput() {
         </div>
       )}
 
-      <div className="p-4 border-t border-gray-100/50 bg-white/40 backdrop-blur-sm flex items-center gap-2 relative">
+      <div className="p-4 flex items-center gap-2 relative z-20">
 
         {/* Emoji Picker Popup */}
         {showEmoji && (
@@ -214,16 +214,16 @@ export default function ChatInput() {
           </div>
         )}
 
-        <button onClick={() => { setShowEmoji(!showEmoji); setShowGif(false); }} className="p-2 text-gray-400 hover:text-chattix-teal transition-colors">
-          <Smile className="w-6 h-6" />
+        <button onClick={() => { setShowEmoji(!showEmoji); setShowGif(false); }} className="p-2 text-gray-500 hover:text-chattix-teal transition-colors clay-btn">
+          <Smile className="w-5 h-5" />
         </button>
 
-        <button onClick={() => { setShowGif(!showGif); setShowEmoji(false); }} className="p-2 text-gray-400 hover:text-chattix-teal transition-colors">
-          <FileImage className="w-6 h-6" />
+        <button onClick={() => { setShowGif(!showGif); setShowEmoji(false); }} className="p-2 text-gray-500 hover:text-chattix-teal transition-colors clay-btn">
+          <FileImage className="w-5 h-5" />
         </button>
 
-        <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-400 hover:text-chattix-teal transition-colors">
-          <Paperclip className="w-6 h-6" />
+        <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-500 hover:text-chattix-teal transition-colors clay-btn">
+          <Paperclip className="w-5 h-5" />
         </button>
 
         <input
@@ -240,7 +240,7 @@ export default function ChatInput() {
           onChange={handleTyping}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           placeholder="Type a message..."
-          className="flex-1 bg-white border border-gray-200 rounded-full py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-chattix-teal/50 shadow-inner"
+          className="flex-1 clay-input py-2.5 px-4 text-sm"
         />
 
         {/* Voice Record Button */}
@@ -249,9 +249,9 @@ export default function ChatInput() {
             onMouseDown={startRecording}
             onMouseUp={stopRecording}
             onMouseLeave={stopRecording}
-            className={`p-2 transition-colors rounded-full ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-gray-400 hover:text-chattix-teal'}`}
+            className={`p-2 transition-colors rounded-xl clay-btn ${isRecording ? 'text-red-500 animate-pulse shadow-clay-inset' : 'text-gray-500 hover:text-chattix-teal'}`}
           >
-            <Mic className="w-6 h-6" />
+            <Mic className="w-5 h-5" />
           </button>
         )}
 
@@ -259,16 +259,16 @@ export default function ChatInput() {
         {isTypingSomething ? (
           <button
             onClick={() => sendMessage()}
-            className="p-2.5 bg-chattix-teal text-white rounded-full hover:bg-chattix-teal-light shadow-md transition-colors"
+            className="p-2 clay-btn-teal flex items-center justify-center transition-colors"
           >
             <Send className="w-5 h-5 ml-0.5" />
           </button>
         ) : (
           <button
             onClick={() => sendMessage('👍')}
-            className="p-2 text-chattix-teal hover:scale-110 transition-transform"
+            className="p-2 text-chattix-teal hover:scale-110 transition-transform clay-btn"
           >
-            <ThumbsUp className="w-6 h-6" />
+            <ThumbsUp className="w-5 h-5" />
           </button>
         )}
       </div>

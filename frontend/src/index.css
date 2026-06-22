@@ -3,24 +3,24 @@
 @theme {
   --color-chattix-teal: #137A8B;
   --color-chattix-teal-light: #24A2B6;
-  --color-chattix-bg: #F4F7F9;
+  --color-chattix-bg: #e0e5ec;
 
   /* Claymorphism styles */
-  --shadow-clay-card: 8px 8px 16px #d1d9e6, -8px -8px 16px #ffffff;
-  --shadow-clay-inset: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+  --shadow-clay-card: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+  --shadow-clay-inset: inset 6px 6px 10px 0 rgba(163,177,198, 0.5), inset -6px -6px 10px 0 rgba(255,255,255, 0.5);
   --shadow-clay-teal: 8px 8px 16px #0f6270, -8px -8px 16px #1792a6;
   --shadow-clay-teal-inset: inset 6px 6px 12px #0f6270, inset -6px -6px 12px #1792a6;
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white/40 backdrop-blur-md border border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
-  }
   .clay-card {
-    @apply bg-[#F4F7F9] shadow-clay-card rounded-2xl;
+    @apply bg-[#e0e5ec] shadow-clay-card rounded-2xl border-transparent;
+  }
+  .clay-input {
+    @apply bg-[#e0e5ec] shadow-clay-inset rounded-xl border-transparent text-gray-700 outline-none;
   }
   .clay-btn {
-    @apply bg-[#F4F7F9] shadow-clay-card rounded-xl active:shadow-clay-inset transition-shadow duration-200 cursor-pointer;
+    @apply bg-[#e0e5ec] shadow-clay-card rounded-xl active:shadow-clay-inset transition-shadow duration-200 cursor-pointer border-transparent;
   }
   .clay-btn-teal {
     @apply bg-chattix-teal text-white shadow-clay-teal rounded-xl active:shadow-clay-teal-inset transition-shadow duration-200 border-none cursor-pointer;

@@ -113,7 +113,7 @@ export default function Dashboard() {
             initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
-            className="absolute top-6 left-1/2 -translate-x-1/2 z-50 glass clay-card p-4 flex items-center gap-4 w-[90%] max-w-2xl border-l-4 border-chattix-teal"
+            className="absolute top-6 left-1/2 -translate-x-1/2 z-50 clay-card p-4 flex items-center gap-4 w-[90%] max-w-2xl border-l-4 border-l-chattix-teal"
           >
             <ShieldAlert className="text-chattix-teal w-6 h-6 flex-shrink-0" />
             <div className="flex-1">
@@ -121,7 +121,7 @@ export default function Dashboard() {
               <p className="text-sm text-gray-600">Save your account on this device for a quick, 1-click sign-in next time you visit Chattix.</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={handleDismissBanner} className="p-2 text-gray-400 hover:bg-white rounded-full transition-colors">
+              <button onClick={handleDismissBanner} className="p-2 text-gray-400 hover:text-gray-600 rounded-full transition-colors clay-btn">
                 <X className="w-5 h-5" />
               </button>
               <button onClick={handleSaveAccount} className="clay-btn-teal flex items-center gap-1 px-4 py-2 text-sm">
@@ -133,9 +133,9 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <div className="w-80 glass clay-card flex flex-col overflow-hidden">
+      <div className="w-80 clay-card flex flex-col overflow-hidden">
         {/* Header / Profile */}
-        <div className="p-4 border-b border-gray-100/50 flex items-center justify-between">
+        <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => openUserProfile()}>
             <img src={user?.imageUrl} alt="Profile" className="w-10 h-10 rounded-full border-2 border-white shadow-sm group-hover:scale-105 transition-transform" />
             <div className="overflow-hidden">
@@ -174,17 +174,17 @@ export default function Dashboard() {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-gray-100/50 flex flex-col gap-2">
+        <div className="p-4 flex flex-col gap-2">
           <button
             onClick={handleSwitchAccount}
-            className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-xl text-sm font-medium text-gray-600 hover:bg-white transition-colors"
+            className="clay-btn flex items-center justify-center gap-2 w-full py-2 px-4 text-sm font-medium text-gray-600 hover:text-chattix-teal transition-colors"
           >
             <ArrowRightLeft className="w-4 h-4" />
             Switch Account
           </button>
           <button
             onClick={() => signOut()}
-            className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+            className="clay-btn flex items-center justify-center gap-2 w-full py-2 px-4 text-sm font-medium text-red-500 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Log Out
@@ -193,11 +193,11 @@ export default function Dashboard() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 glass clay-card flex flex-col overflow-hidden relative">
+      <div className="flex-1 clay-card flex flex-col overflow-hidden relative">
         {activeConversation ? (
           <div className="flex flex-col h-full">
             {/* Chat Header */}
-            <div className="h-20 border-b border-gray-100/50 p-4 flex items-center justify-between shadow-sm z-10 bg-white/40 backdrop-blur-sm">
+            <div className="h-20 p-4 flex items-center justify-between z-10">
               <div className="flex items-center gap-3">
                 {(() => {
                   const otherParticipant = activeConversation.participants.find(p => p.clerkId !== user.id) || activeConversation.participants[0];

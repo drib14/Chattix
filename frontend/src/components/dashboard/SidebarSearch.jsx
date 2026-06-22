@@ -53,13 +53,13 @@ export default function SidebarSearch({ onSelectUser }) {
           placeholder="Search users..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full bg-white/50 border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-chattix-teal/50 shadow-inner"
+          className="w-full clay-input py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-chattix-teal/50"
         />
         {loading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-chattix-teal w-4 h-4 animate-spin" />}
       </div>
 
       {query && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white/90 backdrop-blur-md rounded-xl shadow-clay-card border border-gray-100 max-h-60 overflow-y-auto z-50 p-2">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-chattix-bg rounded-xl shadow-clay-card max-h-60 overflow-y-auto z-50 p-2">
           {(!Array.isArray(results) || results.length === 0) && !loading && (
             <p className="text-center text-gray-500 text-sm py-4">No users found.</p>
           )}
