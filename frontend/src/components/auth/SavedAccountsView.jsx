@@ -57,7 +57,7 @@ export default function SavedAccountsView({ onContinueNew }) {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
-      <img src="/chattix-logo.png" alt="Chattix Logo" className="w-20 h-20 mb-8 drop-shadow-md" />
+      <img src="/chattix-logo.png" alt="Chattix Logo" className="w-20 h-20 mb-8 drop-shadow-md object-contain" />
       <h2 className="text-2xl font-bold mb-8 text-gray-800">Recent Logins</h2>
 
       <div className="flex flex-wrap gap-6 justify-center max-w-2xl">

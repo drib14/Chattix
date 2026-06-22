@@ -25,6 +25,14 @@ const userSchema = new mongoose.Schema({
   profileImageUrl: {
     type: String,
   },
+  lastSeen: {
+    type: Date,
+    default: Date.now,
+  },
+  isOnline: {
+    type: Boolean,
+    default: false,
+  }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);

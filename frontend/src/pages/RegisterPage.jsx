@@ -84,7 +84,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md glass clay-card p-8">
 
         <div className="flex flex-col items-center mb-8">
-          <img src="/chattix-logo.png" alt="Chattix Logo" className="w-16 h-16 mb-4 drop-shadow-md" />
+          <img src="/chattix-logo.png" alt="Chattix Logo" className="w-16 h-16 mb-4 drop-shadow-md object-contain" />
           <h2 className="text-2xl font-bold text-gray-800">
             {pendingVerification ? "Verify Email" : "Create an Account"}
           </h2>

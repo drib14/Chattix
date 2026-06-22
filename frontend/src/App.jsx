@@ -2,7 +2,10 @@ import { BrowserRouter } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react';
 import AppRoutes from './routes/AppRoutes';
 import { AuthProvider } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
 import SplashScreen from './components/common/SplashScreen';
+import ForwardModal from './components/modals/ForwardModal';
+import DeleteModal from './components/modals/DeleteModal';
 import { useState, useEffect } from 'react';
 
 export default function App() {
@@ -23,7 +26,11 @@ export default function App() {
     <div className="min-h-screen bg-chattix-bg flex flex-col">
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <SocketProvider>
+            <AppRoutes />
+            <ForwardModal />
+            <DeleteModal />
+          </SocketProvider>
         </AuthProvider>
       </BrowserRouter>
     </div>

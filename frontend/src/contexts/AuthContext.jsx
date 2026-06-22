@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [dbUser, setDbUser] = useState(null);
 
   useEffect(() => {
     const syncUser = async () => {
@@ -16,7 +17,7 @@ export function AuthProvider({ children }) {
         setIsSyncing(true);
         const token = await getToken();
 
-        await fetch(import.meta.env.VITE_API_URL + '/auth/sync', {
+        const res = await fetch(import.meta.env.VITE_API_URL + '/auth/sync', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -31,6 +32,11 @@ export function AuthProvider({ children }) {
             username: user.username || 'chattix_user'
           })
         });
+
+        const data = await res.json();
+        if (data.user) {
+          setDbUser(data.user);
+        }
       } catch (error) {
         console.error("Failed to sync user with backend:", error);
       } finally {
@@ -42,7 +48,7 @@ export function AuthProvider({ children }) {
   }, [user, getToken]);
 
   return (
-    <AuthContext.Provider value={{ isSyncing }}>
+    <AuthContext.Provider value={{ isSyncing, dbUser }}>
       {children}
     </AuthContext.Provider>
   );
